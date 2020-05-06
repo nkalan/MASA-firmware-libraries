@@ -23,6 +23,11 @@ void init_adc(SPI_HandleTypeDef* SPI_BUS, GPIO_ADC_Pinfo *pins, int num_adcs) {
         write_adc_reg(SPI_BUS, tx, rx, 2); // Select register of adc
         set_adc(adc_pin, adc_port, GPIO_PIN_SET); // Release adc
     }
+
+    // Set ADC CNVST low here to guarantee its held for at least 5 ns
+    HAL_GPIO_WritePin(  pinfo.ADC_CNVST_PORT[adcn], 
+                        pinfo.ADC_CNVST_ADDR[adcn], 
+                        GPIO_PIN_RESET);
     __enable_irq();
 }
 
@@ -34,10 +39,10 @@ uint16_t* read_adc(SPI_HandleTypeDef* SPI_BUS, uint8_t adcn) {
     adcn    = ADC0 + adcn;
 
     __disable_irq();
-    // ~CS should be high, Set ~CNVST low before pulling high
+    // ~CS should be high, Set ~CNVST low before pulling high after 5ns
     HAL_GPIO_WritePin(  pinfo.ADC_CNVST_PORT[adcn], 
                         pinfo.ADC_CNVST_ADDR[adcn], 
-                        GPIO_PIN_RESET);
+                        GPIO_PIN_SET);
     // Wait for EOC to pull low, then set ~CS low 
     while(HAL_GPIO_ReadPin(pinfo.ADC_EOC_PORT[adcn], pinfo.ADC_EOC_ADDR[adcn])){}
     set_adc(pinfo.ADC_CS_PORT[adcn], pinfo.ADC_CS_ADDR[adcn], GPIO_PIN_RESET);
@@ -56,6 +61,11 @@ uint16_t* read_adc(SPI_HandleTypeDef* SPI_BUS, uint8_t adcn) {
 
     // Deselect ADC once reading finishes
     set_adc(pinfo.ADC_CS_PORT[adcn], pinfo.ADC_CS_ADDR[adcn], GPIO_PIN_SET);
+
+    // Set CNVST low to guarantee hold for at least 5ns before next adc read
+    HAL_GPIO_WritePin(  pinfo.ADC_CNVST_PORT[adcn], 
+                        pinfo.ADC_CNVST_ADDR[adcn], 
+                        GPIO_PIN_RESET);
 
     // Reenable Interrupts
     __disable_irq();
