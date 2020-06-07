@@ -7,9 +7,12 @@
  * The main function of the MS5607-02BA is to convert the uncompensated analogue output voltage from the piezo-resistive
  * pressure sensor to a 24-bit digital value, as well as providing a 24-bit digital value for the temperature of the sensor."
  * 
+ * 
+ * 
  * Nathaniel Kalantar (nkalan@umich.edu)
  * Michigan Aeronautical Science Association
  * Created May 3, 2020
+ * Last edited June 3, 2020
  */
 
 #ifndef MS5607_H
@@ -17,22 +20,31 @@
 
 #include "stm32f4xx_hal_spi.h"
 #include "stm32f4xx_hal_gpio.h"
-#include "Stm32f4xx_hal_tim.h"
 
-//#define MS5607_PACK_16_TO_8(data) {data>>8, (data<<8)>>8}  // MSB SPI line
 #define MS5607_CS_ACTIVE    GPIO_PIN_RESET  // chip is active low
 #define MS5607_CS_INACTIVE  GPIO_PIN_SET
 
-// Pressure and temperature ranges the device can handle
-#define MS5607_MINIMUM_PRESSURE         = 1000      //mbar*100    (10 mbar)
-#define MS5607_MAXIMUM_PRESSURE         = 120000    //mbar*100    (1200 mbar)
-#define MS5607_MINIMUM_TEMPERATURE      = -4000     //Celsius*100 (-40 C)
-#define MS5607_MAXIMUM_TEMPERATURE      = 8500      //Celsius*100 (85 C)
-#define MS5607_REFERENCE_TEMPERATURE    = 2000      //Celsius*100 (20 C)
+/** ADC Maximum Conversion times
+ * The altimeter's onboard ADC must wait a certain amount of time
+ * after receiving the CONVERT command before data can be read with
+ * the ADC_READ command. If the ADC_READ command is given too early or the
+ * CONVERT command is not given, the ADC will return a 0 instead of data.
+ * 
+ */
+#define ADC_CONVERSION_TIME_OSR_256_MICROSECONDS   9040    //units in microseconds
+#define ADC_CONVERSION_TIME_OSR_512_MICROSECONDS   4540
+#define ADC_CONVERSION_TIME_OSR_1024_MICROSECONDS  2280
+#define ADC_CONVERSION_TIME_OSR_2048_MICROSECONDS  1170
+#define ADC_CONVERSION_TIME_OSR_4096_MICROSECONDS   600
 
+/** Altimeter memory reset delay
+ * Delay required after sending the memory reset command
+ * 
+ */
+#define RESET_LOAD_TIME_MICROSECONDS      2880
 
-/** MS5607_OversamplingRatio
- * The MS5607 can operate at one of 5 oversampling ratios (OSR).
+/** MS5607_OversamplingRate
+ * The MS5607 can operate at one of 5 oversampling rates (OSR).
  * The commands are different for each, so one must be selected at initialization.
  * 
  */
@@ -42,24 +54,22 @@ typedef enum {
     OSR_1024;
     OSR_2048;
     OSR_4096;
-} MS5607_OversamplingRatio;
+} MS5607_OversamplineRate;
 
 
 /** MS5607
  * 
  */
 typedef struct {
-    MS5607_OversamplingRatio OSR;       // Oversampling ratio
+    MS5607_OversamplingRate OSR;       // Oversampling rate, specified by user
 
-    TIM_HandleTypeDef* timer;            // Timer
+    SPI_HandlTypeDef* SPI_BUS;          // SPI struct, specified by user
 
-    SPI_HandlTypeDef* SPI_BUS;          // SPI
+    GPIO_TypeDef* cs_base;              // Chip select GPIO base, specified by user
 
-    GPIO_TypeDef* cs_base;              // Chip select GPIO base
+    uint16_t cs_pin;                    // Chip select GPIO pin, specified by user
 
-    uint16_t cs_pin;                    // Chip select GPIO pin
-
-    uint16_t[6] calibration_constants;            // Calibration constants for pressure and temperature
+    uint16_t[6] calibration_constants;  // Calibration constants to be read in during second_initialization()
                                         /* {Presure sensitivity,
                                             Presure offset,
                                             Temperature coefficient of pressure sensitivity,
@@ -67,39 +77,70 @@ typedef struct {
                                             Reference temperature,
                                             Temperature coefficient of the temperature} */
 
-    uint32_t time_of_last_conversion;   // 
+    int32_t D1;                         // Uncompensated pressure to be read in from the altimeter ADC
 
-    double last_recorded_pressure;
-    
-    double last_recorded_temperature;         // 
+    int32_t D2;                         // Uncompensated temperature to be read in from the altimeter ADC
 } MS5607_Altimeter;
 
 
-/** initialize
- * This function MUST be run once after starting up the microcontroller.
- * Initializes the chip by resetting its memory and reading calibration constants from its memory
+/**
+ * This function must be run once after starting up the microcontroller.
+ * It stores the settings and configuration into the MS5607_Altimeter struct
+ *  and initializes the device by resetting its memory from an unknown state.
+ * YOU MUST WAIT 2.88 MILLISECONDS BEFORE RUNNING SECOND_INITIALIZATION()
  * 
- * @param altimeter         <MS5607_CalibrationConstants*>      altimeter object to store settings and constants
- * @param OSR_setting_in    <MS5607_OversamplingRatio>          OSR setting for the chip to operate at
- * @param timer_in          <TIM_HandleTypeDef*>                Timer object for tracking ADC conversion times
- * @param SPI_BUS           <SPI_HandleTypeDef*>                SPI object altimeter is on
- * @param cs_base           <GPIO_TypeDef*>                     GPIO pin array chip select pin is on
- * @param cs_pin            <uint16_t>                          GPIO pin connected to altimeter chip select
+ * @param altimeter         <MS5607_Altimeter*>             altimeter object to store settings and constants
+ * @param OSR_setting_in    <MS5607_OversamplingRate>       OSR setting for the chip to operate at
+ * @param SPI_BUS           <SPI_HandleTypeDef*>            SPI object altimeter is on
+ * @param cs_base           <GPIO_TypeDef*>                 GPIO pin array chip select pin is on
+ * @param cs_pin            <uint16_t>                      GPIO pin connected to altimeter chip select
  * 
  */
-void initialize(MS5607_Altimeter* altimeter, MS5607_OversamplingRatio OSR_setting_in, TIM_HandleTypeDef* timer_in,
+void first_initialization(MS5607_Altimeter* altimeter, MS5607_OversamplingRate OSR_setting_in,
         SPI_HandlTypeDef* SPI_BUS_in,GPIO_TypeDef* cs_base_in, uint16_t cs_pin_in);
 
 
-/** read_pres_and_temp
- * reads pressure and temperature from the altimeter, then corrects them using the calibration constants
- * calculations are documented on datasheet p.8-9
+/**
+ * THIS FUNCTION MUST BE RUN AT LEAST 2.88 MILLISECONDS AFTER RUNNING FIRST_INITIALIZATION()
+ * It reads factory-calibrated constants from the device and stores them in the altimeter struct.
  * 
- * @param altimeter     <MS5607_CalibrationConstants*>      altimeter object to store settings and constants
- * @param pres          <double*>                           pointer to double to store the pressure
- * @param temp          <double*>                           poniter to double to store the temperature
+ * @param altimeter         <MS5607_Altimeter*>             altimeter object to store settings and constants
  * 
  */
-void read_pres_and_temp(MS5607_CalibrationConstants altimeter, double* pres, double* temp);
+void second_initialization(MS5607_Altimeter* altimeter);
+
+
+/**
+ * Commands the device's ADC to convert the digital pressure data.
+ * This function does not require any delay before using.
+ * REQUIRES A DELAY AFTER RUNNING - exact time depends on the user-specified oversampling rate (OSR)
+ * 
+ * @param altimeter         <MS5607_Altimeter*>             altimeter object to store settings and constants
+ * 
+ */
+void first_conversion(MS5607_Altimeter* altimeter);
+
+
+/**
+ * REQUIRES A DELAY BEFORE RUNNING - exact time depends on the user-specified oversampling rate (OSR)
+ * Reads the digital pressure from the device's ADC and sends the command to convert digital pressure.
+ * REQUIRES A DELAY AFTER RUNNING - exact time depends on the user-specified oversampling rate (OSR)
+ * 
+ * @param altimeter         <MS5607_Altimeter*>             altimeter object to store settings and constants
+ * 
+ */
+void second_conversion(MS5607_Altimeter* altimeter);
+
+
+/**
+ * REQUIRES A DELAY BEFORE RUNNING - exact time depends on the user-specified oversampling rate (OSR)
+ * Reads the digital temperature from the device's ADC and calculates actual pressure and temperature,
+ * then returns the altitude above mean sea level (AMSL) in meters
+ * 
+ * @param altimeter         <MS5607_Altimeter*>             altimeter object to store settings and constants
+ * @retval                  <int32_t>                       altitude above mean sea level in meters
+ * 
+ */
+int32_t calculate_altitude(MS5607_Altimeter* altimeter);
 
 #endif  /* end header include protection */
