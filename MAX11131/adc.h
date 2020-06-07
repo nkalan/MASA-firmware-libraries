@@ -63,15 +63,18 @@ enum SCAN_STATES{
  *  
  *  detailed documentation starts on datasheet pg21 
  *  @param SPI_BUS      <SPI_HandleTypeDef*> SPI object ADC is on
- *  @param pinfo        <GPIO_ADC_Pinfo*> contains adc pin defs, refer to def above
+ *  @param pinfo        <GPIO_ADC_Pinfo*>   contains adc pin defs, 
+ *                                          refer to def above
  *  @param num_adcs     <int>   number of adcs
  * 
  *  Note: assumes 8bit data framing on SPI
  */
-void init_adc(SPI_HandleTypeDef* SPI_BUS, GPIO_ADC_Pinfo *pinfo, uint8_t num_adcs);
+void init_adc(SPI_HandleTypeDef* SPI_BUS, GPIO_ADC_Pinfo *pinfo, 
+                    uint8_t num_adcs);
 
 /**
- *  Reads adc range from a specified range of pins on adc and returns arr of read values
+ *  Reads adc range from a specified range of pins on adc and 
+ *  returns arr of read values
  *  
  *  general documentation starts on datasheet pg 21
  *  @param SPI_BUS      <SPI_HandleTypeDef*> SPI object ADC is on
@@ -90,7 +93,8 @@ uint16_t* read_adc_range(SPI_HandleTypeDef* SPI_BUS, uint8_t adcn);
  *  @param ch_num       <uint8_t> number of channels to read
  * 
  */
-void set_read_adc_range(SPI_HandleTypeDef* SPI_BUS, uint8_t adcn, uint8_t *channels, uint8_t ch_num);
+void set_read_adc_range(SPI_HandleTypeDef* SPI_BUS, uint8_t adcn, 
+                            uint8_t *channels, uint8_t ch_num);
 
 /* Private Helper Functions */
 

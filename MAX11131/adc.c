@@ -32,7 +32,8 @@ void init_adc(SPI_HandleTypeDef* SPI_BUS, GPIO_ADC_Pinfo *pins, int num_adcs) {
     __enable_irq();
 }
 
-uint16_t* read_adc_range(SPI_HandleTypeDef* SPI_BUS, uint8_t adcn, uint8_t *channels, uint8_t ch_num) {
+uint16_t* read_adc_range(SPI_HandleTypeDef* SPI_BUS, uint8_t adcn, 
+                            uint8_t *channels, uint8_t ch_num) {
     uint16_t full_rx[16] = {-1};
 
     __disable_irq();
@@ -55,7 +56,8 @@ uint16_t* read_adc_range(SPI_HandleTypeDef* SPI_BUS, uint8_t adcn, uint8_t *chan
         tx[1] = (ch << 7) | 0b00000000; // gets LSB from channel num
         // Read analog in data from FIFO channel
         read_adc_ch(SPI_BUS, &tx, &rx);
-        full_rx[ch] = (rx[1] | (rx[0]<<8)) & 0x0FFF; // MSB 4 bits is simply ch addr, LSB 12 bits is adc data
+        // MSB 4 bits is simply ch addr, LSB 12 bits is adc data
+        full_rx[ch] = (rx[1] | (rx[0]<<8)) & 0x0FFF;
     }
 
     // Deselect ADC once reading finishes
@@ -74,7 +76,8 @@ uint16_t* read_adc_range(SPI_HandleTypeDef* SPI_BUS, uint8_t adcn, uint8_t *chan
 }
 
 
-void set_read_adc_range(SPI_HandleTypeDef* SPI_BUS, uint8_t adcn, uint8_t *channels, uint8_t ch_num) {
+void set_read_adc_range(SPI_HandleTypeDef* SPI_BUS, uint8_t adcn, 
+                            uint8_t *channels, uint8_t ch_num) {
     uint8_t tx[2];
 	uint8_t rx[2];
 
