@@ -16,7 +16,7 @@ void init_adc(SPI_HandleTypeDef* SPI_BUS, GPIO_ADC_Pinfo *pins, int num_adcs) {
         adc_pin = pinfo.ADC_CS_ADDR[i];
         adc_port= pinfo.ADC_CS_POST[i];
 
-        // Sets ADC conversions to be written to FIFO register
+        // Sets ADC conversions to be written to FIFO register 
         set_adc(adc_pin, adc_port, GPIO_PIN_RESET);
         package_cmd(ADC_MODE_CNTL|SCAN_STATES.STD_INT, tx);
         write_adc_reg(SPI_BUS, tx, rx);
@@ -30,7 +30,7 @@ void init_adc(SPI_HandleTypeDef* SPI_BUS, GPIO_ADC_Pinfo *pins, int num_adcs) {
     __enable_irq();
 }
 
-uint16_t* read_adc_range(SPI_HandleTypeDef* SPI_BUS, uint8_t adcn, 
+uint16_t* read_adc_range(SPI_HandleTypeDef* SPI_BUS, suint8_t adcn, 
                             uint8_t *channels, uint8_t ch_num) {
     /*
         Read ADC Procedure (pg17): 
