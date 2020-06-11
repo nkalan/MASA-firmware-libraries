@@ -12,26 +12,33 @@
 #include "stm32f4xx_hal_def.h" // SPI Typedef Header
 
 /* Register Definitions */
-#define ADC0                190 // all subsequent adcs increment from base by 1
+const uint32`_t ADC0                190 // Other adcs increment by 1
 
 // Register Identification Code
 // datasheet definitions between on pg21
-#define ADC_MODE_CNTL               0x0000; // 0b0          followed by 0s
-#define ADC_CONFIG                  0x8000; // 0b1000       followed by 0s
-#define ADC_UNIPOLAR                0x8800; // 0b10001000   followed by 0s
-#define ADC_BIPOLAR                 0x9000; // 0b1001       followed by 0s
-#define ADC_RANGE                   0x9800; // 0b10011000   followed by 0
+const uint16_t ADC_MODE_CNTL        0x0000; // 0b0          followed by 0s
+const uint16_t ADC_CONFIG           0x8000; // 0b1000       followed by 0s
+const uint16_t ADC_UNIPOLAR         0x8800; // 0b10001000   followed by 0s
+const uint16_t ADC_BIPOLAR          0x9000; // 0b1001       followed by 0s
+const uint16_t ADC_RANGE            0x9800; // 0b10011000   followed by 0
 
 /* Offsets base channel addr to modify correct scan register bit */
-#define ADC_CUSTOM_SCAN0_ADD        0x0003; // 0b11         preceded by 1s
-#define ADC_CUSTOM_SCAN1_SUB        0x0005; // 0b101        preceded by 1s
-/* Register bits used to configure ADC scan registers */
-#define ADC_CUSTOM_SCAN0            0xA000; // 0b10100      followed by 0s
-#define ADC_CUSTOM_SCAN1            0xA800; // 0b10101      followed by 0s
+const uint16_t                      0x0003; // 0b11         preceded by 1s
+const uint16_t                      0x0005; // 0b101        preceded by 1s
+
+/* Register bits for ADC Mode Control registers */
+const uint16_t SET_SWCNV            0x0002 //0b10           preceded by 0s
+
+/* Register bits for ADC configuration registers */
+const uint16_t SET_ADC_AVGON        0x0200; // 0b1000000000 preceded by 0s
+
+/* Register bits for ADC scan registers */
+const uint16_t ADC_CUSTOM_SCAN0     0xA000; // 0b10100      followed by 0s
+const uint16_t ADC_CUSTOM_SCAN1     0xA800; // 0b10101      followed by 0s
 
 /* Global Var Definitions */
-// TODO: document what hardware setup needs to be for this library
-//          Write up README talking about what 
+
+// GPIO pinout memory addresses
 typedef GPIO_ADC_Pinfo {
     uint16_t ADC_CS_ADDR[8];
     uint16_t ADC_CS_PORT[8];
@@ -44,9 +51,10 @@ typedef GPIO_ADC_Pinfo {
 GPIO_ADC_Pinfo pinfo;
 
 // Mode Control Scan Registers
+// SCAN STATE specifications are defined in pg22
 enum SCAN_STATES{
-    HOLD,
-    MANUAL,
+    HOLD,       
+    MANUAL,     
     REPEAT,
     STD_INT,
     STD_EXT,
@@ -111,7 +119,11 @@ void set_read_adc_range(SPI_HandleTypeDef* SPI_BUS, uint8_t adcn,
 uint16_t* read_adc(SPI_HandleTypeDef* SPI_BUS, uint8_t adcn);
 
 /**
- *  
+ *  Selects/Disables ADC for SPI transmissions
+ * 
+ *  @param adcn         <uint8_t> adc number
+ *  @param state        <GPIO_PinState> state of GPIO PIN
+ *                            Note:            
  */
 void set_adc(uint8_t adcn, GPIO_PinState state);
 void write_adc_reg(SPI_HandleTypeDef* SPI_BUS, uint8_t *tx, uint8_t *rx);
