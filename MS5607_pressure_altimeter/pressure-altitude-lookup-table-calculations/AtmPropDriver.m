@@ -7,7 +7,6 @@ function AtmPropDriver
     hplot_max = 31060;
     
     N = (hplot_max - hplot_min) / 0.20;
-    N = 500;
     
     hvec = linspace(hplot_min, hplot_max, N);
     Pvec = AtmProp(hvec, N);
@@ -17,39 +16,21 @@ function AtmPropDriver
     Pvec = flip(Pvec);
     Pvec = round(Pvec);     % round to the nearest unit (0.01 mbar / 1 Pa)
     
+    % convert to cm
+    hvec = hvec * 100;
     
-    % Units are mbar/100 for the firmware (last 2 digits are decimals)
-    %hvec = hvec * 100;
-    
-    
-    %table = [Pvec, hvec];
-    %process_table(table, N);
-    
-    Pvec = [1 3 6 9 13];
-    hvec = [1 2 3 4 5];
     table = [Pvec; hvec];
+    processed_table = process_function(table, N);
+    write_to_file('pressure_altitude_lookup_table.txt', processed_table);
     
-    disp(table');
-    processed_table = process_function(table, 10);
-    
-    %{
-    fileID = fopen('pressure_altitude_lookup_table_temp.txt', 'w');
-    fprintf(fileID, '#"include <stdint.h>"\r\n');
-    fprintf(fileID, 'static const int32_t table[120001 = {\r\n');
-    fprintf(fileID,'%13s %12s\r\n', 'Pressure [Pa]', 'Altitude [cm]');
-    fprintf(fileID,'%19.10f %13.0f\r\n', lookup_table);
-    fclose(fileID);
-    %}
-    
-    
-    %{
-    fileID = fopen('pressure_altitude_lookup_table.txt', 'w');
-    fprintf(fileID,'%13s %12s\r\n', 'Pressure [Pa]', 'Altitude [cm]');
-    fprintf(fileID,'%19.0f %13.0f\r\n', lookup_table);
-    fclose(fileID);
-    %}
-    
+end
 
+function write_to_file(filename, table)
+    fileID = fopen(filename, 'w');
+    fprintf(fileID,'%13s %12s\r\n', 'Pressure [Pa]', 'Altitude [cm]');
+    fprintf(fileID,'%19.0f %13.0f\r\n', table);
+    fclose(fileID);     
+    
 end
 
 function map = process_function(table, N)
@@ -62,8 +43,6 @@ function map = process_function(table, N)
     % Delete redundant rows and interpolate missing data
     index = 1;
     while (index <= length)
-        disp(['index: ', num2str(index)]);
-        
         % if the next pressure is the same as the current
         if (index ~= length && map(1, index+1) == map(1, index))
             
@@ -72,8 +51,6 @@ function map = process_function(table, N)
             while (last_repeat_index ~= length && map(1, last_repeat_index+1) == map(1, index))
                 last_repeat_index = last_repeat_index + 1;
             end
-            disp(['last_repeat_index: ', num2str(last_repeat_index)]);
-            
             
             % replace that chunk of redundant rows with their average
             
@@ -106,14 +83,24 @@ function map = process_function(table, N)
         elseif (index ~= length && abs(map(1, index+1) - map(1, index)) > 1)
             
             % linear interpolation of missing data points on the independent axis
-            slope = (map(2, index+1) - map(2, index)) / (map(1, index+1) - map(1, index));
-            array_insert = linspace(map(1, index)+1, map(1, index+1)-1, map(1, index) + 1 - map(1, index+1));
-            disp('insert:');
-            disp(array_insert);
+            num_to_insert = map(1, index+1)-1 - (map(1, index)+1) + 1;
+            array_insert = linspace(map(1, index)+1, map(1, index+1)-1, num_to_insert);
+            array_interpolate = linspace(map(2, index), map(2, index+1), num_to_insert+2);
+            array_interpolate = array_interpolate(2:end-1);     %cut off the endpoints
+            
+            insert_chunk = [array_insert; array_interpolate];
+            
+            map = [map(:, 1:index), insert_chunk, map(:, index+1:end)];
+            
+            old_length = length;
+            length = length + num_to_insert;
+            assert(old_length < length);
+            
+            index = index+num_to_insert;
             
         end
         
-        disp(map');
+        %disp(map');
         index = index+1;
     end
 
