@@ -7,12 +7,12 @@
  * The main function of the MS5607-02BA is to convert the uncompensated analogue output voltage from the piezo-resistive
  * pressure sensor to a 24-bit digital value, as well as providing a 24-bit digital value for the temperature of the sensor."
  * 
- * 
+ * The altimeter supplies pressure and temperature, which the user must convert to altitude.
  * 
  * Nathaniel Kalantar (nkalan@umich.edu)
  * Michigan Aeronautical Science Association
  * Created May 3, 2020
- * Last edited June 18, 2020
+ * Last edited June 22, 2020
  */
 
 #ifndef MS5607_H

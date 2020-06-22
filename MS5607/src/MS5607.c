@@ -12,13 +12,17 @@
  * Nathaniel Kalantar (nkalan@umich.edu)
  * Michigan Aeronautical Science Association
  * Created May 3, 2020
- * Last edited June 18, 2020
+ * Last edited June 22, 2020
+ *
+ * Sorry it's a bit of a mess now (⋟﹏⋞)
+ * I'll fix the comments after it's debugged
+ *
  */
 
 #include <stdint.h>
 #include <math.h>
-#include <ms5607.h>
-//#include "ms5607_pressure_altitude.c"
+#include <MS5607.h>
+//#include "MS5607_altitude_conversion.c"
 
 /** SET_VALUE_BETWEEN_RANGE
  * Helper function to manually ensure a value is in the given range
@@ -241,20 +245,17 @@ void MS5607_calculate_pressure_and_temperature(MS5607_Altimeter *altimeter,
 	int32_t OFF2 = 0;
 	int32_t SENS2 = 0;
 
-	/*
-	 // if temperature is low (TEMP < 20 C), compensate
-	 if (TEMP < MS5607_LOW_TEMPERATURE) {
-	 T2 = (dT*dT) >> 31;
-	 OFF2 = 61 * pow(TEMP - MS5607_REFERENCE_TEMPERATURE, 2) * pow(2, -4);
-	 SENS2 = 2 * pow(TEMP - MS5607_REFERENCE_TEMPERATURE, 2);
-
-	 // if temperature is very low (TEMP < -15 C), compensate again
-	 if (TEMP < MS5607_VERY_LOW_TEMPERATURE) {
-	 OFF2 += 15 * pow(TEMP - MS5607_VERY_LOW_TEMPERATURE, 2);
-	 SENS2 += 8 * pow(TEMP - MS5607_VERY_LOW_TEMPERATURE, 2);
-	 }
-	 }
-	 */
+	// if temperature is low (TEMP < 20 C), compensate
+	if (TEMP < MS5607_LOW_TEMPERATURE) {
+		T2 = (dT * dT) >> 31;
+		OFF2 = 61 * pow(TEMP - MS5607_REFERENCE_TEMPERATURE, 2) * pow(2, -4);
+		SENS2 = 2 * pow(TEMP - MS5607_REFERENCE_TEMPERATURE, 2);
+	}
+	// if temperature is very low (TEMP < -15 C), compensate again
+	if (TEMP < MS5607_VERY_LOW_TEMPERATURE) {
+		OFF2 += 15 * pow(TEMP - MS5607_VERY_LOW_TEMPERATURE, 2);
+		SENS2 += 8 * pow(TEMP - MS5607_VERY_LOW_TEMPERATURE, 2);
+	}
 
 	TEMP -= T2;
 	OFF -= OFF2;
@@ -330,7 +331,7 @@ uint32_t MS5607_read_from_ADC(MS5607_Altimeter *altimeter) {
 	// add bits starting with MSB (most significant bit) and bit shift left by 8; repeat.
 	// first byte is junk - don't return it
 	//return rx[1] * pow(2, 16) + rx[2] * pow(2, 8) + rx[3];
-	return ((((uint32_t)rx[1] << 8) + (uint32_t)rx[2]) << 8) + (uint32_t)rx[3];
+	return ((((uint32_t) rx[1] << 8) + (uint32_t) rx[2]) << 8) + (uint32_t) rx[3];
 }
 
 /**
