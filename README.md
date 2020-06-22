@@ -16,7 +16,7 @@ The filestructure for your project should look like this:
 
 .   
 +-- IC_NAME     
-    +-- inc     
+    +-- inc      
         +-- IC_NAME.h       
         +-- *additional header files for project here*      
     +-- src     
