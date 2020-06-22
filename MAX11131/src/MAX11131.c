@@ -1,4 +1,4 @@
-#include "MAX11131.h"
+#include "../inc/MAX11131.h"
 
 void init_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_ADC_Pinfo *pins, int num_adcs) {
 	// Configure settings for all ADCs
@@ -121,6 +121,14 @@ void set_read_adc_range(SPI_HandleTypeDef *SPI_BUS, uint8_t adcn,
 	set_adc(adcn, GPIO_PIN_SET);
 
 	__enable_irq();
+}
+
+void set_read_adc_all(SPI_HandleTypeDef *SPI_BUS, uint8_t adcn) {
+	// Convenience function for reading all channels on adc
+	uint8_t channels[16] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
+			15 };
+	uint8_t ch_num = 16;
+	return set_read_adc_range(SPI_BUS, adcn, channels, ch_num);
 }
 
 uint16_t* read_adc_all(SPI_HandleTypeDef *SPI_BUS, uint8_t adcn) {
