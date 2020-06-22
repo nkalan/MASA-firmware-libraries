@@ -14,14 +14,15 @@ The filestructure for your project should look like this:
 
 ### Example file structure for firmware library
 
-IC_NAME ->|
-        inc ->|
-            IC_NAME.h
-            *additional header files for project here*
-        src ->|
-            IC_NAME.c
-            *additional c files for project here*
-        README.md
+.
++-- IC_NAME 
+    +-- inc
+        +-- IC_NAME.h
+        +-- *additional header files for project here*
+    +-- src
+        +-- IC_NAME.c
+        +-- *additional c files for project here*
+    README.md
 
 The IC_NAME should be the exact name of your IC's number specified on the spec sheet. This ensures that firmware libraries are easy to find and use in projects. In addition, all header files for your library should be placed in the nested inc directory, and all c files should be placed in the nested src directory. Failure to do this will result in complications using your library in projects. Additionally, a README.md files is highly recommended for an firmware library, as it will inform the user of any information required to use your library in projects.
 
@@ -39,6 +40,6 @@ Remember to create your firmware library folder at the top level of the firmware
 
 4. Once you're finished adding the inc directory for your IC to the project, the compiler will be able to properly link your firmware library's *.c files to the required *.h files. 
 
-5. In the main.h file for your project, simply add the main header for your IC inside the user include guards. You should be adding something that looks like "#include FOO.h", where FOO is the name of header file for your IC.
+5. In the main.h file for your project, simply add the main header for your IC inside the user include guards. You should be adding something that looks like `#include FOO.h`, where FOO is the name of header file for your IC.
 
 6. Now you're all set to use your firmware library in your project's main.c file!
