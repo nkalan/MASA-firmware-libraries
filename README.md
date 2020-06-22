@@ -14,15 +14,15 @@ The filestructure for your project should look like this:
 
 ### Example file structure for firmware library
 
-.
-+-- IC_NAME 
-    +-- inc
-        +-- IC_NAME.h
-        +-- *additional header files for project here*
-    +-- src
-        +-- IC_NAME.c
-        +-- *additional c files for project here*
-    README.md
+. \s \s
++-- IC_NAME \s \s
+    +-- inc \s \s
+        +-- IC_NAME.h \s \s
+        +-- *additional header files for project here* \s \s
+    +-- src \s \s
+        +-- IC_NAME.c \s \s
+        +-- *additional c files for project here* \s \s
+    README.md \s \s
 
 The IC_NAME should be the exact name of your IC's number specified on the spec sheet. This ensures that firmware libraries are easy to find and use in projects. In addition, all header files for your library should be placed in the nested inc directory, and all c files should be placed in the nested src directory. Failure to do this will result in complications using your library in projects. Additionally, a README.md files is highly recommended for an firmware library, as it will inform the user of any information required to use your library in projects.
 
