@@ -1,75 +1,119 @@
 #include "../inc/MAX11131.h"
 
 void init_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_ADC_Pinfo *pins, int num_adcs) {
+	/*
+	 * 	Automatically configures ADC to read from custom internal channels
+	 * 	Steps:
+	 * 	ADC configuration register
+	 * 		1.	Set AVG_ON bit to 1
+	 * 		2.	Set NAVG[1:0]  to N
+	 *	ADC custom scan registers
+	 * 		3. Set CUSTOM_SCAN0 register
+	 * 		4. Set CUSTOM_SCAN1 register
+	 * 	ADC mode control register
+	 * 		5. Set SCAN[3:0] to 0111
+	 * 		6. Set CHSEL[3:0] to channel number (not needed for Custom int)
+	 * 		7. Select the right SWCNV bit
+	 *
+	 *
+	 */
 	// Configure settings for all ADCs
-	uint8_t tx[2];
-	uint8_t rx[2];
-	pinfo = *pins; // assign gpio pins for adcs
+	uint8_t tx[2] = {0, 0};
+	uint8_t rx[2] = {0, 0};
+	pinfo = pins;
 
 	// 	note: these types are taken from the GPIO_TypeDef line 486
 	//			in file stm32f446x.h
 	uint8_t adcn;
 
+	// Generate adc config data
+	uint16_t ADC_CONFIG_REG			= ADC_CONFIG|SET_ADC_AVGON;
+	uint16_t ADC_CUSTOM_SCAN0_REG	= ADC_CUSTOM_SCAN0|ADC_CUSTOM_SCAN_ALL_0;
+	uint16_t ADC_CUSTOM_SCAN1_REG	= ADC_CUSTOM_SCAN1|ADC_CUSTOM_SCAN_ALL_1;
+	uint16_t ADC_MODE_CNTL_REG 		= ADC_MODE_CNTL|(CUSTOM_INT<<11);
+
 	__disable_irq();
-
 	for (adcn = 0; adcn < num_adcs; ++adcn) {
-		// Sets ADC conversions to be written to FIFO register
 		set_adc(adcn, GPIO_PIN_RESET);
-		package_cmd(ADC_MODE_CNTL | STD_INT, tx);
-		write_adc_reg(SPI_BUS, tx, rx);
+		package_cmd(ADC_CUSTOM_SCAN0_REG, tx);
+		//write_adc_reg(SPI_BUS, tx, rx);
+		if (HAL_SPI_Transmit(SPI_BUS, tx, 2, 1) == HAL_TIMEOUT) {}
 		set_adc(adcn, GPIO_PIN_SET);
-	}
 
-	// Set ADC CNVST low here to guarantee its held for at least 5 ns
-	HAL_GPIO_WritePin(pinfo.ADC_CNVST_PORT[adcn], pinfo.ADC_CNVST_ADDR[adcn],
-			GPIO_PIN_RESET);
+		set_adc(adcn, GPIO_PIN_RESET);
+		package_cmd(ADC_CUSTOM_SCAN1_REG, tx);
+		//write_adc_reg(SPI_BUS, tx, rx);
+		if (HAL_SPI_Transmit(SPI_BUS, tx, 2, 1) == HAL_TIMEOUT) {}
+		set_adc(adcn, GPIO_PIN_SET);
+
+		set_adc(adcn, GPIO_PIN_RESET);
+		package_cmd(ADC_CONFIG_REG, tx);
+		if (HAL_SPI_Transmit(SPI_BUS, tx, 2, 1) == HAL_TIMEOUT) {}
+		//write_adc_reg(SPI_BUS, tx, rx);
+		set_adc(adcn, GPIO_PIN_SET);
+
+		set_adc(adcn, GPIO_PIN_RESET);
+		package_cmd(ADC_MODE_CNTL_REG, tx);
+		//write_adc_reg(SPI_BUS, tx, rx);
+		if (HAL_SPI_Transmit(SPI_BUS, tx, 2, 1) == HAL_TIMEOUT) {}
+		set_adc(adcn, GPIO_PIN_SET);
+
+	} // program all adcs with custom int mode set to read all channels
 	__enable_irq();
 }
 
-uint16_t* read_adc_range(SPI_HandleTypeDef *SPI_BUS, uint8_t adcn,
-		uint8_t *channels, uint8_t ch_num) {
+void read_adc_range(SPI_HandleTypeDef *SPI_BUS, uint8_t adcn,
+		uint16_t* adc_out, uint8_t ch_num) {
 	/*
-	 Read ADC Procedure (pg17):
-	 1.  Toggle CS on, note this is done instead of setting ~CNVST
-	 because conversions are intiated on rising edge of ~CS with
-	 SWCNV bit is set
-	 2.  When ADC read of all requested channels is complete, the EOC
-	 pin is pulled low and results are available in FIFO
-	 3.  SPI Transmit each channel to ADC and store into full_rx
-	 // TODO modify below code to better suite behavior stated in step 1
+	 Read ADC Procedure for internal clock using SWCNV bit set(pg17):
+	 	 1.	Set CS high to initiate conversions
+	 	 2. Wait for EOC pin to be pulled low
+	 	 3. Read from FIFO register on DOUT pin
+	 	 4. Set CS high again
+
+	 Read ADC Procedure for internal clock not using SWCNV bit
+	 	 1. Set CS high
+	 	 2. Set CNVST low for at least 5ns before pulling high again
+	 	 3. Wait for EOC to be pulled low
+	 	 4. Set CS low and High to initiate serial communications
+	 		Note: EOC stays low until CS or CNVST is pulled low again
 	 */
-	static uint16_t full_rx[16] = { -1 };
-
-	__disable_irq();
-
-	HAL_GPIO_WritePin(pinfo.ADC_CNVST_PORT[adcn], pinfo.ADC_CNVST_ADDR[adcn],
-			GPIO_PIN_RESET);
-
-	while (HAL_GPIO_ReadPin(pinfo.ADC_EOC_PORT[adcn], pinfo.ADC_EOC_ADDR[adcn])) {
-	}
-	set_adc(adcn, GPIO_PIN_RESET);
-
-	uint8_t tx[2];
-	uint8_t rx[2];
-	for (uint8_t i = 0; i < ch_num; ++i) {
-		uint8_t ch = channels[i];
-
-		tx[0] = (ch >> 1) | 0b00000000; // gets 3 MSB from channel num
-		tx[1] = (ch << 7) | 0b00000000; // gets LSB from channel num
-		// Read analog in data from FIFO channel
-		read_adc_ch(SPI_BUS, tx, rx);
-		// MSB 4 bits is simply ch addr, LSB 12 bits is adc data
-		full_rx[ch] = (rx[1] | (rx[0] << 8)) & 0x0FFF;
-	}
+	/* ADC startup and FIFO register intialization */
 
 	set_adc(adcn, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(pinfo->ADC_CNVST_PORT[adcn],
+			pinfo->ADC_CNVST_ADDR[adcn], GPIO_PIN_RESET);
+	HAL_Delay(1);
+	HAL_GPIO_WritePin(pinfo->ADC_CNVST_PORT[adcn],
+				pinfo->ADC_CNVST_ADDR[adcn], GPIO_PIN_SET);
 
-	HAL_GPIO_WritePin(pinfo.ADC_CNVST_PORT[adcn], pinfo.ADC_CNVST_ADDR[adcn],
-			GPIO_PIN_SET); // prep ADC for next read
+	uint8_t pin_state = HAL_GPIO_ReadPin(pinfo->ADC_EOC_PORT[adcn],
+					pinfo->ADC_EOC_ADDR[adcn]);
+
+	while (pin_state != 0) {
+		pin_state = HAL_GPIO_ReadPin(pinfo->ADC_EOC_PORT[adcn],
+							pinfo->ADC_EOC_ADDR[adcn]);
+	}
+
+	/* Serial communications with ADC */
+	__disable_irq();
+
+	// The number of bytes in the FIFO is simply the
+	// number of channels * 2 (bytes for each channel)
+	uint8_t rx[2] = {0};
+	uint8_t tx[2] = {0};
+
+	for (uint8_t i = 0; i < ch_num; ++i) {
+		set_adc(adcn, GPIO_PIN_RESET);
+		if (HAL_SPI_TransmitReceive(SPI_BUS, tx, rx, 2, 1) == HAL_TIMEOUT) {}
+		set_adc(adcn, GPIO_PIN_SET);
+
+		uint16_t adc_counts = ((rx[0]<<8)|rx[1]) & 0x0FFF;
+		uint16_t channelId = (rx[0] >> 4) & 0x0F;
+		adc_out[channelId] = adc_counts;
+	}
 
 	__enable_irq();
-
-	return full_rx;
 }
 
 void set_read_adc_range(SPI_HandleTypeDef *SPI_BUS, uint8_t adcn,
@@ -88,7 +132,6 @@ void set_read_adc_range(SPI_HandleTypeDef *SPI_BUS, uint8_t adcn,
 
 	uint16_t SET_AVG_ON_BIT = ADC_CONFIG | SET_ADC_AVGON;
 	uint16_t SET_ADC_MODE_CNTL = ADC_MODE_CNTL | CUSTOM_INT;
-	uint16_t SET_CS_CHIP_CONV = ADC_MODE_CNTL | SET_SWCNV;
 
 	uint16_t SET_SCAN_REGISTER_0 = ADC_CUSTOM_SCAN0;
 	uint16_t SET_SCAN_REGISTER_1 = ADC_CUSTOM_SCAN1;
@@ -110,13 +153,11 @@ void set_read_adc_range(SPI_HandleTypeDef *SPI_BUS, uint8_t adcn,
 	set_adc(adcn, GPIO_PIN_RESET);
 	package_cmd(SET_AVG_ON_BIT, tx);
 	write_adc_reg(SPI_BUS, tx, rx);
+	package_cmd(SET_SCAN_REGISTER_0, tx); // doesn't work on this cmd
+	write_adc_reg(SPI_BUS, tx, rx);
 	package_cmd(SET_SCAN_REGISTER_1, tx);
 	write_adc_reg(SPI_BUS, tx, rx);
-	package_cmd(SET_SCAN_REGISTER_0, tx);
-	write_adc_reg(SPI_BUS, tx, rx);
 	package_cmd(SET_ADC_MODE_CNTL, tx);
-	write_adc_reg(SPI_BUS, tx, rx);
-	package_cmd(SET_CS_CHIP_CONV, tx);
 	write_adc_reg(SPI_BUS, tx, rx);
 	set_adc(adcn, GPIO_PIN_SET);
 
@@ -131,13 +172,10 @@ void set_read_adc_all(SPI_HandleTypeDef *SPI_BUS, uint8_t adcn) {
 	return set_read_adc_range(SPI_BUS, adcn, channels, ch_num);
 }
 
-uint16_t* read_adc_all(SPI_HandleTypeDef *SPI_BUS, uint8_t adcn) {
+void read_adc_all(SPI_HandleTypeDef *SPI_BUS, uint16_t* adc_out, uint8_t adcn) {
 	// Convenience function for reading all channels on adc
-	uint8_t channels[16] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
-			15 };
 	uint8_t ch_num = 16;
-	return read_adc_range(SPI_BUS, adcn, channels, ch_num);
-
+	read_adc_range(SPI_BUS, adcn, adc_out, ch_num);
 }
 
 void read_adc_ch(SPI_HandleTypeDef *SPI_BUS, uint8_t *tx, uint8_t *rx) {
@@ -151,10 +189,10 @@ void write_adc_reg(SPI_HandleTypeDef *SPI_BUS, uint8_t *tx, uint8_t *rx) {
 }
 
 void package_cmd(uint16_t cmd, uint8_t *tx) {
-	tx[0] = (cmd & 0xff00)>>8;
-	tx[1] = (cmd & 0x00ff)>>8;
+	tx[0] = (cmd >> 8) & 0x00ff;
+	tx[1] = (cmd & 0x00ff);
 }
 
 void set_adc(uint8_t adcn, GPIO_PinState state) {
-	HAL_GPIO_WritePin(pinfo.ADC_CS_PORT[adcn], pinfo.ADC_CS_ADDR[adcn], state);
+	HAL_GPIO_WritePin(pinfo->ADC_CS_PORT[adcn], pinfo->ADC_CS_ADDR[adcn], state);
 }
