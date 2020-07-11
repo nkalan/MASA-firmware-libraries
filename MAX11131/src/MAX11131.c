@@ -1,7 +1,6 @@
 #include "../inc/MAX11131.h"
 
-void init_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX31_Pinfo *pins, 
-				int num_adcs) {
+void init_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX31_Pinfo *pins) {
 	/*
 	 * 	Automatically configures ADC to read from custom internal channels
 	 * 	Steps:
@@ -31,7 +30,7 @@ void init_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX31_Pinfo *pins,
 	uint16_t ADC_MODE_CNTL_REG 		= MAX31_MODE_CNTL|(CUSTOM_INT<<11);
 
 	__disable_irq();
-	for (adcn = 0; adcn < num_adcs; ++adcn) {
+	for (adcn = 0; adcn < pinfo->NUM_ADCS; ++adcn) {
 		configure_read_adc_all(adcn);
 		set_read_adc_range(SPI_BUS, 0);
 
@@ -92,7 +91,7 @@ void read_adc(SPI_HandleTypeDef *SPI_BUS, uint8_t adcn,
 	uint8_t rx[2] = {0};
 	uint8_t tx[2] = {0};
 
-	for (uint8_t i = 0; i < pinfo->NUM_CHANNELS; ++i) {
+	for (uint8_t i = 0; i < pinfo->NUM_CHANNELS[adcn]; ++i) {
 		set_adc(adcn, GPIO_PIN_RESET);
 		if (HAL_SPI_TransmitReceive(SPI_BUS, tx, rx, 2, 1) == HAL_TIMEOUT) {}
 		set_adc(adcn, GPIO_PIN_SET);
@@ -119,8 +118,10 @@ void set_read_adc_range(SPI_HandleTypeDef *SPI_BUS, uint8_t adcn) {
 
 	uint16_t SET_SCAN_REGISTER_0 = MAX31_CUSTOM_SCAN0;
 	uint16_t SET_SCAN_REGISTER_1 = MAX31_CUSTOM_SCAN1;
-	for (uint8_t i = 0; i < pinfo->NUM_CHANNELS; ++i) {
-		uint8_t ch = pinfo->MAX31_CHANNELS[i];
+	uint8_t num_channels		= pinfo->NUM_CHANNELS[adcn];
+
+	for (uint8_t i = 0; i < num_channels; ++i) {
+		uint8_t ch = pinfo->MAX31_CHANNELS[adcn][i];
 		if (ch > 7) {
 			ch -= MAX31_CUSTOM_SCAN0_SUB;
 			SET_SCAN_REGISTER_0 = SET_SCAN_REGISTER_0 | (1 << ch);
@@ -149,9 +150,9 @@ void set_read_adc_range(SPI_HandleTypeDef *SPI_BUS, uint8_t adcn) {
 
 void configure_read_adc_all(uint8_t adcn) {
 	// Convenience function for reading all channels on adc
-	pinfo->NUM_CHANNELS = MAX31_MAX_CHANNELS;
+	pinfo->NUM_CHANNELS[adcn] = MAX31_MAX_CHANNELS;
 	for (uint8_t i = 0; i < MAX31_MAX_CHANNELS; ++i) {
-		pinfo->MAX31_CHANNELS[i] = i;
+		pinfo->MAX31_CHANNELS[adcn][i] = i;
 	}
 }
 

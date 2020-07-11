@@ -50,15 +50,16 @@
 
 // GPIO pinout memory addresses
 typedef struct GPIO_MAX31_Pinfo {
-	GPIO_TypeDef* MAX31_CS_PORT[8];
-	GPIO_TypeDef* MAX31_EOC_PORT[8];
-	GPIO_TypeDef* MAX31_CNVST_PORT[8];
-	uint16_t MAX31_CS_ADDR[8];
-	uint16_t MAX31_EOC_ADDR[8];
-	uint16_t MAX31_CNVST_ADDR[8];
+	GPIO_TypeDef* MAX31_CS_PORT[8];		// PORT belonging to CS pin
+	GPIO_TypeDef* MAX31_EOC_PORT[8];	// PORT belonging to EOC pin
+	GPIO_TypeDef* MAX31_CNVST_PORT[8];	// PORT belonging to CNVST pin
+	uint16_t MAX31_CS_ADDR[8];			// PIN belonging to CS pin
+	uint16_t MAX31_EOC_ADDR[8];			// PIN belonging to EOC pin
+	uint16_t MAX31_CNVST_ADDR[8];		// PIN belonging to CNVST pin
+	uint8_t NUM_ADCS;					// Number of ADCs
 
-	uint8_t NUM_CHANNELS;
-	uint8_t MAX31_CHANNELS[16];
+	uint8_t NUM_CHANNELS[8];				// Number of channels to read from
+	uint8_t MAX31_CHANNELS[8][16];			// Channel Identification Numbers
 } GPIO_MAX31_Pinfo;
 
 GPIO_MAX31_Pinfo *pinfo;
@@ -90,8 +91,7 @@ enum SCAN_STATES {
  *
  *  Note: assumes 8bit data framing on SPI
  */
-void init_adc(SPI_HandleTypeDef* SPI_BUS, GPIO_MAX31_Pinfo *pins,
-					int num_adcs);
+void init_adc(SPI_HandleTypeDef* SPI_BUS, GPIO_MAX31_Pinfo *pins);
 
 /**
  *  Sets range to read from adc
