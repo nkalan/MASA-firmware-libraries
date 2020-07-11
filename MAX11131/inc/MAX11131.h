@@ -11,44 +11,57 @@
 #include "stdlib.h"
 #include "stm32f4xx_hal.h"
 
+/* DEBUG ENABLER */
+#define	MAX11131_DEBUG_EN	(uint16_t) 0x0001 // set to 1 to enable debugging
+
 /* Register Definitions */
-#define ADC0	190; // Other adcs increment by 1
 
 // Register Identification Code
 // datasheet definitions between on pg21
-#define ADC_MODE_CNTL	(uint16_t) 0x0000 // 0b0          followed by 0s
-#define ADC_CONFIG 		(uint16_t) 0x8000 // 0b1000       followed by 0s
-#define ADC_UNIPOLAR 	(uint16_t) 0x8800 // 0b10001000   followed by 0s
-#define ADC_BIPOLAR 	(uint16_t) 0x9000 // 0b1001       followed by 0s
-#define ADC_RANGE 		(uint16_t) 0x9800 // 0b10011000   followed by 0
+#define MAX31_MODE_CNTL			(uint16_t) 0x0000 // 0b0          followed by 0s
+#define MAX31_CONFIG 			(uint16_t) 0x8000 // 0b1000       followed by 0s
+#define MAX31_UNIPOLAR 			(uint16_t) 0x8800 // 0b10001000   followed by 0s
+#define MAX31_BIPOLAR 			(uint16_t) 0x9000 // 0b1001       followed by 0s
+#define MAX31_RANGE 			(uint16_t) 0x9800 // 0b10011000   followed by 0
 
 /* Offset bits mapping adc channel numbers to bit number */
-#define ADC_CUSTOM_SCAN1_SUB	(uint8_t) 5
-#define ADC_CUSTOM_SCAN0_ADD	(uint8_t) 3
+#define MAX31_CUSTOM_SCAN0_SUB	(uint8_t) 5
+#define MAX31_CUSTOM_SCAN1_ADD	(uint8_t) 3
 
 /* Register bits for adc Mode Control registers */
-#define SET_SWCNV 			(uint16_t) 0x0002 //0b10  preceded by 0s
+#define SET_SWCNV 				(uint16_t) 0x0002 //0b10  preceded by 0s
+#define SET_CHAN_ID				(uint16_t) 0x0004 // 0b100 preceded by 0s
 
 /* Register bits for adc configuration registers */
-#define SET_ADC_AVGON 		(uint16_t) 0x0200 // 0b1000000000 preceded by 0s
+#define SET_MAX31_AVGON 		(uint16_t) 0x0200 // 0b10 00000000preceded by 0s
+#define SET_MAX31_ECHO_ON		(uint16_t) 0x0004 // 0b0100		  preceded by 0s
 
 /* Register bits for adc scan registers */
-#define ADC_CUSTOM_SCAN0 	(uint16_t) 0xA000 // 0b10100      followed by 0s
-#define ADC_CUSTOM_SCAN1 	(uint16_t) 0xA800 // 0b10101      followed by 0s
+#define MAX31_CUSTOM_SCAN0 		(uint16_t) 0xA000 // 0b10100      followed by 0s
+#define MAX31_CUSTOM_SCAN1 		(uint16_t) 0xA800 // 0b10101      followed by 0s
+#define MAX31_CUSTOM_SCAN_ALL_0 (uint16_t) 0x01F8 // 0b00111111000
+#define MAX31_CUSTOM_SCAN_ALL_1 (uint16_t) 0x07F8 // 0b11111111000
+
+/* Channel size in FIFO register */
+#define MAX31_CHANNEL_SZ		(uint8_t) 	0x0002
 
 /* Global Var Definitions */
+#define MAX31_MAX_CHANNELS		(uint8_t)	0x000E
 
 // GPIO pinout memory addresses
-typedef struct GPIO_ADC_Pinfo {
-	GPIO_TypeDef* ADC_CS_PORT[8];
-	GPIO_TypeDef* ADC_EOC_PORT[8];
-	GPIO_TypeDef* ADC_CNVST_PORT[8];
-	uint16_t ADC_CS_ADDR[8];
-	uint16_t ADC_EOC_ADDR[8];
-	uint16_t ADC_CNVST_ADDR[8];
-} GPIO_ADC_Pinfo;
+typedef struct GPIO_MAX31_Pinfo {
+	GPIO_TypeDef* MAX31_CS_PORT[8];
+	GPIO_TypeDef* MAX31_EOC_PORT[8];
+	GPIO_TypeDef* MAX31_CNVST_PORT[8];
+	uint16_t MAX31_CS_ADDR[8];
+	uint16_t MAX31_EOC_ADDR[8];
+	uint16_t MAX31_CNVST_ADDR[8];
 
-GPIO_ADC_Pinfo pinfo;
+	uint8_t NUM_CHANNELS;
+	uint8_t MAX31_CHANNELS[16];
+} GPIO_MAX31_Pinfo;
+
+GPIO_MAX31_Pinfo *pinfo;
 
 // Mode Control Scan Registers
 // SCAN STATE specifications are defined in pg22
@@ -71,26 +84,14 @@ enum SCAN_STATES {
  *
  *  detailed documentation starts on datasheet pg21
  *  @param SPI_BUS      <SPI_HandleTypeDef*> SPI object ADC is on
- *  @param pinfo        <GPIO_ADC_Pinfo*>   contains ADC pin defs,
- *                                          refer to def above
+ *  @param pins        	<GPIO_MAX31_Pinfo*>   contains ADC pin defs,
+ *                                          	refer to def above
  *  @param num_adcs     <int>   number of adcs
  *
  *  Note: assumes 8bit data framing on SPI
  */
-void init_adc(SPI_HandleTypeDef* SPI_BUS, GPIO_ADC_Pinfo *pins,
+void init_adc(SPI_HandleTypeDef* SPI_BUS, GPIO_MAX31_Pinfo *pins,
 					int num_adcs);
-
-/**
- *  Reads adc range from a specified range of pins on adc and
- *  returns arr of read values
- *
- *  general documentation starts on datasheet pg 21
- *  @param SPI_BUS      <SPI_HandleTypeDef*> SPI object adc is on
- *  @param adc_num      <uint8_t> selected adc number
- *
- */
-uint16_t* read_adc_range(SPI_HandleTypeDef *SPI_BUS, uint8_t adcn,
-		uint8_t *channels, uint8_t ch_num);
 
 /**
  *  Sets range to read from adc
@@ -98,26 +99,28 @@ uint16_t* read_adc_range(SPI_HandleTypeDef *SPI_BUS, uint8_t adcn,
  *  general documentation starts on datasheet pg 21
  *  @param SPI_BUS      <SPI_HandleTypeDef*> SPI object adc is on
  *  @param adcn         <uint8_t> selected adc number
- *  @param channels     <uint8_t*> arr of adc channels to read from
- *  @param ch_num       <uint8_t> number of channels to read
  *
  */
-void set_read_adc_range(SPI_HandleTypeDef *SPI_BUS, uint8_t adcn,
-		uint8_t *channels, uint8_t ch_num);
+void set_read_adc_range(SPI_HandleTypeDef *SPI_BUS, uint8_t adcn);
 
 /* Private Helper Functions */
 
 /**
- *  Convenience function for reading from all channels on adcx
+ *  Convenience function for reading from configured channels on adcx
  *  Note: this function assumes adc range to read from has already
  *          been set by set_read_adc_range()
  *
  *  general documentation starts on datasheet pg 21
  *  @param SPI_BUS      <SPI_HandleTypeDef*> SPI object adc is on
  *  @param adcn         <uint8_t> selected adc number
+ *	@param adc_out		<uint16_t*> raw adc counts for each channel (0-4096)
  *
+ *	Note: adc_out should be initialized to at least size 14 to guarantee safe op
+ *			if channel x, y, z are selected, then indices x, y, z will be filled
+ *			in adc_out
  */
-uint16_t* read_adc(SPI_HandleTypeDef *SPI_BUS, uint8_t adcn);
+void read_adc(SPI_HandleTypeDef *SPI_BUS, uint8_t adcn,
+		uint16_t* adc_out);
 
 /**
  *  Selects/Disables adc for SPI transmissions
@@ -129,26 +132,28 @@ uint16_t* read_adc(SPI_HandleTypeDef *SPI_BUS, uint8_t adcn);
 void set_adc(uint8_t adcn, GPIO_PinState state);
 
 /**
- * 	Convenience function for reading all adc channels for adc n
+ * 	Convenience function for updating GPIO_MAX31_Pinfo to read from pins 0-13
  *
- * 	@param SPI_BUS		<SPI_HandleTypeDef>	SPI object adc is on
  * 	@param adcn			<uint8_t> selected adc number
- *
- * 	Note: adc should be configured to update all SPI channels prior
- * 			to function call
  */
-uint16_t* read_adc_all(SPI_HandleTypeDef *SPI_BUS, uint8_t adcn);
+void configure_read_adc_all(uint8_t adcn);
 
 /**
- * 	Convenience function for setting adc to update all channels
- *
- * 	@param SPI_BUS		<SPI_HandleTypeDef>	SPI object adc is on
- * 	@param adcn			<uint8_t> selected adc number
+ *	Private function for transmit and receiving bytes to selected ADC
+ *  
+ *  @param SPI_BUS      <SPI_HandleTypeDef*> SPI object adc is on
+ *  @param tx	        <uint8_t*> bytes to transmit (expected size 2)
+ *	@param adc_out		<uint8_t*> bytes to receive (expected size 2)
  */
-void set_read_adc_all(SPI_HandleTypeDef *SPI_BUS, uint8_t adcn);
-
 void write_adc_reg(SPI_HandleTypeDef *SPI_BUS, uint8_t *tx, uint8_t *rx);
-void read_adc_ch(SPI_HandleTypeDef *SPI_BUS, uint8_t *tx, uint8_t *rx);
+
+/**
+ *	Private function for packing 16 bit command to 8 bit chunks
+ *  
+ *  @param cmd      	<uint16_t> 16 bit command
+ *  @param tx	        <uint8_t*> arr of 16 bit command MSB first (size 2)
+ *
+ */
 void package_cmd(uint16_t cmd, uint8_t *tx);
 
 #endif /* end header include protection */
