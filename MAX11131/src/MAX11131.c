@@ -1,6 +1,6 @@
 #include "../inc/MAX11131.h"
 
-void init_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_ADC_Pinfo *pins, int num_adcs) {
+void init_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX31_Pinfo *pins) {
 	/*
 	 * 	Automatically configures ADC to read from custom internal channels
 	 * 	Steps:
@@ -19,7 +19,6 @@ void init_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_ADC_Pinfo *pins, int num_adcs) {
 	 */
 	// Configure settings for all ADCs
 	uint8_t tx[2] = {0, 0};
-	uint8_t rx[2] = {0, 0};
 	pinfo = pins;
 
 	// 	note: these types are taken from the GPIO_TypeDef line 486
@@ -27,24 +26,13 @@ void init_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_ADC_Pinfo *pins, int num_adcs) {
 	uint8_t adcn;
 
 	// Generate adc config data
-	uint16_t ADC_CONFIG_REG			= ADC_CONFIG|SET_ADC_AVGON;
-	uint16_t ADC_CUSTOM_SCAN0_REG	= ADC_CUSTOM_SCAN0|ADC_CUSTOM_SCAN_ALL_0;
-	uint16_t ADC_CUSTOM_SCAN1_REG	= ADC_CUSTOM_SCAN1|ADC_CUSTOM_SCAN_ALL_1;
-	uint16_t ADC_MODE_CNTL_REG 		= ADC_MODE_CNTL|(CUSTOM_INT<<11);
+	uint16_t ADC_CONFIG_REG			= MAX31_CONFIG|SET_MAX31_AVGON;
+	uint16_t ADC_MODE_CNTL_REG 		= MAX31_MODE_CNTL|(CUSTOM_INT<<11);
 
 	__disable_irq();
-	for (adcn = 0; adcn < num_adcs; ++adcn) {
-		set_adc(adcn, GPIO_PIN_RESET);
-		package_cmd(ADC_CUSTOM_SCAN0_REG, tx);
-		//write_adc_reg(SPI_BUS, tx, rx);
-		if (HAL_SPI_Transmit(SPI_BUS, tx, 2, 1) == HAL_TIMEOUT) {}
-		set_adc(adcn, GPIO_PIN_SET);
-
-		set_adc(adcn, GPIO_PIN_RESET);
-		package_cmd(ADC_CUSTOM_SCAN1_REG, tx);
-		//write_adc_reg(SPI_BUS, tx, rx);
-		if (HAL_SPI_Transmit(SPI_BUS, tx, 2, 1) == HAL_TIMEOUT) {}
-		set_adc(adcn, GPIO_PIN_SET);
+	for (adcn = 0; adcn < pinfo->NUM_ADCS; ++adcn) {
+		configure_read_adc_all(adcn);
+		set_read_adc_range(SPI_BUS, 0);
 
 		set_adc(adcn, GPIO_PIN_RESET);
 		package_cmd(ADC_CONFIG_REG, tx);
@@ -62,8 +50,8 @@ void init_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_ADC_Pinfo *pins, int num_adcs) {
 	__enable_irq();
 }
 
-void read_adc_range(SPI_HandleTypeDef *SPI_BUS, uint8_t adcn,
-		uint16_t* adc_out, uint8_t ch_num) {
+void read_adc(SPI_HandleTypeDef *SPI_BUS, uint8_t adcn,
+		uint16_t* adc_out) {
 	/*
 	 Read ADC Procedure for internal clock using SWCNV bit set(pg17):
 	 	 1.	Set CS high to initiate conversions
@@ -81,18 +69,18 @@ void read_adc_range(SPI_HandleTypeDef *SPI_BUS, uint8_t adcn,
 	/* ADC startup and FIFO register intialization */
 
 	set_adc(adcn, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(pinfo->ADC_CNVST_PORT[adcn],
-			pinfo->ADC_CNVST_ADDR[adcn], GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(pinfo->MAX31_CNVST_PORT[adcn],
+			pinfo->MAX31_CNVST_ADDR[adcn], GPIO_PIN_RESET);
 	HAL_Delay(1);
-	HAL_GPIO_WritePin(pinfo->ADC_CNVST_PORT[adcn],
-				pinfo->ADC_CNVST_ADDR[adcn], GPIO_PIN_SET);
+	HAL_GPIO_WritePin(pinfo->MAX31_CNVST_PORT[adcn],
+				pinfo->MAX31_CNVST_ADDR[adcn], GPIO_PIN_SET);
 
-	uint8_t pin_state = HAL_GPIO_ReadPin(pinfo->ADC_EOC_PORT[adcn],
-					pinfo->ADC_EOC_ADDR[adcn]);
+	uint8_t pin_state = HAL_GPIO_ReadPin(pinfo->MAX31_EOC_PORT[adcn],
+					pinfo->MAX31_EOC_ADDR[adcn]);
 
 	while (pin_state != 0) {
-		pin_state = HAL_GPIO_ReadPin(pinfo->ADC_EOC_PORT[adcn],
-							pinfo->ADC_EOC_ADDR[adcn]);
+		pin_state = HAL_GPIO_ReadPin(pinfo->MAX31_EOC_PORT[adcn],
+							pinfo->MAX31_EOC_ADDR[adcn]);
 	}
 
 	/* Serial communications with ADC */
@@ -103,7 +91,7 @@ void read_adc_range(SPI_HandleTypeDef *SPI_BUS, uint8_t adcn,
 	uint8_t rx[2] = {0};
 	uint8_t tx[2] = {0};
 
-	for (uint8_t i = 0; i < ch_num; ++i) {
+	for (uint8_t i = 0; i < pinfo->NUM_CHANNELS[adcn]; ++i) {
 		set_adc(adcn, GPIO_PIN_RESET);
 		if (HAL_SPI_TransmitReceive(SPI_BUS, tx, rx, 2, 1) == HAL_TIMEOUT) {}
 		set_adc(adcn, GPIO_PIN_SET);
@@ -116,8 +104,7 @@ void read_adc_range(SPI_HandleTypeDef *SPI_BUS, uint8_t adcn,
 	__enable_irq();
 }
 
-void set_read_adc_range(SPI_HandleTypeDef *SPI_BUS, uint8_t adcn,
-		uint8_t *channels, uint8_t ch_num) {
+void set_read_adc_range(SPI_HandleTypeDef *SPI_BUS, uint8_t adcn) {
 	/*
 	 Configure Custom ADC read procedure (pg32-33):
 	 1. Set AVGON BIT reg to 1
@@ -128,21 +115,19 @@ void set_read_adc_range(SPI_HandleTypeDef *SPI_BUS, uint8_t adcn,
 	 6. Set SWCNV bit to 1 to enable conversions with chip select
 	 */
 	uint8_t tx[2];
-	uint8_t rx[2];
 
-	uint16_t SET_AVG_ON_BIT = ADC_CONFIG | SET_ADC_AVGON;
-	uint16_t SET_ADC_MODE_CNTL = ADC_MODE_CNTL | CUSTOM_INT;
+	uint16_t SET_SCAN_REGISTER_0 = MAX31_CUSTOM_SCAN0;
+	uint16_t SET_SCAN_REGISTER_1 = MAX31_CUSTOM_SCAN1;
+	uint8_t num_channels		= pinfo->NUM_CHANNELS[adcn];
 
-	uint16_t SET_SCAN_REGISTER_0 = ADC_CUSTOM_SCAN0;
-	uint16_t SET_SCAN_REGISTER_1 = ADC_CUSTOM_SCAN1;
-	for (uint8_t i = 0; i < ch_num; ++i) {
-		uint8_t ch = channels[i];
+	for (uint8_t i = 0; i < num_channels; ++i) {
+		uint8_t ch = pinfo->MAX31_CHANNELS[adcn][i];
 		if (ch > 7) {
-			ch -= ADC_CUSTOM_SCAN1_SUB;
-			SET_SCAN_REGISTER_1 = SET_SCAN_REGISTER_1 | (1 << ch);
-		} else {
-			ch += ADC_CUSTOM_SCAN0_ADD;
+			ch -= MAX31_CUSTOM_SCAN0_SUB;
 			SET_SCAN_REGISTER_0 = SET_SCAN_REGISTER_0 | (1 << ch);
+		} else {
+			ch += MAX31_CUSTOM_SCAN1_ADD;
+			SET_SCAN_REGISTER_1 = SET_SCAN_REGISTER_1 | (1 << ch);
 		} // sets channel register bit in Custom Scan0 Register
 	}
 
@@ -151,35 +136,23 @@ void set_read_adc_range(SPI_HandleTypeDef *SPI_BUS, uint8_t adcn,
 
 	/* Transmit custom channels to send data from */
 	set_adc(adcn, GPIO_PIN_RESET);
-	package_cmd(SET_AVG_ON_BIT, tx);
-	write_adc_reg(SPI_BUS, tx, rx);
-	package_cmd(SET_SCAN_REGISTER_0, tx); // doesn't work on this cmd
-	write_adc_reg(SPI_BUS, tx, rx);
+	package_cmd(SET_SCAN_REGISTER_0, tx);
+	if (HAL_SPI_Transmit(SPI_BUS, tx, 2, 1) == HAL_TIMEOUT) {}
+	set_adc(adcn, GPIO_PIN_SET);
+
+	set_adc(adcn, GPIO_PIN_RESET);
 	package_cmd(SET_SCAN_REGISTER_1, tx);
-	write_adc_reg(SPI_BUS, tx, rx);
-	package_cmd(SET_ADC_MODE_CNTL, tx);
-	write_adc_reg(SPI_BUS, tx, rx);
+	if (HAL_SPI_Transmit(SPI_BUS, tx, 2, 1) == HAL_TIMEOUT) {}
 	set_adc(adcn, GPIO_PIN_SET);
 
 	__enable_irq();
 }
 
-void set_read_adc_all(SPI_HandleTypeDef *SPI_BUS, uint8_t adcn) {
+void configure_read_adc_all(uint8_t adcn) {
 	// Convenience function for reading all channels on adc
-	uint8_t channels[16] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
-			15 };
-	uint8_t ch_num = 16;
-	return set_read_adc_range(SPI_BUS, adcn, channels, ch_num);
-}
-
-void read_adc_all(SPI_HandleTypeDef *SPI_BUS, uint16_t* adc_out, uint8_t adcn) {
-	// Convenience function for reading all channels on adc
-	uint8_t ch_num = 16;
-	read_adc_range(SPI_BUS, adcn, adc_out, ch_num);
-}
-
-void read_adc_ch(SPI_HandleTypeDef *SPI_BUS, uint8_t *tx, uint8_t *rx) {
-	if (HAL_SPI_TransmitReceive(SPI_BUS, tx, rx, 2, 1) == HAL_TIMEOUT) {
+	pinfo->NUM_CHANNELS[adcn] = MAX31_MAX_CHANNELS;
+	for (uint8_t i = 0; i < MAX31_MAX_CHANNELS; ++i) {
+		pinfo->MAX31_CHANNELS[adcn][i] = i;
 	}
 }
 
@@ -194,5 +167,6 @@ void package_cmd(uint16_t cmd, uint8_t *tx) {
 }
 
 void set_adc(uint8_t adcn, GPIO_PinState state) {
-	HAL_GPIO_WritePin(pinfo->ADC_CS_PORT[adcn], pinfo->ADC_CS_ADDR[adcn], state);
+	HAL_GPIO_WritePin(pinfo->MAX31_CS_PORT[adcn], 
+							pinfo->MAX31_CS_ADDR[adcn], state);
 }
