@@ -11,9 +11,6 @@
 #include "stdlib.h"
 #include "stm32f4xx_hal.h"
 
-/* DEBUG ENABLER */
-#define	MAX11131_DEBUG_EN	(uint16_t) 0x0001 // set to 1 to enable debugging
-
 /* Register Definitions */
 #define ADC0	190; // Other adcs increment by 1
 
@@ -31,20 +28,13 @@
 
 /* Register bits for adc Mode Control registers */
 #define SET_SWCNV 			(uint16_t) 0x0002 //0b10  preceded by 0s
-#define SET_CHAN_ID			(uint16_t) 0x0004 // 0b100 preceded by 0s
 
 /* Register bits for adc configuration registers */
-#define SET_ADC_AVGON 		(uint16_t) 0x0200 // 0b10 0000 0000 preceded by 0s
-#define SET_ADC_ECHO_ON		(uint16_t) 0x0004 // 0b0100		  preceded by 0s
+#define SET_ADC_AVGON 		(uint16_t) 0x0200 // 0b1000000000 preceded by 0s
 
 /* Register bits for adc scan registers */
 #define ADC_CUSTOM_SCAN0 	(uint16_t) 0xA000 // 0b10100      followed by 0s
 #define ADC_CUSTOM_SCAN1 	(uint16_t) 0xA800 // 0b10101      followed by 0s
-#define ADC_CUSTOM_SCAN_ALL_0 (uint16_t) 0x01F8 // 0b00111111000
-#define ADC_CUSTOM_SCAN_ALL_1 (uint16_t) 0x07F8 // 0b11111111000
-
-/* Channel size in FIFO register */
-#define ADC_CHANNEL_SZ		(uint8_t)  0x0002
 
 /* Global Var Definitions */
 
@@ -58,7 +48,7 @@ typedef struct GPIO_ADC_Pinfo {
 	uint16_t ADC_CNVST_ADDR[8];
 } GPIO_ADC_Pinfo;
 
-GPIO_ADC_Pinfo *pinfo;
+GPIO_ADC_Pinfo pinfo;
 
 // Mode Control Scan Registers
 // SCAN STATE specifications are defined in pg22
@@ -99,8 +89,8 @@ void init_adc(SPI_HandleTypeDef* SPI_BUS, GPIO_ADC_Pinfo *pins,
  *  @param adc_num      <uint8_t> selected adc number
  *
  */
-void read_adc_range(SPI_HandleTypeDef *SPI_BUS, uint8_t adcn,
-		uint16_t* adc_out, uint8_t ch_num);
+uint16_t* read_adc_range(SPI_HandleTypeDef *SPI_BUS, uint8_t adcn,
+		uint8_t *channels, uint8_t ch_num);
 
 /**
  *  Sets range to read from adc
@@ -147,7 +137,7 @@ void set_adc(uint8_t adcn, GPIO_PinState state);
  * 	Note: adc should be configured to update all SPI channels prior
  * 			to function call
  */
-void read_adc_all(SPI_HandleTypeDef *SPI_BUS, uint16_t* adc_out, uint8_t adcn);
+uint16_t* read_adc_all(SPI_HandleTypeDef *SPI_BUS, uint8_t adcn);
 
 /**
  * 	Convenience function for setting adc to update all channels
