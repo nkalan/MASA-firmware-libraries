@@ -73,7 +73,7 @@ repeat the following procedure below:
 3. Initialize the microcontroller to read from channels 0-13 on the ADC. Additionally,
     it is helpful to initialize the ADC values array as a global var in order to
     view from the live expressions tab in STM32CubeIDE. More information on how
-    to setup live expressions can be found at this [link.] (https://www.youtube.com/watch?v=Nyml66k_Ppk)
+    to setup live expressions can be found at this [link.](https://www.youtube.com/watch?v=Nyml66k_Ppk)
 4. Observe that each adc value in the array match what is expected. Note: the adc
     values are currently in counts, so some additional conversions may be needed.
 
