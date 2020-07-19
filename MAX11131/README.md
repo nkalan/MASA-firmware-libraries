@@ -73,16 +73,16 @@ repeat the following procedure below:
 3. Initialize the microcontroller to read from channels 0-13 on the ADC. Additionally,
     it is helpful to initialize the ADC values array as a global var in order to
     view from the live expressions tab in STM32CubeIDE. More information on how
-    to setup live expressions can be found at this [link]: (https://www.youtube.com/watch?v=Nyml66k_Ppk)
+    to setup live expressions can be found at this [link.] (https://www.youtube.com/watch?v=Nyml66k_Ppk)
 4. Observe that each adc value in the array match what is expected. Note: the adc
     values are currently in counts, so some additional conversions may be needed.
 
 For a brief example of what this implementation looks like on the Nucleo F446RE 
 dev board, I have created an example program below that demonstrates the procedure
-on adc pins 0-2. It is at this [Github Repo](https://github.com/KingArthurZ3/MASA-firmware-dev) 
-Commit number: 2a15a84085ea2538323f85d88e12b5dce86c457e
+on adc pins 0-2. It is at this [Github Repo.](https://github.com/KingArthurZ3/MASA-firmware-dev) 
+(Commit number: 2a15a84085ea2538323f85d88e12b5dce86c457e)
 
 ### Modifying the existing firmware
 
 Most of the documentation for the exact details on how to configure each read mode should be documented in the firmware code. The README should only be for documenting project level configurations. In addition, detailed documentation
-for this ADC can be found on the [technical datasheet](https://datasheets.maximintegrated.com/en/ds/MAX11129-MAX11132.pdf)
+for this ADC can be found on the [technical datasheet.](https://datasheets.maximintegrated.com/en/ds/MAX11129-MAX11132.pdf)
