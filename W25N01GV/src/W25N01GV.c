@@ -7,3 +7,6 @@
  * Created July 20, 2020
  * Last edited July 20, 2020
  */
+
+#include "W25N01GV.h"
+
