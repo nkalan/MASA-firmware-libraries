@@ -12,6 +12,14 @@
 void set_adc(GPIO_MAX31_Pinfo *pinfo, GPIO_PinState state);
 
 /**
+ *  Cycles CNVST pin to wakeup ADC for adc conversions
+ *
+ *  @param pinfo        <GPIO_MAX31_Pinfo*>   contains ADC pin defs
+ *  
+ */
+void cycle_cnvst(GPIO_MAX31_Pinfo *pinfo);
+
+/**
  * 	Convenience function for updating GPIO_MAX31_Pinfo to read from pins 0-13
  *
  * 	@param pinfo        <GPIO_MAX31_Pinfo*>   contains ADC pin defs
@@ -103,20 +111,9 @@ void read_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX31_Pinfo *pinfo,
 	/* ADC startup and FIFO register intialization */
 
 	set_adc(pinfo, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(pinfo->MAX31_CNVST_PORT,
-			pinfo->MAX31_CNVST_ADDR, GPIO_PIN_RESET);
-	asm("nop"); // Clock Freq at most 120 MHz, each instruction
-				// takes about 8ns to complete
-	HAL_GPIO_WritePin(pinfo->MAX31_CNVST_PORT,
-				pinfo->MAX31_CNVST_ADDR, GPIO_PIN_SET);
-
-	uint8_t pin_state = HAL_GPIO_ReadPin(pinfo->MAX31_EOC_PORT,
-					pinfo->MAX31_EOC_ADDR);
-
-	while (pin_state != 0) {
-		pin_state = HAL_GPIO_ReadPin(pinfo->MAX31_EOC_PORT,
-							pinfo->MAX31_EOC_ADDR);
-	}
+	cycle_cnvst(pinfo);
+	while (HAL_GPIO_ReadPin(pinfo->MAX31_EOC_PORT,
+							pinfo->MAX31_EOC_ADDR)) {}
 
 	/* Serial communications with ADC */
 
@@ -202,4 +199,13 @@ void package_cmd(uint16_t cmd, uint8_t *tx) {
 
 void set_adc(GPIO_MAX31_Pinfo *pinfo, GPIO_PinState state) {
 	HAL_GPIO_WritePin(pinfo->MAX31_CS_PORT, pinfo->MAX31_CS_ADDR, state);
+}
+
+void cycle_cnvst(GPIO_MAX31_Pinfo *pinfo) {
+	HAL_GPIO_WritePin(pinfo->MAX31_CNVST_PORT,
+			pinfo->MAX31_CNVST_ADDR, GPIO_PIN_RESET);
+	asm("nop"); // Clock Freq at most 120 MHz, each instruction
+				// takes about 8ns to complete
+	HAL_GPIO_WritePin(pinfo->MAX31_CNVST_PORT,
+				pinfo->MAX31_CNVST_ADDR, GPIO_PIN_SET);
 }
