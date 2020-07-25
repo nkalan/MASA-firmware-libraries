@@ -2,6 +2,44 @@
  *
  * Header file for communicating with MAX11131 adc
  * datasheet:https://datasheets.maximintegrated.com/en/ds/MAX11129-MAX11132.pdf
+ * 
+ * Public Interface Functions
+ * 
+ * 	init_adc()	-	Automatically initializes ADC to read from channels 0-13 
+ * 					using CUSTOM INT scan method. More explanation on scan 
+ * 					method differences can be found below. In addition, this
+ * 					function configures ADC registers to save the average of 4
+ * 					ADC conversion results for each channel, denoted by the 
+ * 					'SET_MAX31_AVGON' bit. 
+ * 
+ * 	read_adc()	-	Reads ADC conversions for configured channels on ADC. Reads
+ * 					adc conversions on 'adc_out'. Note: adc_out should be at 
+ * 					least size 14 to avoid index out of bound errors. Each index
+ * 					in 'adc_out' corresponds to the channel it's for.
+ * 
+ *	set_read_adc_range()- Configures ADC registers to read from custom
+ *						range of ADC channels. Prior to calling this 
+ *						function, the user must set the contents of the
+ *						'MAX31_CHANNELS' array inside of the 'GPIO_MAX31_Pinfo'
+ *						to the channel numbers to read from. In addition, the 
+ *						user should also set the 'NUM_CHANNELS' variables in the
+ *						struct to the number of channels.
+ * 					
+ * 	Scan Modes
+ * 
+ * 	Overview: There are several different scan modes available to this ADC. Of 
+ * 	the different modes, only CUSTOM_INT is currently implemented because it 
+ * 	handles the majority of this library's use cases. In addition, this mode
+ * 	also increases the speed at which ADC conversions can be retrieved.
+ * 	CUSTOM_INT indicates that the ADC will use its internal clock when carrying 
+ * 	out ADC conversions, it also gives the user the ability to set what ADC 
+ * 	channels should be converted.
+ * 	
+ * 	The second scan mode that can be useful is MANUAL. MANUAL mode uses the 
+ * 	external clock for carrying out ADC conversions. In addition, to retrieve
+ * 	ADC conversions, the user must send the channel ID to the ADC and wait for
+ * 	the conversion result on the SPI MISO line. This is not currently implemented.
+ * 
  *
  */
 #ifndef MAX11131_H
@@ -50,32 +88,29 @@
 
 // GPIO pinout memory addresses
 typedef struct GPIO_MAX31_Pinfo {
-	GPIO_TypeDef* MAX31_CS_PORT[8];		// PORT belonging to CS pin
-	GPIO_TypeDef* MAX31_EOC_PORT[8];	// PORT belonging to EOC pin
-	GPIO_TypeDef* MAX31_CNVST_PORT[8];	// PORT belonging to CNVST pin
-	uint16_t MAX31_CS_ADDR[8];			// PIN belonging to CS pin
-	uint16_t MAX31_EOC_ADDR[8];			// PIN belonging to EOC pin
-	uint16_t MAX31_CNVST_ADDR[8];		// PIN belonging to CNVST pin
-	uint8_t NUM_ADCS;					// Number of ADCs
+	GPIO_TypeDef* MAX31_CS_PORT;		// PORT belonging to CS pin
+	GPIO_TypeDef* MAX31_EOC_PORT;		// PORT belonging to EOC pin
+	GPIO_TypeDef* MAX31_CNVST_PORT;		// PORT belonging to CNVST pin
+	uint16_t MAX31_CS_ADDR;				// PIN belonging to CS pin
+	uint16_t MAX31_EOC_ADDR;			// PIN belonging to EOC pin
+	uint16_t MAX31_CNVST_ADDR;			// PIN belonging to CNVST pin
 
-	uint8_t NUM_CHANNELS[8];				// Number of channels to read from
-	uint8_t MAX31_CHANNELS[8][16];			// Channel Identification Numbers
+	uint8_t NUM_CHANNELS;				// Number of channels to read from
+	uint8_t MAX31_CHANNELS[16];			// Channel Identification Numbers
 } GPIO_MAX31_Pinfo;
-
-GPIO_MAX31_Pinfo *pinfo;
 
 // Mode Control Scan Registers
 // SCAN STATE specifications are defined in pg22
 enum SCAN_STATES {
-	HOLD,
-	MANUAL,
-	REPEAT,
-	STD_INT,
-	STD_EXT,
-	UPPER_INT,
-	UPPER_EXT,
-	CUSTOM_INT,
-	CUSTOM_EXT
+	HOLD,		// Maintains same ADC conversion procedure as before
+	MANUAL,		// Requires transmission of Channel ID each ADC conversion
+	REPEAT,		// Repeats scanning channel N for number of times
+	STD_INT,	// Scans all channels 0-15 in ascending order
+	STD_EXT,	// Same as STD_INT except uses external clock
+	UPPER_INT,	// Scans cahnnels N through 15/11/7/3 in ascending order
+	UPPER_EXT,	// Same as UPPER_INT, except uses external clock
+	CUSTOM_INT,	// Scans specified channels in ascending order
+	CUSTOM_EXT	// Same as CUSTOM_INT except uses external clock
 };
 
 /* Public Function Prototypes */
@@ -87,7 +122,6 @@ enum SCAN_STATES {
  *  @param SPI_BUS      <SPI_HandleTypeDef*> SPI object ADC is on
  *  @param pins        	<GPIO_MAX31_Pinfo*>   contains ADC pin defs,
  *                                          	refer to def above
- *  @param num_adcs     <int>   number of adcs
  *
  *  Note: assumes 8bit data framing on SPI
  */
@@ -98,12 +132,10 @@ void init_adc(SPI_HandleTypeDef* SPI_BUS, GPIO_MAX31_Pinfo *pins);
  *
  *  general documentation starts on datasheet pg 21
  *  @param SPI_BUS      <SPI_HandleTypeDef*> SPI object adc is on
- *  @param adcn         <uint8_t> selected adc number
+ *  @param pinfo        <GPIO_MAX31_Pinfo*>   contains ADC pin defs
  *
  */
-void set_read_adc_range(SPI_HandleTypeDef *SPI_BUS, uint8_t adcn);
-
-/* Private Helper Functions */
+void set_read_adc_range(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX31_Pinfo *pinfo);
 
 /**
  *  Convenience function for reading from configured channels on adcx
@@ -112,48 +144,14 @@ void set_read_adc_range(SPI_HandleTypeDef *SPI_BUS, uint8_t adcn);
  *
  *  general documentation starts on datasheet pg 21
  *  @param SPI_BUS      <SPI_HandleTypeDef*> SPI object adc is on
- *  @param adcn         <uint8_t> selected adc number
+ *  @param pinfo        <GPIO_MAX31_Pinfo*>   contains ADC pin defs
  *	@param adc_out		<uint16_t*> raw adc counts for each channel (0-4096)
  *
  *	Note: adc_out should be initialized to at least size 14 to guarantee safe op
  *			if channel x, y, z are selected, then indices x, y, z will be filled
  *			in adc_out
  */
-void read_adc(SPI_HandleTypeDef *SPI_BUS, uint8_t adcn,
-		uint16_t* adc_out);
-
-/**
- *  Selects/Disables adc for SPI transmissions
- *
- *  @param adcn         <uint8_t> adc number
- *  @param state        <GPIO_PinState> state of GPIO PIN
- *                            Note:
- */
-void set_adc(uint8_t adcn, GPIO_PinState state);
-
-/**
- * 	Convenience function for updating GPIO_MAX31_Pinfo to read from pins 0-13
- *
- * 	@param adcn			<uint8_t> selected adc number
- */
-void configure_read_adc_all(uint8_t adcn);
-
-/**
- *	Private function for transmit and receiving bytes to selected ADC
- *  
- *  @param SPI_BUS      <SPI_HandleTypeDef*> SPI object adc is on
- *  @param tx	        <uint8_t*> bytes to transmit (expected size 2)
- *	@param adc_out		<uint8_t*> bytes to receive (expected size 2)
- */
-void write_adc_reg(SPI_HandleTypeDef *SPI_BUS, uint8_t *tx, uint8_t *rx);
-
-/**
- *	Private function for packing 16 bit command to 8 bit chunks
- *  
- *  @param cmd      	<uint16_t> 16 bit command
- *  @param tx	        <uint8_t*> arr of 16 bit command MSB first (size 2)
- *
- */
-void package_cmd(uint16_t cmd, uint8_t *tx);
+void read_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX31_Pinfo *pinfo,
+													uint16_t* adc_out);
 
 #endif /* end header include protection */

@@ -35,10 +35,12 @@ EOC: (Input pin)
 1. Initialize `GPIO_MAX31_Pinfo` struct, this is your main interface for 
     configuring ADC hardware pins and which channels to read from
 2. Manually assign pins in `GPIO_MAX31_Pinfo` to hardware pins. A snippet of 
-    the underlying data structure can be found below. Each index in the member
-    variable identifies which adc it belongs to. For instance, MAX31_CS_ADDR[0]
-    indicates that it is CS pin addr for ADC 0.
-    Note: the maximum number of ADCs currently supported at once is 8 (arbitrary)
+    the underlying data structure can be found below. For instance, MAX31_CS_ADDR
+    indicates that it is CS pin addr for an ADC.
+3. To initialize multiple ADCs, create an array of `GPIO_MAX31_Pinfo` structs
+    and manually assign each struct's pinouts.
+4. For future reference, you must provide the pin data for each ADC everytime 
+    you want to interface with the ADC.
 
 ```
 typedef struct GPIO_MAX31_Pinfo {
@@ -54,9 +56,9 @@ typedef struct GPIO_MAX31_Pinfo {
 	uint8_t MAX31_CHANNELS[8][16];			// Channel Identification Numbers
 } GPIO_MAX31_Pinfo;
 ```
-3. Once ADC settings are configured, call `init_adc(SPI_HandleTypeDef* SPI_BUS, GPIO_MAX31_Pinfo *pins)`, making sure to pass the correct `SPI BUS`, `GPIO_MAX31_Pinfo` configuration variable. This initializes, by default, channels 0-13.
+3. Once ADC settings are configured, call `init_adc(SPI_HandleTypeDef* SPI_BUS, GPIO_MAX31_Pinfo *pins)` on each ADC struct, making sure to pass the correct `SPI BUS`, `GPIO_MAX31_Pinfo` configuration variable. This initializes, by default, channels 0-13.
 
-4. To read current ADC values, call `read_adc(SPI_HandleTypeDef *SPI_BUS, uint8_t adcn, uint16_t* adc_out)`.
+4. To read current ADC values, call `read_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX31_Pinfo *pinfo, uint16_t* adc_out)`.
 
 # Developer Guide
 
@@ -79,8 +81,7 @@ repeat the following procedure below:
 
 For a brief example of what this implementation looks like on the Nucleo F446RE 
 dev board, I have created an example program below that demonstrates the procedure
-on adc pins 0-2. It is at this [Github Repo.](https://github.com/KingArthurZ3/MASA-firmware-dev) 
-(Commit number: 2a15a84085ea2538323f85d88e12b5dce86c457e)
+on adc pins 0-2. It is at this [Github Repo.](https://github.com/KingArthurZ3/MASA-firmware-dev) (Commit number: 2a15a8)
 
 ### Modifying the existing firmware
 
