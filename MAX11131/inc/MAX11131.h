@@ -40,6 +40,25 @@
  * 	ADC conversions, the user must send the channel ID to the ADC and wait for
  * 	the conversion result on the SPI MISO line. This is not currently implemented.
  * 
+ * Implementation Details
+ * 
+ * For the CUSTOM_INT mode, the developer can choose to enable the SWCNV bit. 
+ * If the SWCNV bit is enabled, the ADC samples all the channels once after 
+ * the user is done requesting data, and does not sample again until the user
+ * finishes requesting data again. This means that the longer you wait between
+ * requesting ADC conversions, the more the results will lag reality. However, 
+ * the benefit is that this method can be faster than disabling the SWCNV bit.
+ * 
+ * By disabling the SWCNV bit, the user must cycle the CNVST (Conversions Start)
+ * pin to tell the ADC to sample conversions before getting conversion data. 
+ * This guarantees that conversion data will be as recent as possible at the 
+ * expense of longer conversion times.
+ * 
+ * Conversion Times for SWCNV (10000 ADC samples)
+ * SWCNV enabled	-	9052 milliseconds
+ * SWCNV disabled	- 	9023 milliseconds
+ * 
+ * Currently, the library disables SWCNV because we favor accuracy over efficiency.
  *
  */
 #ifndef MAX11131_H
@@ -114,7 +133,7 @@ enum SCAN_STATES {
 };
 
 /* Public Function Prototypes */
-
+#ifdef HAL_SPI_MODULE_ENABLED
 /**
  *  Initialize ADC hardware component
  *
@@ -153,5 +172,6 @@ void set_read_adc_range(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX31_Pinfo *pinfo);
  */
 void read_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX31_Pinfo *pinfo,
 													uint16_t* adc_out);
+#endif
 
 #endif /* end header include protection */

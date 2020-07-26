@@ -1,7 +1,7 @@
 #include "../inc/MAX11131.h"
 
 /* Private Helper Functions */
-
+#ifdef HAL_SPI_MODULE_ENABLED
 /**
  *  Selects/Disables adc for SPI transmissions
  *
@@ -72,7 +72,7 @@ void init_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX31_Pinfo *pinfo) {
 
 	// Generate adc config data
 	uint16_t ADC_CONFIG_REG			= MAX31_CONFIG|SET_MAX31_AVGON;
-	uint16_t ADC_MODE_CNTL_REG 		= MAX31_MODE_CNTL|(CUSTOM_INT<<11);
+	uint16_t ADC_MODE_CNTL_REG 		= MAX31_MODE_CNTL|(CUSTOM_INT<<11)/*|SET_SWCNV*/;
 
 	configure_read_adc_all(pinfo);
 	set_read_adc_range(SPI_BUS, pinfo);
@@ -121,8 +121,12 @@ void read_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX31_Pinfo *pinfo,
 	// number of channels * 2 (bytes for each channel)
 	uint8_t rx[2] = {0};
 	uint8_t tx[2] = {0};
-
+	//uint16_t ADC_MODE_CNTL_REG 		= MAX31_MODE_CNTL|(CUSTOM_INT<<11)|SET_SWCNV;
 	for (uint8_t i = 0; i < pinfo->NUM_CHANNELS; ++i) {
+		// reassert MODE CNTL bit on final channel
+		//if (i == pinfo->NUM_CHANNELS-1) {
+		//	package_cmd(ADC_MODE_CNTL_REG, tx);
+		//}
 		set_adc(pinfo, GPIO_PIN_RESET);
 		__disable_irq();
 		if (HAL_SPI_TransmitReceive(SPI_BUS, tx, rx, 2, 1) == HAL_TIMEOUT) {}
@@ -133,6 +137,7 @@ void read_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX31_Pinfo *pinfo,
 		uint16_t channelId = (rx[0] >> 4) & 0x0F;
 		adc_out[channelId] = adc_counts;
 	}
+
 }
 
 void set_read_adc_range(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX31_Pinfo *pinfo) {
@@ -209,3 +214,4 @@ void cycle_cnvst(GPIO_MAX31_Pinfo *pinfo) {
 	HAL_GPIO_WritePin(pinfo->MAX31_CNVST_PORT,
 				pinfo->MAX31_CNVST_ADDR, GPIO_PIN_SET);
 }
+#endif
