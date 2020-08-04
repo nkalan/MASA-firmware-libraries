@@ -35,7 +35,7 @@
  * 	out ADC conversions, it also gives the user the ability to set what ADC 
  * 	channels should be converted.
  * 	
- * 	The second scan mode that can be useful is MANUAL. MANUAL mode uses the 
+ * 	The second scan mode of use is MANUAL. MANUAL mode uses the 
  * 	external clock for carrying out ADC conversions. In addition, to retrieve
  * 	ADC conversions, the user must send the channel ID to the ADC and wait for
  * 	the conversion result on the SPI MISO line. This is not currently implemented.
@@ -58,7 +58,7 @@
  * SWCNV enabled	-	9052 milliseconds
  * SWCNV disabled	- 	9023 milliseconds
  * 
- * Currently, the library disables SWCNV because we favor accuracy over efficiency.
+ * Currently, the library disables SWCNV.
  *
  */
 #ifndef MAX11131_H

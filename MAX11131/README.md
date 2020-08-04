@@ -44,16 +44,15 @@ EOC: (Input pin)
 
 ```
 typedef struct GPIO_MAX31_Pinfo {
-	GPIO_TypeDef* MAX31_CS_PORT[8];		// PORT belonging to CS pin
-	GPIO_TypeDef* MAX31_EOC_PORT[8];	// PORT belonging to EOC pin
-	GPIO_TypeDef* MAX31_CNVST_PORT[8];	// PORT belonging to CNVST pin
-	uint16_t MAX31_CS_ADDR[8];			// PIN belonging to CS pin
-	uint16_t MAX31_EOC_ADDR[8];			// PIN belonging to EOC pin
-	uint16_t MAX31_CNVST_ADDR[8];		// PIN belonging to CNVST pin
-	uint8_t NUM_ADCS;					// Number of ADCs
+	GPIO_TypeDef* MAX31_CS_PORT;		// PORT belonging to CS pin
+	GPIO_TypeDef* MAX31_EOC_PORT;		// PORT belonging to EOC pin
+	GPIO_TypeDef* MAX31_CNVST_PORT;		// PORT belonging to CNVST pin
+	uint16_t MAX31_CS_ADDR;				// PIN belonging to CS pin
+	uint16_t MAX31_EOC_ADDR;			// PIN belonging to EOC pin
+	uint16_t MAX31_CNVST_ADDR;			// PIN belonging to CNVST pin
 
-	uint8_t NUM_CHANNELS[8];				// Number of channels to read from
-	uint8_t MAX31_CHANNELS[8][16];			// Channel Identification Numbers
+	uint8_t NUM_CHANNELS;				// Number of channels to read from
+	uint8_t MAX31_CHANNELS[16];			// Channel Identification Numbers
 } GPIO_MAX31_Pinfo;
 ```
 3. Once ADC settings are configured, call `init_adc(SPI_HandleTypeDef* SPI_BUS, GPIO_MAX31_Pinfo *pins)` on each ADC struct, making sure to pass the correct `SPI BUS`, `GPIO_MAX31_Pinfo` configuration variable. This initializes, by default, channels 0-13.
