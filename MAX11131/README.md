@@ -1,5 +1,7 @@
 # User Guide (LAST UPDATED: July 11, 2020)
 
+[MAX11131 Technical Datasheet](https://datasheets.maximintegrated.com/en/ds/MAX11129-MAX11132.pdf)
+
 ## Pin Terminology
 
 * CNVST   - ADC pin that is used for starting conversions on the MAX11131 chip
@@ -9,7 +11,7 @@
 ### Microcontroller Clock Settings
 
 To guarantee proper functionality, the clock speed on the microcontroller should 
-not be set higher than 120 MHz. This is because this library using a noop instruction
+not be set higher than 180 MHz. This is because this library using a noop instruction
 to delay execution of the CNVST pin cycle for at least 5ns. This delay is necessary
 to guarantee that the ADC properly registers that the CNVST pin has been cycled.
 
@@ -45,32 +47,55 @@ EOC: (Input pin)
 * GPIO Pull-up/Pull-down: None
 
 ### Configuring Hardware Pinouts
-1. Initialize `GPIO_MAX31_Pinfo` struct, this is your main interface for 
+1. Initialize `GPIO_MAX11131_Pinfo` struct, this is your main interface for 
     configuring ADC hardware pins and which channels to read from
-2. Manually assign pins in `GPIO_MAX31_Pinfo` to hardware pins. A snippet of 
-    the underlying data structure can be found below. For instance, MAX31_CS_ADDR
+2. Manually assign pins in `GPIO_MAX11131_Pinfo` to hardware pins. A snippet of 
+    the underlying data structure can be found below. For instance, MAX11131_CS_ADDR
     indicates that it is CS pin addr for an ADC.
-3. To initialize multiple ADCs, create an array of `GPIO_MAX31_Pinfo` structs
+3. To initialize multiple ADCs, create an array of `GPIO_MAX11131_Pinfo` structs
     and manually assign each struct's pinouts.
 4. For future reference, you must provide the pin data for each ADC everytime 
     you want to interface with the ADC.
 
 ```
-typedef struct GPIO_MAX31_Pinfo {
-	GPIO_TypeDef* MAX31_CS_PORT;		// PORT belonging to CS pin
-	GPIO_TypeDef* MAX31_EOC_PORT;		// PORT belonging to EOC pin
-	GPIO_TypeDef* MAX31_CNVST_PORT;		// PORT belonging to CNVST pin
-	uint16_t MAX31_CS_ADDR;				// PIN belonging to CS pin
-	uint16_t MAX31_EOC_ADDR;			// PIN belonging to EOC pin
-	uint16_t MAX31_CNVST_ADDR;			// PIN belonging to CNVST pin
+typedef struct GPIO_MAX11131_Pinfo {
+	GPIO_TypeDef* MAX11131_CS_PORT;		// PORT belonging to CS pin
+	GPIO_TypeDef* MAX11131_EOC_PORT;	// PORT belonging to EOC pin
+	GPIO_TypeDef* MAX11131_CNVST_PORT;	// PORT belonging to CNVST pin
+	uint16_t MAX11131_CS_ADDR;			// PIN belonging to CS pin
+	uint16_t MAX11131_EOC_ADDR;			// PIN belonging to EOC pin
+	uint16_t MAX11131_CNVST_ADDR;		// PIN belonging to CNVST pin
 
 	uint8_t NUM_CHANNELS;				// Number of channels to read from
-	uint8_t MAX31_CHANNELS[16];			// Channel Identification Numbers
-} GPIO_MAX31_Pinfo;
+	uint8_t MAX11131_CHANNELS[16];		// Channel Identification Numbers
+} GPIO_MAX11131_Pinfo;
 ```
-3. Once ADC settings are configured, call `init_adc(SPI_HandleTypeDef* SPI_BUS, GPIO_MAX31_Pinfo *pins)` on each ADC struct, making sure to pass the correct `SPI BUS`, `GPIO_MAX31_Pinfo` configuration variable. This initializes, by default, channels 0-13.
+3. Once ADC settings are configured, call `init_adc(SPI_HandleTypeDef* SPI_BUS, GPIO_MAX11131_Pinfo *pins)` on each ADC struct, making sure to pass the correct `SPI BUS`, `GPIO_MAX11131_Pinfo` configuration variable. This initializes, by default, channels 0-13.
 
-4. To read current ADC values, call `read_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX31_Pinfo *pinfo, uint16_t* adc_out)`.
+4. To read current ADC values, call `read_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo, uint16_t* adc_out)`. The adc_out array that you pass in
+must be of size 14 to guarantee proper behavior.
+
+### Sample ADC Initialization Code
+
+Here is all of the sample code needed to read from channels 0-13 on an adc
+that is connected to SPI 1. The pin assignment names are macros assigned 
+by STM32CubeIDE to the actual micro pins.
+
+```
+MX_SPI1_Init();                 // initializes SPI1
+uint16_t adc_values[14] = {0};  // array for receiving adc conversions
+
+GPIO_MAX11131_Pinfo adc_pins;
+adc_pins.MAX11131_CS_PORT 		= SPI_ADC0_CS_GPIO_Port;
+adc_pins.MAX11131_EOC_PORT		= SPI_EOC_GPIO_Port;
+adc_pins.MAX11131_CNVST_PORT		= SPI_CNVST_GPIO_Port;
+adc_pins.MAX11131_CS_ADDR 		= SPI_ADC0_CS_Pin;
+adc_pins.MAX11131_EOC_ADDR		= SPI_EOC_Pin;
+adc_pins.MAX11131_CNVST_ADDR		= SPI_CNVST_Pin;
+init_adc(&hspi1, &adc_pins);
+
+read_adc(&hspi1, &adc_pins, adc_values);
+```
 
 # Developer Guide
 
