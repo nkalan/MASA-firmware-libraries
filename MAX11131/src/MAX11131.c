@@ -163,20 +163,21 @@ void set_read_adc_range(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX31_Pinfo *pinfo) {
 	}
 
 	/* Set ADC to custom scan channel range */
-	__disable_irq();
 
 	/* Transmit custom channels to send data from */
 	set_adc(pinfo, GPIO_PIN_RESET);
 	package_cmd(SET_SCAN_REGISTER_0, tx);
+	__disable_irq();
 	if (HAL_SPI_Transmit(SPI_BUS, tx, 2, 1) == HAL_TIMEOUT) {}
+	__enable_irq();
 	set_adc(pinfo, GPIO_PIN_SET);
 
 	set_adc(pinfo, GPIO_PIN_RESET);
 	package_cmd(SET_SCAN_REGISTER_1, tx);
+	__disable_irq();
 	if (HAL_SPI_Transmit(SPI_BUS, tx, 2, 1) == HAL_TIMEOUT) {}
-	set_adc(pinfo, GPIO_PIN_SET);
-
 	__enable_irq();
+	set_adc(pinfo, GPIO_PIN_SET);
 }
 
 void configure_read_adc_all(GPIO_MAX31_Pinfo *pinfo) {
