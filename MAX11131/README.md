@@ -2,8 +2,8 @@
 
 ## Pin Terminology
 
-CNVST   - ADC pin that is used for starting conversions on the MAX11131 chip
-EOC     - ADC pin set by the MAX11131 chip that tells the microcontroller when
+* CNVST   - ADC pin that is used for starting conversions on the MAX11131 chip
+* EOC     - ADC pin set by the MAX11131 chip that tells the microcontroller when
             conversions are ready to be read
 
 ### Microcontroller Clock Settings
