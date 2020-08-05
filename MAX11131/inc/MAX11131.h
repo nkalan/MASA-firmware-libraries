@@ -3,6 +3,11 @@
  * Header file for communicating with MAX11131 adc
  * datasheet:https://datasheets.maximintegrated.com/en/ds/MAX11129-MAX11132.pdf
  * 
+ * Pin Terminology
+ * CNVST   - ADC pin that is used for starting conversions on the MAX11131 chip
+ * EOC     - ADC pin set by the MAX11131 chip that tells the microcontroller when
+ *				conversions are ready to be read
+ * 
  * Public Interface Functions
  * 
  * 	init_adc()	-	Automatically initializes ADC to read from channels 0-13 
@@ -25,7 +30,7 @@
  *						user should also set the 'NUM_CHANNELS' variables in the
  *						struct to the number of channels.
  * 					
- * 	Scan Modes
+ * Scan Modes
  * 
  * 	Overview: There are several different scan modes available to this ADC. Of 
  * 	the different modes, only CUSTOM_INT is currently implemented because it 
@@ -54,11 +59,15 @@
  * This guarantees that conversion data will be as recent as possible at the 
  * expense of longer conversion times.
  * 
- * Conversion Times for SWCNV (10000 ADC samples)
- * SWCNV enabled	-	9052 milliseconds
- * SWCNV disabled	- 	9023 milliseconds
+ * One advantage of enabling the SWCNV bit is that it frees up all channels on 
+ * the ADC to read data from.
  * 
- * Currently, the library disables SWCNV.
+ * Conversion Times for SWCNV (10000 ADC samples)
+ * SWCNV enabled	-	9023 milliseconds
+ * SWCNV disabled	- 	9052 milliseconds
+ * 
+ * Currently, the library disables the SWCNV bit for simplicity on the user's 
+ * part when they are testing on boards.
  *
  */
 #ifndef MAX11131_H

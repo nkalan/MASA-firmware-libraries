@@ -1,5 +1,18 @@
 # User Guide (LAST UPDATED: July 11, 2020)
 
+## Pin Terminology
+
+CNVST   - ADC pin that is used for starting conversions on the MAX11131 chip
+EOC     - ADC pin set by the MAX11131 chip that tells the microcontroller when
+            conversions are ready to be read
+
+### Microcontroller Clock Settings
+
+To guarantee proper functionality, the clock speed on the microcontroller should 
+not be set higher than 120 MHz. This is because this library using a noop instruction
+to delay execution of the CNVST pin cycle for at least 5ns. This delay is necessary
+to guarantee that the ADC properly registers that the CNVST pin has been cycled.
+
 ### Configuring SPI settings
 
 The maximum SPI frequency allowed for this ADC is 40 MHz. In the STM32CubeIde
