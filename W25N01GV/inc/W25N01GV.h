@@ -5,7 +5,7 @@
  * Nathaniel Kalantar (nkalan@umich.edu)
  * Michigan Aeronautical Science Association
  * Created July 20, 2020
- * Last edited July 27, 2020
+ * Last edited August 2, 2020
  */
 
 #ifndef W25N01GV_H	// begin header include protection
@@ -20,7 +20,7 @@ typedef struct {
 	GPIO_TypeDef *cs_base;        // Chip select GPIO base, specified by user
 	uint16_t cs_pin;              // Chip select GPIO pin, specified by user
 
-	uint16_t last_page_loaded;
+	uint16_t last_page_loaded;	//TODO: get rid of this
 
 	uint16_t current_page;
 	uint16_t next_free_column;
