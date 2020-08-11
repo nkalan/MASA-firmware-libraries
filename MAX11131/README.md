@@ -1,7 +1,7 @@
 # User Guide (LAST UPDATED: August 10, 2020)
 
-[MAX11131 Technical Datasheet](https://datasheets.maximintegrated.com/en/ds/MAX11129-MAX11132.pdf)
-[MAX11131BOB Breakout Board Datasheet](https://datasheets.maximintegrated.com/en/ds/MAX11131BOB.pdf)
+*[MAX11131 Technical Datasheet](https://datasheets.maximintegrated.com/en/ds/MAX11129-MAX11132.pdf)
+*[MAX11131BOB Breakout Board Datasheet](https://datasheets.maximintegrated.com/en/ds/MAX11131BOB.pdf)
 
 Important note for MAX11131BOB breakout board users: the MAX11131BOB dev board 
 connects analog input 15 to REF- by default. To configure it to use AIN15, cut the
