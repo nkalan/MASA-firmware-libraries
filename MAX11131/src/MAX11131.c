@@ -22,7 +22,7 @@
  *  @param state        <GPIO_PinState>        state of GPIO PIN
  *                            Note:
  */
-void set_adc(GPIO_MAX11131_Pinfo *pinfo, GPIO_PinState state);
+static void set_adc(GPIO_MAX11131_Pinfo *pinfo, GPIO_PinState state);
 
 /**
  *  Cycles CNVST pin to wakeup ADC for adc conversions
@@ -30,7 +30,7 @@ void set_adc(GPIO_MAX11131_Pinfo *pinfo, GPIO_PinState state);
  *  @param pinfo        <GPIO_MAX11131_Pinfo*>   contains ADC pin defs
  *
  */
-void cycle_cnvst(GPIO_MAX11131_Pinfo *pinfo);
+static void cycle_cnvst(GPIO_MAX11131_Pinfo *pinfo);
 
 /**
  * 	Convenience function for updating GPIO_MAX11131_Pinfo to read from pins 0-13
@@ -38,7 +38,7 @@ void cycle_cnvst(GPIO_MAX11131_Pinfo *pinfo);
  * 	@param pinfo        <GPIO_MAX11131_Pinfo*>   contains ADC pin defs
  *
  */
-void configure_read_adc_all(GPIO_MAX11131_Pinfo *pinfo);
+static void configure_read_adc_all(GPIO_MAX11131_Pinfo *pinfo);
 
 /**
  *	Private function for transmit and receiving bytes to selected ADC
@@ -47,7 +47,7 @@ void configure_read_adc_all(GPIO_MAX11131_Pinfo *pinfo);
  *  @param tx           <uint8_t*> bytes to transmit (expected size 2)
  *  @param adc_out      <uint8_t*> bytes to receive (expected size 2)
  */
-void write_adc_reg(SPI_HandleTypeDef *SPI_BUS, uint8_t *tx, uint8_t *rx);
+static void write_adc_reg(SPI_HandleTypeDef *SPI_BUS, uint8_t *tx, uint8_t *rx);
 
 /**
  *  Private function for packing 16 bit command to 8 bit chunks
@@ -56,7 +56,7 @@ void write_adc_reg(SPI_HandleTypeDef *SPI_BUS, uint8_t *tx, uint8_t *rx);
  *  @param tx           <uint8_t*> arr of 16 bit command MSB first (size 2)
  *
  */
-void package_cmd(uint16_t cmd, uint8_t *tx);
+static void package_cmd(uint16_t cmd, uint8_t *tx);
 
 /*-------------------------Public Interface Functions-------------------------*/
 
