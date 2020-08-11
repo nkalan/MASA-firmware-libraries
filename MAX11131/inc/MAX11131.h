@@ -3,6 +3,11 @@
  * Header file for communicating with MAX11131 adc
  * datasheet:https://datasheets.maximintegrated.com/en/ds/MAX11129-MAX11132.pdf
  * 
+ * Important note for MAX11131BOB breakout board users: the MAX11131BOB dev board 
+ * connects analog input 15 to REF- by default. To configure it to use AIN15, cut the
+ * jumper J15 and apply analog input at header H2. This can be found on the datasheet
+ * on the [MAX11131BOB datasheet.](https://datasheets.maximintegrated.com/en/ds/MAX11131BOB.pdf)
+ * 
  * Pin Terminology
  * CNVST   - ADC pin that is used for starting conversions on the MAX11131 chip
  * EOC     - ADC pin set by the MAX11131 chip that tells the microcontroller when
@@ -10,7 +15,7 @@
  * 
  * Public Interface Functions
  * 
- * 	init_adc()	-	Automatically initializes ADC to read from channels 0-13 
+ * 	init_adc()	-	Automatically initializes ADC to read from channels 0-13, 15
  * 					using CUSTOM INT scan method. More explanation on scan 
  * 					method differences can be found below. In addition, this
  * 					function configures ADC registers to save the average of 4
@@ -19,7 +24,7 @@
  * 
  * 	read_adc()	-	Reads ADC conversions for configured channels on ADC. Reads
  * 					adc conversions on 'adc_out'. 'adc_out' should be an array of
- * 					size 14 to avoid index out of bound errors. Each index in 
+ * 					size 16 to avoid index out of bound errors. Each index in
  * 					'adc_out' corresponds to the channel it's for.
  * 
  *	set_read_adc_range()- Configures ADC registers to read from custom
@@ -27,8 +32,9 @@
  *						function, the user must set the contents of the
  *						'MAX11131_CHANNELS' array inside of the 'GPIO_MAX11131_Pinfo'
  *						to the channel numbers to read from. In addition, the 
- *						user should also set the 'NUM_CHANNELS' variables in the
- *						struct to the number of channels.
+ *						user must also set the 'NUM_CHANNELS' variables in the
+ *						struct to the number of channels. This function
+ *						can only be called after init_adc().
  * 					
  * Scan Modes
  * 
@@ -117,14 +123,14 @@
 /* Register bits for adc scan registers */
 #define MAX11131_CUSTOM_SCAN0 		(uint16_t) 0xA000 // 0b10100      followed by 0s
 #define MAX11131_CUSTOM_SCAN1 		(uint16_t) 0xA800 // 0b10101      followed by 0s
-#define MAX11131_CUSTOM_SCAN_ALL_0 	(uint16_t) 0x01F8 // 0b00111111000
+#define MAX11131_CUSTOM_SCAN_ALL_0 	(uint16_t) 0x05F8 // 0b10111111000
 #define MAX11131_CUSTOM_SCAN_ALL_1 	(uint16_t) 0x07F8 // 0b11111111000
 
 /* Channel size in FIFO register */
 #define MAX11131_CHANNEL_SZ			(uint8_t) 	0x0002
 
 /* Global Var Definitions */
-#define MAX11131_MAX_CHANNELS		(uint8_t)	0x000E
+#define MAX11131_MAX_CHANNELS		(uint8_t)	0x000F // 15 Channels (0-13, 15)
 
 // GPIO pinout memory addresses
 typedef struct GPIO_MAX11131_Pinfo {
@@ -187,12 +193,11 @@ void set_read_adc_range(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo);
  *  @param pinfo        <GPIO_MAX11131_Pinfo*>   contains ADC pin defs
  *	@param adc_out		<uint16_t*> raw adc counts for each channel (0-4096)
  *
- *	Note: adc_out should be initialized to size 14 to guarantee safe operations
+ *	Note: adc_out should be initialized to size 16 to guarantee safe operations
  *			if channel x, y, z are selected, then indices x, y, z will be filled
  *			in adc_out
  */
-void read_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo,
-													uint16_t* adc_out);
+void read_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo, uint16_t *adc_out);
 #endif
 
 #endif /* end header include protection */
