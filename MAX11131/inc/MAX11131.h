@@ -82,8 +82,8 @@
  * the ADC to read data from.
  *
  * Conversion Times for SWCNV (10000 ADC samples)
- * SWCNV enabled	-	9023 milliseconds
- * SWCNV disabled	- 	9052 milliseconds
+ * SWCNV enabled    -    9023 milliseconds
+ * SWCNV disabled   -    9052 milliseconds
  *
  * Currently, the library disables the SWCNV bit for simplicity on the user's
  * part when they are testing on boards.
@@ -97,7 +97,7 @@
 #include "stm32f4xx_hal.h"
 
 /* DEBUG ENABLER */
-#define	MAX11131_DEBUG_EN   (uint16_t) 0x0001 // set to 1 to enable debugging
+#define MAX11131_DEBUG_EN    (uint16_t) 0x0001 // set to 1 to enable debugging
 
 /* Register Definitions */
 
@@ -167,8 +167,8 @@ enum SCAN_STATES {
  *
  *  detailed documentation starts on datasheet pg21
  *  @param SPI_BUS      <SPI_HandleTypeDef*> SPI object ADC is on
- *  @param pins        	<GPIO_MAX11131_Pinfo*>   contains ADC pin defs,
- *                                          refer to def above
+ *  @param pins         <GPIO_MAX11131_Pinfo*> contains ADC pin defs,
+ *                                              refer to def above
  *
  *  Note: assumes 8bit data framing on SPI
  */
@@ -178,8 +178,8 @@ void init_adc(SPI_HandleTypeDef* SPI_BUS, GPIO_MAX11131_Pinfo *pins);
  *  Sets range to read from adc
  *
  *  general documentation starts on datasheet pg 21
- *  @param SPI_BUS      <SPI_HandleTypeDef*> SPI object adc is on
- *  @param pinfo        <GPIO_MAX11131_Pinfo*>   contains ADC pin defs
+ *  @param SPI_BUS      <SPI_HandleTypeDef*>    SPI object adc is on
+ *  @param pinfo        <GPIO_MAX11131_Pinfo*>  contains ADC pin defs
  *
  */
 void set_read_adc_range(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo);

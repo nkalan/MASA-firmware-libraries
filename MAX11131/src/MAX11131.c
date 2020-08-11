@@ -1,12 +1,25 @@
+/** MAX11131.c
+ *  @author arthurzh
+ *
+ *  See MAX11131.h for usage and public function documentation
+ *
+ * Private Functions:
+ *   set_adc
+ *   cycle_cnvst
+ *   configure_read_adc_all
+ *   write_adc_reg
+ *   package_cmd
+ */
 #include "../inc/MAX11131.h"
 
-/* Private Helper Functions */
+/*---------------------- Private Functions Declarations ----------------------*/
+
 #ifdef HAL_SPI_MODULE_ENABLED
 /**
  *  Selects/Disables adc for SPI transmissions
  *
- *  @param pinfo        <GPIO_MAX11131_Pinfo*>   contains ADC pin defs
- *  @param state        <GPIO_PinState> state of GPIO PIN
+ *  @param pinfo        <GPIO_MAX11131_Pinfo*> contains ADC pin defs
+ *  @param state        <GPIO_PinState>        state of GPIO PIN
  *                            Note:
  */
 void set_adc(GPIO_MAX11131_Pinfo *pinfo, GPIO_PinState state);
@@ -15,7 +28,7 @@ void set_adc(GPIO_MAX11131_Pinfo *pinfo, GPIO_PinState state);
  *  Cycles CNVST pin to wakeup ADC for adc conversions
  *
  *  @param pinfo        <GPIO_MAX11131_Pinfo*>   contains ADC pin defs
- *  
+ *
  */
 void cycle_cnvst(GPIO_MAX11131_Pinfo *pinfo);
 
@@ -23,7 +36,7 @@ void cycle_cnvst(GPIO_MAX11131_Pinfo *pinfo);
  * 	Convenience function for updating GPIO_MAX11131_Pinfo to read from pins 0-13
  *
  * 	@param pinfo        <GPIO_MAX11131_Pinfo*>   contains ADC pin defs
- *                                          
+ *
  */
 void configure_read_adc_all(GPIO_MAX11131_Pinfo *pinfo);
 
@@ -45,7 +58,7 @@ void write_adc_reg(SPI_HandleTypeDef *SPI_BUS, uint8_t *tx, uint8_t *rx);
  */
 void package_cmd(uint16_t cmd, uint8_t *tx);
 
-/* Public Interface Functions */
+/*-------------------------Public Interface Functions-------------------------*/
 
 void init_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo) {
     /*
@@ -71,8 +84,8 @@ void init_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo) {
     //          in file stm32f446x.h
 
     // Generate adc config data
-    uint16_t ADC_CONFIG_REG         = MAX11131_CONFIG|SET_MAX11131_AVGON;
-    uint16_t ADC_MODE_CNTL_REG      = MAX11131_MODE_CNTL|(CUSTOM_INT<<11);
+    uint16_t ADC_CONFIG_REG	   = MAX11131_CONFIG|SET_MAX11131_AVGON;
+    uint16_t ADC_MODE_CNTL_REG = MAX11131_MODE_CNTL|(CUSTOM_INT<<11);
 
     configure_read_adc_all(pinfo);
     set_read_adc_range(SPI_BUS, pinfo);
@@ -204,12 +217,13 @@ void set_adc(GPIO_MAX11131_Pinfo *pinfo, GPIO_PinState state) {
 }
 
 void cycle_cnvst(GPIO_MAX11131_Pinfo *pinfo) {
-    HAL_GPIO_WritePin(pinfo->MAX11131_CNVST_PORT,
-            pinfo->MAX11131_CNVST_ADDR, GPIO_PIN_RESET);
-    asm("nop"); // Clock Freq should be 180 MHz, each noop instruction
-                // takes about 5.5 ns to complete
-    asm("nop");
-    HAL_GPIO_WritePin(pinfo->MAX11131_CNVST_PORT,
-                pinfo->MAX11131_CNVST_ADDR, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(
+        pinfo->MAX11131_CNVST_PORT, pinfo->MAX11131_CNVST_ADDR, GPIO_PIN_RESET
+    );
+    asm("nop");  // Clock Freq maxes at 180 MHz, at which each noop instruction
+    asm("nop");  // takes about 5.5 ns to complete
+    HAL_GPIO_WritePin(
+        pinfo->MAX11131_CNVST_PORT, pinfo->MAX11131_CNVST_ADDR, GPIO_PIN_SET
+    );
 }
 #endif
