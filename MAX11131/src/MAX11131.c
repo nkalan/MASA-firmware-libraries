@@ -93,7 +93,7 @@ void init_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo) {
 }
 
 void read_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo,
-														uint16_t* adc_out) {
+												uint16_t *adc_out) {
 	/*
 	 Read ADC Procedure for internal clock using SWCNV bit set(pg17):
 	 	 1.	Set CS high to initiate conversions
@@ -186,6 +186,7 @@ void configure_read_adc_all(GPIO_MAX11131_Pinfo *pinfo) {
 	for (uint8_t i = 0; i < MAX11131_MAX_CHANNELS; ++i) {
 		pinfo->MAX11131_CHANNELS[i] = i;
 	}
+	pinfo->MAX11131_CHANNELS[14] = 15;
 }
 
 void write_adc_reg(SPI_HandleTypeDef *SPI_BUS, uint8_t *tx, uint8_t *rx) {
