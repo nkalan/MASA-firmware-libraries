@@ -1,8 +1,38 @@
-function AtmPropDriver
-    % Adapted from AERO201 project 3 code
-    
+function MS5607_lookup_table_generator
     close all;
+%   Input:      alt:        Final Geometric Altitude[km]
+%               division:   Reporting points for output arrays[km]
+%                           (.01 km & Divisible by .01 km)
+%               units:      1-[Metric]
+%                           2-{English}
+%   Default:    Values used if no input
+%               alt:        1000 km
+%               division:   1 km
+%               units:      Metric
+%   Output:     Each value has a specific region that it is valid in with this model
+%               and is only printed out in that region
+%               Z:          Total Reporting Altitudes[0<=alt<=1000 km][km]{ft}
+%               Z_L:        Lower Atmosphere Reporting Altitudes[0<=alt<=86 km][km]{ft}
+%               Z_U:        Upper Atmosphere Reporting Altitudes[86<=alt<=1000 km][km]{ft}
+%               T:          Temperature array[0<=alt<=1000 km][K]{R}
+%               P:          Pressure array[0<=alt<=1000 km][Pa]{in_Hg}
+%               rho:        Density array[0<=alt<=1000 km][kg/m^3]{lb/ft^3}
+%               c:          Speed of sound array[0<=alt<=86 km][m/s]{ft/s}
+%               g:          Gravity array[0<=alt<=1000 km][m/s^2]{ft/s^2}
+%               mu:         Dynamic Viscosity array[0<=alt<=86 km][N*s/m^2]{lb/(ft*s)}
+%               nu:         Kinematic Viscosity array[0<=alt<=86 km][m^2/s]{ft^2/s}
+%               k:          Coefficient of Thermal Conductivity
+%                           array[0<=alt<=86 km][W/(m*K)]{BTU/(ft*s*R)}
+%               n:          Number Density of individual gases
+%                           (N2 O O2 Ar He H)[86km<=alt<=1000km][1/m^3]{1/ft^3}
+%               n_sum:      Number Density of total gases
+    alt = 25;
+    division = 0.01;
+    units = 1;
+    
+    [Z, Z_L, Z_U, T, P, rho, c, g, mu, nu, k, n, n_sum] = atmo(alt,division,units);
 
+    %{
     hplot_min = 0;
     hplot_max = 31060;
     
@@ -22,6 +52,7 @@ function AtmPropDriver
     table = [Pvec; hvec];
     processed_table = process_function(table, N);
     write_to_file('pressure_altitude_lookup_table.txt', processed_table);
+    %}
     
 end
 

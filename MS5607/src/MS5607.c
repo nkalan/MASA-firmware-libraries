@@ -1,5 +1,5 @@
 /**
- * Code Implementation for communicating with MS5607 Pressure Altimeter
+ * Code Implementation MS5607 Pressure Altimeter firmware library
  * Datasheet: https://www.te.com/commerce/DocumentDelivery/DDEController?Action=srchrtrv&DocNm=MS5607-02BA03&DocType=Data+Sheet&DocLang=English
  *
  * From the datasheet: "The MS5607-02BA consists of a piezo-resistive sensor
@@ -8,19 +8,24 @@
  * pressure sensor to a 24-bit digital value, as well as providing a 24-bit
  * digital value for the temperature of the sensor."
  * 
+ * Operating Temperature range: -40 dg C to 85 dg C
+ * Operating Pressure range: 10 mbar to 1200 mbar
+ *
  * The altimeter supplies pressure and temperature, which is then converted to
  * altitude according to the 1976 U.S. Standard Atmosphere model.
  * 
  * Nathaniel Kalantar (nkalan@umich.edu)
  * Michigan Aeronautical Science Association
  * Created May 3, 2020
- * Last edited July 23, 2020
+ * Last edited August 11, 2020
  */
 
 #include <stdint.h>
 #include <math.h>
-#include <MS5607.h>
-//#include "MS5607_altitude_conversion.c"
+#include "MS5607.h"
+#include "MS5607_altitude_conversion.c"
+
+#ifdef HAL_SPI_MODULE_ENABLED	// begin SPI include protection
 
 /** Command bytes 
  * Each command has a corresponding 1-byte sequence
@@ -38,77 +43,63 @@
  * 7        Stop				Stop bit, always 0
  *
  * A note about PROM addresses:
- * Each of the 8 addresses stores a value, shown here.
+ * Each of the 8 addresses stores a 16 bit value, shown here.
  *
  * Address 0:		Reserved for manufacturer
  * Address 1-6: Calibration constants
  * Address 7:		Serial code, CRC in last 4 bits
  *
  * To get the command for address i, 0 <= i <= 7, add 2*i
- * to MS5607_PROM_READ_CMD_BASE.
+ * to MPROM_READ_CMD_BASE.
  */
-#define MS5607_RESET_CMD                   	(uint8_t) 0x1E    // 0b00011110
-#define MS5607_ADC_CONVERT_BASE_CMD					(uint8_t) 0x40		// 0b01000000
-#define MS5607_ADC_CONVERT_D1_CMD						(uint8_t) 0x00		// 0b00000000
-#define MS5607_ADC_CONVERT_D2_CMD						(uint8_t) 0x10		// 0b00010000
-#define MS5607_ADC_CONVERT_OSR_256_CMD			(uint8_t) 0x00		// 0b00000000
-#define MS5607_ADC_CONVERT_OSR_512_CMD			(uint8_t) 0x02		// 0b00000010
-#define MS5607_ADC_CONVERT_OSR_1024_CMD			(uint8_t) 0x04		// 0b00000100
-#define MS5607_ADC_CONVERT_OSR_2048_CMD			(uint8_t) 0x06		// 0b00000110
-#define MS5607_ADC_CONVERT_OSR_4096_CMD			(uint8_t) 0x08		// 0b00001000
-#define MS5607_ADC_READ_CMD                	(uint8_t) 0x00    // 0b00000000
-#define MS5607_PROM_READ_CMD_BASE          	(uint8_t) 0xA0    // 0b10100000
+
+const uint8_t RESET_CMD = 0x1E;  // 0b00011110
+const uint8_t ADC_CONVERT_D1_OSR_256_CMD = 0x40;  // 0b01000000
+const uint8_t ADC_CONVERT_D1_OSR_512_CMD = 0x42;  // 0b01000010
+const uint8_t ADC_CONVERT_D1_OSR_1024_CMD = 0x44;  // 0b01000100
+const uint8_t ADC_CONVERT_D1_OSR_2048_CMD = 0x46;  // 0b01000110
+const uint8_t ADC_CONVERT_D1_OSR_4096_CMD = 0x48;  // 0b01001000
+const uint8_t ADC_CONVERT_D2_OSR_256_CMD = 0x50;  // 0b01010000
+const uint8_t ADC_CONVERT_D2_OSR_512_CMD = 0x52;  // 0b01010010
+const uint8_t ADC_CONVERT_D2_OSR_1024_CMD = 0x54;  // 0b01010100
+const uint8_t ADC_CONVERT_D2_OSR_2048_CMD = 0x56;  // 0b01010110
+const uint8_t ADC_CONVERT_D2_OSR_4096_CMD = 0x58;  // 0b01011000
+const uint8_t ADC_READ_CMD = 0x00;  // 0b00000000
+const uint8_t PROM_READ_CMD_BASE = 0xA0;  // 0b1010---0
 
 /**
- * ADC conversion times, which vary depending on the oversampling rate
+ * Maximum ADC conversion times, which vary depending on the oversampling rate
  * specified during initialization.
  */
-#define MS5607_ADC_CONVERSION_DELAY_MILLISECONDS_OSR_256			1
-#define MS5607_ADC_CONVERSION_DELAY_MILLISECONDS_OSR_512    	2
-#define MS5607_ADC_CONVERSION_DELAY_MILLISECONDS_OSR_1024 		3
-#define MS5607_ADC_CONVERSION_DELAY_MILLISECONDS_OSR_2048   	5
-#define MS5607_ADC_CONVERSION_DELAY_MILLISECONDS_OSR_4096    10
+const uint8_t ADC_CONVERSION_TIME_MILLISECONDS_OSR_256 = 1;
+const uint8_t ADC_CONVERSION_TIME_MILLISECONDS_OSR_512 = 2;
+const uint8_t ADC_CONVERSION_TIME_MILLISECONDS_OSR_1024 = 3;
+const uint8_t ADC_CONVERSION_TIME_MILLISECONDS_OSR_2048 = 5;
+const uint8_t ADC_CONVERSION_TIME_MILLISECONDS_OSR_4096 = 10;
 
-#define MS5607_CS_ACTIVE    GPIO_PIN_RESET  // Chip is active low
-#define MS5607_CS_INACTIVE  GPIO_PIN_SET
+const uint8_t MS5607_CS_ACTIVE = GPIO_PIN_RESET;  // Chip is active low
+const uint8_t MS5607_CS_INACTIVE = GPIO_PIN_SET;
 
-#define MS5607_TIMEOUT	1	 // Timeout for SPI
-
-/**
- * Pressure and temperature ranges the MS5607 can handle (not used in code)
- */
-#define MS5607_MINIMUM_PRESSURE         1000        // 0.01 mbar    (  10 mbar)
-#define MS5607_MAXIMUM_PRESSURE         120000      // 0.01 mbar    (1200 mbar)
-#define MS5607_MINIMUM_TEMPERATURE     -4000        // 0.01 Celsius ( -40 C)
-#define MS5607_MAXIMUM_TEMPERATURE      8500        // 0.01 Celsius (  85 C)
-
-/** Lookup table
- * Function mapping pressure to altitude
- * 
- */
-//static const int32_t[]
-
+const uint8_t MS5607_TIMEOUT = 1;  // Timeout for SPI
 
 /* Private function declarations */
 
-void MS5607_chip_select(MS5607_Altimeter *altimeter);
-void MS5607_chip_release(MS5607_Altimeter *altimeter);
-void MS5607_write_cmd_to_spi(MS5607_Altimeter *altimeter, uint8_t tx);
-uint32_t MS5607_read_from_adc(MS5607_Altimeter *altimeter);
-uint8_t MS5607_get_adc_conversion_cmd_OSR(MS5607_Altimeter* altimeter);
+static void MS5607_chip_select(MS5607_Altimeter *altimeter);
+static void MS5607_chip_release(MS5607_Altimeter *altimeter);
+static void MS5607_write_cmd_to_spi(MS5607_Altimeter *altimeter, uint8_t tx);
+static uint32_t MS5607_read_from_adc(MS5607_Altimeter *altimeter);
 
+/* Public function definitions */
 
-/* Public function implementation */
-
-void MS5607_initialization(MS5607_Altimeter *altimeter,
-		MS5607_OversamplingRate OSR_in, SPI_HandleTypeDef *SPI_BUS_in,
-		GPIO_TypeDef *cs_base_in, uint16_t cs_pin_in) {
+void MS5607_altimeter_init(MS5607_Altimeter *altimeter,
+    MS5607_OversamplingRate OSR_in, SPI_HandleTypeDef *SPI_bus_in,
+    GPIO_TypeDef *cs_base_in, uint16_t cs_pin_in) {
 	altimeter->OSR = OSR_in;
-	altimeter->SPI_BUS = SPI_BUS_in;
+	altimeter->SPI_bus = SPI_bus_in;
 	altimeter->cs_base = cs_base_in;
 	altimeter->cs_pin = cs_pin_in;
 
-	MS5607_write_cmd_to_spi(altimeter, MS5607_RESET_CMD);  // Reset the device PROM
+	MS5607_write_cmd_to_spi(altimeter, RESET_CMD); // Reset the device PROM
 	HAL_Delay(3);	// Minimum of 2.88 ms to completely reset the chip
 
 	// Send the 1 byte PROM read command, and the next 2 bytes clocked out
@@ -116,16 +107,16 @@ void MS5607_initialization(MS5607_Altimeter *altimeter,
 	// for each constant.
 	for (int i = 0; i < 8; i++) {
 		/* Prepare SPI buffers */
-		// The 8 ADC PROM read commands are found from MS5607_PROM_READ_CMD_BASE.
-		// To get command i, 0 <= i <= 7, add 2*i to MS5607_PROM_READ_CMD_BASE.
-		uint8_t tx[3] = { MS5607_PROM_READ_CMD_BASE + i * 2, 0, 0 };  // { command, unused, unused }
+		// The 8 ADC PROM read commands are found from PROM_READ_CMD_BASE.
+		// To get command i, 0 <= i <= 7, add 2*i to PROM_READ_CMD_BASE.
+		uint8_t tx[3] = { PROM_READ_CMD_BASE + i * 2, 0, 0 }; // { command, unused, unused }
 		uint8_t rx[3] = { 0, 0, 0 };  // { unused, empty, empty }
 
 		// Transmit and receive over SPI
 		MS5607_chip_select(altimeter);
 		__disable_irq();	// disable interrupt requests
-		if (HAL_SPI_TransmitReceive(altimeter->SPI_BUS, tx, rx, 3, MS5607_TIMEOUT)
-				== HAL_TIMEOUT) {
+		if (HAL_SPI_TransmitReceive(altimeter->SPI_bus, tx, rx, 3, MS5607_TIMEOUT)
+		    == HAL_TIMEOUT) {
 		}
 		__enable_irq();  // re enable interrupt requests
 		MS5607_chip_release(altimeter);
@@ -137,10 +128,26 @@ void MS5607_initialization(MS5607_Altimeter *altimeter,
 
 void MS5607_first_conversion(MS5607_Altimeter *altimeter) {
 	// Send command for ADC to convert pressure
-	uint8_t adc_conversion_cmd = MS5607_ADC_CONVERT_BASE_CMD
-			| MS5607_ADC_CONVERT_D1_CMD
-			| MS5607_get_adc_conversion_cmd_OSR(altimeter);	 // combining bytes, '+' accomplishes the same thing
-	MS5607_write_cmd_to_spi(altimeter, adc_conversion_cmd);
+	switch (altimeter->OSR) {
+		case OSR_256:
+			MS5607_write_cmd_to_spi(altimeter, ADC_CONVERT_D1_OSR_256_CMD);
+			break;
+		case OSR_512:
+			MS5607_write_cmd_to_spi(altimeter, ADC_CONVERT_D1_OSR_512_CMD);
+			break;
+		case OSR_1024:
+			MS5607_write_cmd_to_spi(altimeter, ADC_CONVERT_D1_OSR_1024_CMD);
+			break;
+		case OSR_2048:
+			MS5607_write_cmd_to_spi(altimeter, ADC_CONVERT_D1_OSR_2048_CMD);
+			break;
+		case OSR_4096:
+			MS5607_write_cmd_to_spi(altimeter, ADC_CONVERT_D1_OSR_4096_CMD);
+			break;
+		default:
+			// Send the command with the shortest conversion time by default
+			MS5607_write_cmd_to_spi(altimeter, ADC_CONVERT_D1_OSR_256_CMD);
+	}
 }
 
 void MS5607_second_conversion(MS5607_Altimeter *altimeter) {
@@ -148,43 +155,61 @@ void MS5607_second_conversion(MS5607_Altimeter *altimeter) {
 	altimeter->D1 = MS5607_read_from_adc(altimeter);
 
 	// Send command for ADC to convert temperature
-	uint8_t adc_conversion_cmd = MS5607_ADC_CONVERT_BASE_CMD
-			| MS5607_ADC_CONVERT_D2_CMD
-			| MS5607_get_adc_conversion_cmd_OSR(altimeter);	 // combining bytes, '+' accomplishes the same thing
-	MS5607_write_cmd_to_spi(altimeter, adc_conversion_cmd);
+	switch (altimeter->OSR) {
+		case OSR_256:
+			MS5607_write_cmd_to_spi(altimeter, ADC_CONVERT_D2_OSR_256_CMD);
+			break;
+		case OSR_512:
+			MS5607_write_cmd_to_spi(altimeter, ADC_CONVERT_D2_OSR_512_CMD);
+			break;
+		case OSR_1024:
+			MS5607_write_cmd_to_spi(altimeter, ADC_CONVERT_D2_OSR_1024_CMD);
+			break;
+		case OSR_2048:
+			MS5607_write_cmd_to_spi(altimeter, ADC_CONVERT_D2_OSR_2048_CMD);
+			break;
+		case OSR_4096:
+			MS5607_write_cmd_to_spi(altimeter, ADC_CONVERT_D2_OSR_4096_CMD);
+			break;
+		default:
+			// Send the command with the shortest conversion time by default
+			MS5607_write_cmd_to_spi(altimeter, ADC_CONVERT_D2_OSR_256_CMD);
+	}
 }
 
 uint8_t MS5607_get_adc_conversion_time(MS5607_Altimeter *altimeter) {
+	// Each oversampling rate setting has a different ADC conversion time
 	switch (altimeter->OSR) {
 		case OSR_256:
-			return MS5607_ADC_CONVERSION_DELAY_MILLISECONDS_OSR_256;
+			return ADC_CONVERSION_TIME_MILLISECONDS_OSR_256;
 			break;
 		case OSR_512:
-			return MS5607_ADC_CONVERSION_DELAY_MILLISECONDS_OSR_512;
+			return ADC_CONVERSION_TIME_MILLISECONDS_OSR_512;
 			break;
 		case OSR_1024:
-			return MS5607_ADC_CONVERSION_DELAY_MILLISECONDS_OSR_1024;
+			return ADC_CONVERSION_TIME_MILLISECONDS_OSR_1024;
 			break;
 		case OSR_2048:
-			return MS5607_ADC_CONVERSION_DELAY_MILLISECONDS_OSR_2048;
+			return ADC_CONVERSION_TIME_MILLISECONDS_OSR_2048;
 			break;
 		case OSR_4096:
-			return MS5607_ADC_CONVERSION_DELAY_MILLISECONDS_OSR_4096;
+			return ADC_CONVERSION_TIME_MILLISECONDS_OSR_4096;
 			break;
 		default:
 			// Return the longest delay by default
-			return MS5607_ADC_CONVERSION_DELAY_MILLISECONDS_OSR_4096;
+			return ADC_CONVERSION_TIME_MILLISECONDS_OSR_4096;
 			break;
 	}
 }
 
 void MS5607_calculate_pressure_and_temperature(MS5607_Altimeter *altimeter,
-		int32_t *final_pressure, int32_t *final_temperature) {
+    int32_t *final_pressure, int32_t *final_temperature) {
 	/**
 	 * Calculations for finding actual temperature and pressure are documented
 	 * on pages 8-9 of the datasheet.
 	 *
-	 * Ci is the ith calibration constant stored in the MS5607_Altimeter struct.
+	 * In the datasheet, Ci is the ith calibration constant stored in the
+	 * MS5607_Altimeter struct.
 	 *
 	 * pow() is used when multiplying powers of 2, not bit shift (<< and >>)
 	 * to avoid type errors and integer overflows.
@@ -205,11 +230,11 @@ void MS5607_calculate_pressure_and_temperature(MS5607_Altimeter *altimeter,
 
 	// Offset at actual temperature
 	int64_t OFF = (int64_t) (altimeter->constants[2] * pow(2, 17))
-			+ dT * altimeter->constants[4] * pow(2, -6);
+	    + dT * altimeter->constants[4] * pow(2, -6);
 
 	// Sensitivity at actual temperature
 	int64_t SENS = altimeter->constants[1] * pow(2, 16)
-			+ dT * altimeter->constants[3] * pow(2, -7);
+	    + dT * altimeter->constants[3] * pow(2, -7);
 
 	// COMPENSATION FOR LOW TEMPERATURES
 	// Prepare temperature calibration values
@@ -242,15 +267,39 @@ void MS5607_calculate_pressure_and_temperature(MS5607_Altimeter *altimeter,
 	*final_temperature = TEMP;
 }
 
+//TODO: finish lookup table generator
+uint32_t MS5607_calculate_altitude(MS5607_Altimeter *altimeter) {
+	/**
+	 * I assume the chip gives (inaccurate) outputs outside the listed
+	 * temperature/pressure range. How should these be handled? Ignore them,
+	 * or include them in the lookup table and warn the user that they're wrong?
+	 */
 
-/* Private function implementation */
+	/**
+	 * Outputting pressure and temperature is incredibly useful for debugging,
+	 * but the user probably never needs to see it.
+	 *
+	 * The pressure/temperature calculation is handled in a separate
+	 * function in case the user ever wants to access those values
+	 * directly [MS5607_calculate_pressure_and_temperature()]
+	 */
+
+	int32_t pressure, temperature;
+	MS5607_calculate_pressure_and_temperature(altimeter, &pressure, &temperature);
+
+	// pressure is an int32_t, so it can index the lookup table.
+	// It should never be negative. TODO: double check this
+	return MS5607_pressure_to_altitude_lookup_table[pressure];
+}
+
+/* Private function definitions */
 
 /**
  * Private helper function to set the MS5607's chip select pin active.
  *
  * @param altimeter         	<MS5607_Altimeter*>         Struct to store altimeter settings and constants
  */
-void MS5607_chip_select(MS5607_Altimeter *altimeter) {
+static void MS5607_chip_select(MS5607_Altimeter *altimeter) {
 	HAL_GPIO_WritePin(altimeter->cs_base, altimeter->cs_pin, MS5607_CS_ACTIVE);
 }
 
@@ -259,7 +308,7 @@ void MS5607_chip_select(MS5607_Altimeter *altimeter) {
  *
  * @param altimeter         	<MS5607_Altimeter*>         Struct to store altimeter settings and constants
  */
-void MS5607_chip_release(MS5607_Altimeter *altimeter) {
+static void MS5607_chip_release(MS5607_Altimeter *altimeter) {
 	HAL_GPIO_WritePin(altimeter->cs_base, altimeter->cs_pin, MS5607_CS_INACTIVE);
 }
 
@@ -269,12 +318,10 @@ void MS5607_chip_release(MS5607_Altimeter *altimeter) {
  * @param altimeter         	<MS5607_Altimeter*>         Struct to store altimeter settings and constants
  * @param tx            			<uint8_t>                   1 byte to write to the altimeter
  */
-void MS5607_write_cmd_to_spi(MS5607_Altimeter *altimeter, uint8_t tx) {
+static void MS5607_write_cmd_to_spi(MS5607_Altimeter *altimeter, uint8_t tx) {
 	MS5607_chip_select(altimeter);
 	__disable_irq();	// disable interrupts
-	if (HAL_SPI_Transmit(altimeter->SPI_BUS, &tx, 1, MS5607_TIMEOUT)
-			== HAL_TIMEOUT) {
-	}
+	HAL_SPI_Transmit(altimeter->SPI_bus, &tx, 1, MS5607_TIMEOUT);
 	__enable_irq();  // re enable interrupts
 	MS5607_chip_release(altimeter);
 }
@@ -289,18 +336,16 @@ void MS5607_write_cmd_to_spi(MS5607_Altimeter *altimeter, uint8_t tx) {
  * @param altimeter         	<MS5607_Altimeter*>         Struct to store altimeter settings and constants
  * @retval The 24 bit value stored in the MS5607's ADC
  */
-uint32_t MS5607_read_from_adc(MS5607_Altimeter *altimeter) {
+static uint32_t MS5607_read_from_adc(MS5607_Altimeter *altimeter) {
 
 	// Prepare SPI buffers
-	uint8_t tx[4] = { MS5607_ADC_READ_CMD, 0, 0, 0 }; // { ADC read command, unused, unused, unused }
+	uint8_t tx[4] = { ADC_READ_CMD, 0, 0, 0 }; // { ADC read command, unused, unused, unused }
 	uint8_t rx[4] = { 0, 0, 0, 0 };  // { unused, empty, empty, empty }
 
 	// Transmit and receive over SPI
 	MS5607_chip_select(altimeter);
 	__disable_irq();	// disable interrupts
-	if (HAL_SPI_TransmitReceive(altimeter->SPI_BUS, tx, rx, 4, MS5607_TIMEOUT)
-			== HAL_TIMEOUT) {
-	}
+	HAL_SPI_TransmitReceive(altimeter->SPI_bus, tx, rx, 4, MS5607_TIMEOUT);
 	__enable_irq();	 //re enable interrupts
 	MS5607_chip_release(altimeter);
 
@@ -309,37 +354,4 @@ uint32_t MS5607_read_from_adc(MS5607_Altimeter *altimeter) {
 	return ((((uint32_t) rx[1] << 8) + (uint32_t) rx[2]) << 8) + (uint32_t) rx[3];
 }
 
-/**
- * Private helper function to help generate the correct ADC conversion command,
- * based on the oversampling rate.
- *
- * The output of this function is to be bitewise OR-ed to
- * MS5607_ADC_CONVERT_BASE_CMD, and to either MS5607_ADC_CONVERT_D1_CMD
- * or MS5607_ADC_CONVERT_D2_CMD to generate a complete ADC conversion command.
- *
- * @param altimeter         	<MS5607_Altimeter*>         Struct to store altimeter settings and constants
- * @retval An 8 bit number representing the bits in the ADC conversion command that depend on the OSR
- */
-uint8_t MS5607_get_adc_conversion_cmd_OSR(MS5607_Altimeter* altimeter) {
-	switch (altimeter->OSR) {
-		case OSR_256:
-			return MS5607_ADC_CONVERT_OSR_256_CMD;
-			break;
-		case OSR_512:
-			return MS5607_ADC_CONVERT_OSR_512_CMD;
-			break;
-		case OSR_1024:
-			return MS5607_ADC_CONVERT_OSR_1024_CMD;
-			break;
-		case OSR_2048:
-			return MS5607_ADC_CONVERT_OSR_2048_CMD;
-			break;
-		case OSR_4096:
-			return MS5607_ADC_CONVERT_OSR_4096_CMD;
-			break;
-		default:
-			// Use the OSR with the shortest conversion time by default
-			return MS5607_ADC_CONVERT_OSR_256_CMD;
-			break;
-	}
-}
+#endif	// end SPI include protection
