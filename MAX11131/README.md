@@ -1,6 +1,12 @@
-# User Guide (LAST UPDATED: July 11, 2020)
+# User Guide (LAST UPDATED: August 10, 2020)
 
 [MAX11131 Technical Datasheet](https://datasheets.maximintegrated.com/en/ds/MAX11129-MAX11132.pdf)
+[MAX11131BOB Breakout Board Datasheet](https://datasheets.maximintegrated.com/en/ds/MAX11131BOB.pdf)
+
+Important note for MAX11131BOB breakout board users: the MAX11131BOB dev board 
+connects analog input 15 to REF- by default. To configure it to use AIN15, cut the
+jumper J15 and apply analog input at header H2. This can be found on the datasheet
+on the [MAX11131BOB datasheet.](https://datasheets.maximintegrated.com/en/ds/MAX11131BOB.pdf)
 
 ## Pin Terminology
 
@@ -70,28 +76,30 @@ typedef struct GPIO_MAX11131_Pinfo {
 	uint8_t MAX11131_CHANNELS[16];		// Channel Identification Numbers
 } GPIO_MAX11131_Pinfo;
 ```
-3. Once ADC settings are configured, call `init_adc(SPI_HandleTypeDef* SPI_BUS, GPIO_MAX11131_Pinfo *pins)` on each ADC struct, making sure to pass the correct `SPI BUS`, `GPIO_MAX11131_Pinfo` configuration variable. This initializes, by default, channels 0-13.
+3. Once ADC settings are configured, call `init_adc(SPI_HandleTypeDef* SPI_BUS, GPIO_MAX11131_Pinfo *pins)` on each ADC struct, making sure to pass the correct `SPI BUS`, `GPIO_MAX11131_Pinfo` configuration variable. This initializes, by default, 
+channels 0-13,15. Channel 14 is not initialized because it will be used for the
+CNVST pin in the Custom Internal Mode. Therefore, channel 14 will always read 0.
 
 4. To read current ADC values, call `read_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo, uint16_t* adc_out)`. The adc_out array that you pass in
-must be of size 14 to guarantee proper behavior.
+must be of size 16 to guarantee proper behavior.
 
 ### Sample ADC Initialization Code
 
-Here is all of the sample code needed to read from channels 0-13 on an adc
+Here is all of the sample code needed to read from channels 0-13, 15 on an adc
 that is connected to SPI 1. The pin assignment names are macros assigned 
 by STM32CubeIDE to the actual micro pins.
 
 ```
 MX_SPI1_Init();                 // initializes SPI1
-uint16_t adc_values[14] = {0};  // array for receiving adc conversions
+uint16_t adc_values[16] = {0};  // array for receiving adc conversions
 
 GPIO_MAX11131_Pinfo adc_pins;
 adc_pins.MAX11131_CS_PORT 		= SPI_ADC0_CS_GPIO_Port;
 adc_pins.MAX11131_EOC_PORT		= SPI_EOC_GPIO_Port;
-adc_pins.MAX11131_CNVST_PORT		= SPI_CNVST_GPIO_Port;
+adc_pins.MAX11131_CNVST_PORT	= SPI_CNVST_GPIO_Port;
 adc_pins.MAX11131_CS_ADDR 		= SPI_ADC0_CS_Pin;
 adc_pins.MAX11131_EOC_ADDR		= SPI_EOC_Pin;
-adc_pins.MAX11131_CNVST_ADDR		= SPI_CNVST_Pin;
+adc_pins.MAX11131_CNVST_ADDR	= SPI_CNVST_Pin;
 init_adc(&hspi1, &adc_pins);
 
 read_adc(&hspi1, &adc_pins, adc_values);
@@ -101,18 +109,21 @@ read_adc(&hspi1, &adc_pins, adc_values);
 
 ### Test Procedure (DO THIS EVERYTIME YOU EDIT THIS LIBRARY!)
 
-To verify that adc channels 0-13 are working correctly in Custom Internal mode, 
-repeat the following procedure below:
+To verify that adc channels 0-13, 15 are working correctly in Custom Internal mode, 
+repeat the following procedure below. It is important to note that the MAX11131BOB 
+connects analog input 15 to REF- by default. To configure it to use AIN15, cut the
+jumper J15 and apply analog input at header H2. This can be found on the datasheet
+on the [MAX11131BOB datasheet.](https://datasheets.maximintegrated.com/en/ds/MAX11131BOB.pdf)
 
 1. Setup a timer based interrupt that counts up and is triggered every 1-2 seconds.
 2. In the timer interrupt handler, toggle as many output pins from the main
     microcontroller to each ADC_in pin. Ideally, adjacent pins should be configured
     to always have opposite states. In addition, I voltage divided some of the 
     pins and determined roughly what counts I should be expecting for those pins.
-3. Initialize the microcontroller to read from channels 0-13 on the ADC. Additionally,
-    it is helpful to initialize the ADC values array as a global var in order to
-    view from the live expressions tab in STM32CubeIDE. More information on how
-    to setup live expressions can be found at this [link.](https://www.youtube.com/watch?v=Nyml66k_Ppk)
+3. Initialize the microcontroller to read from channels 0-13, 15 on the ADC.
+    Additionally, it is helpful to initialize the ADC values array as a global var 
+    in order to view from the live expressions tab in STM32CubeIDE. More information 
+    on how to setup live expressions can be found at this [link.](https://www.youtube.com/watch?v=Nyml66k_Ppk)
 4. Observe that each adc value in the array match what is expected. Note: the adc
     values are currently in counts, so some additional conversions may be needed.
 
