@@ -1,5 +1,6 @@
 # MS5607-02BA Barometric Pressure Sensor / Altimeter
 [Link to datasheet](https://www.te.com/commerce/DocumentDelivery/DDEController?Action=srchrtrv&DocNm=MS5607-02BA03&DocType=Data+Sheet&DocLang=English)
+
 This repository contains the MASA firmware library for the MS5607 altimeter. The altimeter supplies pressure and temperature, which is then converted to altitude according to the 1976 U.S. Standard Atmosphere model.
 
 * Operating pressure range: 10 mbar to 1200 mbar

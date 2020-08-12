@@ -11,8 +11,9 @@
  * Operating pressure range: 10 mbar to 1200 mbar
  * Operating temperature range: -40 dg C to 85 dg C
  *
- * The altimeter supplies pressure and temperature, which is then converted to
- * altitude according to the 1976 U.S. Standard Atmosphere model.
+ * The altimeter supplies pressure and temperature, which is then
+ * calibrated and converted to altitude according to the 1976 US
+ * Standard Atmosphere model.
  * 
  * =================================================================
  * EXAMPLE CODE & IMPLEMENTATION NOTES
@@ -24,12 +25,15 @@
  * 		MS5607_initialization(&altimeter, ...)
  *
  * 		while(1) {
- * 			MS5607_first_conversion(&altimeter)
- * 			delay MS5607_get_adc_conversion_time(&altimeter)
- * 			MS5607_second_conversion(&altimeter)
- * 			delay MS5607_get_adc_conversion_time(&altimeter)
+ *			MS5607_convert_pressure(&altimeter);
+ *			delay MS5607_get_adc_conversion_time(&altimeter);
+ *			MS5607_read_raw_pressure(&altimeter);
  *
- *			int MS5607_calculate_altitude(&altimeter);
+ *			MS5607_convert_temperature(&altimeter);
+ *			delay MS5607_get_adc_conversion_time(&altimeter);
+ *			MS5607_read_raw_temperature(&altimeter);
+ *
+ *			int altitude = MS5607_calculate_altitude(&altimeter);
  * 		}
  *
  * For debugging, the function MS5607_calculate_pressure_and_temperature()
@@ -42,7 +46,9 @@
  *
  * A pointer to the MS5607_Altimeter struct must be passed to each function
  * along with any other necessary parameters. The delays should be implemented
- * with STM32 Timers.
+ * with STM32 Timers. This delay can get up to 10 ms (datasheet pg 3).
+ * The device's chip select line is inactive during this conversion, and
+ * interrupts can function normally while it occurs.
  *
  * =================================================================
  * SPI SETTINGS
@@ -63,10 +69,12 @@
  *
  * =================================================================
  *
+ * TODO testing and implementation docs
+ *
  * Nathaniel Kalantar (nkalan@umich.edu)
  * Michigan Aeronautical Science Association
  * Created May 3, 2020
- * Last edited August 11, 2020
+ * Last edited August 12, 2020
  */
 
 #ifndef MS5607_H	// begin header include protection
@@ -99,8 +107,8 @@ typedef struct {
 	GPIO_TypeDef *cs_base;        // Chip select GPIO base, specified by user
 	uint16_t cs_pin;              // Chip select GPIO pin, specified by user
 	uint16_t constants[8]; 				// Calibration constants to be read in during second_initialization()
-	int32_t D1; 									// Uncompensated digital pressure to be read in from the altimeter ADC
-	int32_t D2; 									// Uncompensated digital temperature to be read in from the altimeter ADC
+	uint32_t D1; 									// Uncompensated digital pressure to be read in from the altimeter ADC
+	uint32_t D2; 									// Uncompensated digital temperature to be read in from the altimeter ADC
 } MS5607_Altimeter;
 
 /**
@@ -111,7 +119,8 @@ typedef struct {
  * This function includes a 3 ms delay.
  *
  * This function must be run once after starting up the microcontroller, and
- * before running all other functions.
+ * before running all other MS5607 functions. If you are using multiple
+ * altimeters, it must be run once for each MS5607_Altimeter struct.
  *
  * @param altimeter         	<MS5607_Altimeter*>         Struct to store altimeter settings and constants
  * @param OSR_in					   	<MS5607_OversamplingRate>		OSR setting for pressure/temperature readings
@@ -119,7 +128,7 @@ typedef struct {
  * @param cs_base           	<GPIO_TypeDef*>             GPIO pin array the chip select pin is on
  * @param cs_pin            	<uint16_t>                  GPIO pin connected to altimeter chip select
  */
-void MS5607_altimeter_init(MS5607_Altimeter *altimeter,
+HAL_StatusTypeDef MS5607_altimeter_init(MS5607_Altimeter *altimeter,
     MS5607_OversamplingRate OSR_in, SPI_HandleTypeDef *SPI_bus_in,
     GPIO_TypeDef *cs_base_in, uint16_t cs_pin_in);
 
@@ -130,21 +139,48 @@ void MS5607_altimeter_init(MS5607_Altimeter *altimeter,
  * requires a delay afterwards, and the ADC will return 0 if you try to
  * read from the ADC before the conversion is finished.
  *
+ * MS5607_read_raw_pressure() should be run after this delay.
+ *
  * @param altimeter         	<MS5607_Altimeter*>         Struct to store altimeter settings and constants
  */
-void MS5607_first_conversion(MS5607_Altimeter *altimeter);
+HAL_StatusTypeDef MS5607_convert_pressure(MS5607_Altimeter *altimeter);
 
 /**
- * Reads digital pressure from the altimeter's ADC and commands the MS5607's
- * ADC to convert the digital temperature data.
+ * Reads uncalibrated digital pressure from the altimeter's ADC.
  *
- * This function must be run after MS5607_first_conversion() followed by
- * a delay specified by MS5607_get_adc_conversion_time. The ADC will return
+ * This function must be run after MS5607_convert_pressure() followed by
+ * a delay specified by MS5607_get_adc_conversion_time(). The ADC will return
  * 0 if you try to read from the ADC before the conversion is finished.
- * 
+ *
+ * @param altimeter         	<MS5607_Altimeter*>         Struct to store altimeter settings and constants
+ * @retval SPI status code
+ */
+HAL_StatusTypeDef MS5607_read_raw_pressure(MS5607_Altimeter *altimeter);
+
+/**
+ * Commands the MS5607's ADC to convert the digital temperature data.
+ *
+ * This function does not require any delay before running. However, it
+ * requires a delay afterwards, and the ADC will return 0 if you try to
+ * read from the ADC before the conversion is finished.
+ *
+ * MS5607_read_raw_temperature() should be run after this delay.
+ *
  * @param altimeter         	<MS5607_Altimeter*>         Struct to store altimeter settings and constants
  */
-void MS5607_second_conversion(MS5607_Altimeter *altimeter);
+HAL_StatusTypeDef MS5607_convert_temperature(MS5607_Altimeter *altimeter);
+
+/**
+ * Reads uncalibrated digital temperature from the altimeter's ADC.
+ *
+ * This function must be run after MS5607_convert_temperature() followed by
+ * a delay specified by MS5607_get_adc_conversion_time(). The ADC will return
+ * 0 if you try to read from the ADC before the conversion is finished.
+ *
+ * @param altimeter         	<MS5607_Altimeter*>         Struct to store altimeter settings and constants
+ * @retval SPI status code
+ */
+HAL_StatusTypeDef MS5607_read_raw_temperature(MS5607_Altimeter *altimeter);
 
 /**
  * Returns the maximum ADC conversion time in milliseconds, specified on
@@ -189,13 +225,11 @@ void MS5607_calculate_pressure_and_temperature(MS5607_Altimeter *altimeter,
  * 1976 US standard atmosphere model. It uses a lookup table array generated
  * by a MATLAB script to find the correct altitude.
  *
- * This function must be run after MS5607_second_conversion() followed by
- * a delay specified by MS5607_get_adc_conversion_time. The output will
- * be incorrect if the delay is not long enough.
- *
- * TODO: Figure out ranges for pressure
+ * This function should only be run after raw pressure and raw temperature have
+ * already been read.
  *
  * @param altimeter         	<MS5607_Altimeter*>         Struct to store altimeter settings and constants
+ * @retval Altitude AMSL in meters
  */
 uint32_t MS5607_calculate_altitude(MS5607_Altimeter *altimeter);
 
