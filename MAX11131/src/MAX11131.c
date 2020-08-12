@@ -22,7 +22,7 @@
  *  @param state        <GPIO_PinState>        state of GPIO PIN
  *                            Note:
  */
-static void set_adc(GPIO_MAX11131_Pinfo *pinfo, GPIO_PinState state);
+static inline void set_adc(GPIO_MAX11131_Pinfo *pinfo, GPIO_PinState state);
 
 /**
  *  Cycles CNVST pin to wakeup ADC for adc conversions
@@ -30,7 +30,7 @@ static void set_adc(GPIO_MAX11131_Pinfo *pinfo, GPIO_PinState state);
  *  @param pinfo        <GPIO_MAX11131_Pinfo*>   contains ADC pin defs
  *
  */
-static void cycle_cnvst(GPIO_MAX11131_Pinfo *pinfo);
+static inline void cycle_cnvst(GPIO_MAX11131_Pinfo *pinfo);
 
 /**
  * 	Convenience function for updating GPIO_MAX11131_Pinfo to read from pins 0-13
@@ -47,7 +47,7 @@ static void configure_read_adc_all(GPIO_MAX11131_Pinfo *pinfo);
  *  @param tx           <uint8_t*> bytes to transmit (expected size 2)
  *  @param adc_out      <uint8_t*> bytes to receive (expected size 2)
  */
-static void write_adc_reg(SPI_HandleTypeDef *SPI_BUS, uint8_t *tx, uint8_t *rx);
+static inline void write_adc_reg(SPI_HandleTypeDef *SPI_BUS, uint8_t *tx, uint8_t *rx);
 
 /**
  *  Private function for packing 16 bit command to 8 bit chunks
@@ -56,7 +56,7 @@ static void write_adc_reg(SPI_HandleTypeDef *SPI_BUS, uint8_t *tx, uint8_t *rx);
  *  @param tx           <uint8_t*> arr of 16 bit command MSB first (size 2)
  *
  */
-static void package_cmd(uint16_t cmd, uint8_t *tx);
+static inline void package_cmd(uint16_t cmd, uint8_t *tx);
 
 /*-------------------------Public Interface Functions-------------------------*/
 
@@ -90,19 +90,19 @@ void init_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo) {
     configure_read_adc_all(pinfo);
     set_read_adc_range(SPI_BUS, pinfo);
 
-    set_adc(pinfo, GPIO_PIN_RESET);
     package_cmd(ADC_CONFIG_REG, tx);
     __disable_irq();
-    if (HAL_SPI_Transmit(SPI_BUS, tx, 2, 1) == HAL_TIMEOUT) {}
-    __enable_irq();
-    set_adc(pinfo, GPIO_PIN_SET);
-
     set_adc(pinfo, GPIO_PIN_RESET);
+    if (HAL_SPI_Transmit(SPI_BUS, tx, 2, 1) == HAL_TIMEOUT) {}
+    set_adc(pinfo, GPIO_PIN_SET);
+    __enable_irq();
+
     package_cmd(ADC_MODE_CNTL_REG, tx);
     __disable_irq();
+    set_adc(pinfo, GPIO_PIN_RESET);
     if (HAL_SPI_Transmit(SPI_BUS, tx, 2, 1) == HAL_TIMEOUT) {}
-    __enable_irq();
     set_adc(pinfo, GPIO_PIN_SET);
+    __enable_irq();
 }
 
 void read_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo,
@@ -135,11 +135,11 @@ void read_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo,
     uint8_t rx[2] = {0};
     uint8_t tx[2] = {0};
     for (uint8_t i = 0; i < pinfo->NUM_CHANNELS; ++i) {
-        set_adc(pinfo, GPIO_PIN_RESET);
         __disable_irq();
+        set_adc(pinfo, GPIO_PIN_RESET);
         write_adc_reg(SPI_BUS, tx, rx);
-        __enable_irq();
         set_adc(pinfo, GPIO_PIN_SET);
+        __enable_irq();
 
         uint16_t adc_counts = ((rx[0]<<8)|rx[1]) & 0x0FFF;
         uint16_t channelId = (rx[0] >> 4) & 0x0F;
@@ -178,19 +178,19 @@ void set_read_adc_range(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo) 
     /* Set ADC to custom scan channel range */
 
     /* Transmit custom channels to send data from */
-    set_adc(pinfo, GPIO_PIN_RESET);
     package_cmd(SET_SCAN_REGISTER_0, tx);
     __disable_irq();
-    if (HAL_SPI_Transmit(SPI_BUS, tx, 2, 1) == HAL_TIMEOUT) {}
-    __enable_irq();
-    set_adc(pinfo, GPIO_PIN_SET);
-
     set_adc(pinfo, GPIO_PIN_RESET);
+    if (HAL_SPI_Transmit(SPI_BUS, tx, 2, 1) == HAL_TIMEOUT) {}
+    set_adc(pinfo, GPIO_PIN_SET);
+    __enable_irq();
+
     package_cmd(SET_SCAN_REGISTER_1, tx);
     __disable_irq();
+    set_adc(pinfo, GPIO_PIN_RESET);
     if (HAL_SPI_Transmit(SPI_BUS, tx, 2, 1) == HAL_TIMEOUT) {}
-    __enable_irq();
     set_adc(pinfo, GPIO_PIN_SET);
+    __enable_irq();
 }
 
 void configure_read_adc_all(GPIO_MAX11131_Pinfo *pinfo) {
