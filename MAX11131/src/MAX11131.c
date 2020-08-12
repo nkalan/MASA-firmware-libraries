@@ -38,7 +38,7 @@ static inline void cycle_cnvst(GPIO_MAX11131_Pinfo *pinfo);
  * 	@param pinfo        <GPIO_MAX11131_Pinfo*>   contains ADC pin defs
  *
  */
-static void configure_read_adc_all(GPIO_MAX11131_Pinfo *pinfo);
+static inline void configure_read_adc_all(GPIO_MAX11131_Pinfo *pinfo);
 
 /**
  *	Private function for transmit and receiving bytes to selected ADC
