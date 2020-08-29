@@ -51,6 +51,10 @@ void init_flash(W25N01GV_Flash *flash, SPI_HandleTypeDef *SPI_bus_in,
 
 HAL_StatusTypeDef write_to_flash(W25N01GV_Flash *flash, uint8_t *data, uint32_t size);
 
+void read_address_pointer(W25N01GV_Flash *flash);
+
+void set_address_pointer(W25N01GV_Flash *flash, uint16_t page_adr, uint16_t column_adr);
+
 void reset_flash_read_pointer(W25N01GV_Flash *flash);
 
 HAL_StatusTypeDef read_next_2KB_from_flash(W25N01GV_Flash *flash, uint8_t *buffer);
@@ -68,10 +72,10 @@ uint8_t erase_flash(W25N01GV_Flash *flash);
 //void lock_flash(W25N01GV_Flash *flash);
 
 
-HAL_StatusTypeDef write_bytes_to_page(W25N01GV_Flash *flash, uint8_t *buffer,
+uint8_t write_bytes_to_page(W25N01GV_Flash *flash, uint8_t *buffer,
     uint16_t buffer_size, uint16_t page_adr, uint16_t column_adr);
 
-HAL_StatusTypeDef read_bytes_from_page(W25N01GV_Flash *flash, uint8_t *buffer,
+W25N01GV_ECC_Status read_bytes_from_page(W25N01GV_Flash *flash, uint8_t *buffer,
 		uint16_t buffer_size, uint16_t page_num, uint16_t column_num);
 
 

@@ -604,6 +604,7 @@ HAL_StatusTypeDef read_flash_buffer(W25N01GV_Flash *flash, uint8_t *buffer,
  *
  * It should be used in buffer mode.
  * TODO: maybe enable buffer mode at the start? or not worth it?
+ * probably not worth it
  *
  * @param buffer <uint8_t*> Data buffer to read data into
  * @param num_bytes <uint16_t> Number of bytes to read in
@@ -611,15 +612,15 @@ HAL_StatusTypeDef read_flash_buffer(W25N01GV_Flash *flash, uint8_t *buffer,
  * 	read in (2112 - column_adr) bytes
  * @param page_adr <uint16_t> The page to read data from
  * @param column_adr <uint16_t> The column to start reading data from
- * @retval SPI status code
+ * @retval ECC Status
  */
-HAL_StatusTypeDef read_bytes_from_page(W25N01GV_Flash *flash, uint8_t *buffer, uint16_t num_bytes,
+W25N01GV_ECC_Status read_bytes_from_page(W25N01GV_Flash *flash, uint8_t *buffer, uint16_t num_bytes,
 		uint16_t page_adr, uint16_t column_adr) {
 
-	HAL_StatusTypeDef spi_status_1 = load_page(flash, page_adr);
-	HAL_StatusTypeDef spi_status_2 = read_flash_buffer(flash, buffer, num_bytes, column_adr);
+	load_page(flash, page_adr);
+	read_flash_buffer(flash, buffer, num_bytes, column_adr);
 
-	return spi_status_1 | spi_status_2;
+	return get_ECC_status(flash);
 }
 
 /**
@@ -634,18 +635,21 @@ HAL_StatusTypeDef read_bytes_from_page(W25N01GV_Flash *flash, uint8_t *buffer, u
  * @param num_bytes <uint16_t> Number of bytes to write to flash
  * @param page_adr <uint16_t> Page to write data to
  * @param column_adr <uint16_t> Column of page to start writing data at
- * @retval SPI status code
+ * @retval Write failure status bit
  */
-HAL_StatusTypeDef write_bytes_to_page(W25N01GV_Flash *flash, uint8_t *data, uint16_t num_bytes,
+uint8_t write_bytes_to_page(W25N01GV_Flash *flash, uint8_t *data, uint16_t num_bytes,
 		uint16_t page_adr, uint16_t column_adr) {
-	HAL_StatusTypeDef spi_status_1, spi_status_2, spi_status_3, spi_status_4;
 
-	spi_status_1 = enable_write(flash);
-	spi_status_2 = write_page_to_buffer(flash, data, num_bytes, column_adr);
-	spi_status_3 = program_buffer_to_memory(flash, page_adr);
-	spi_status_4 = disable_write(flash);	//just in case ;)
+	unlock_flash(flash);
+	enable_write(flash);
 
-	return spi_status_1 | spi_status_2 | spi_status_3 | spi_status_4;
+	write_page_to_buffer(flash, data, num_bytes, column_adr);
+	program_buffer_to_memory(flash, page_adr);
+
+	disable_write(flash);	//just in case ;)
+	lock_flash(flash);
+
+	return get_write_failure_status(flash);
 }
 
 /**
@@ -741,6 +745,18 @@ void read_address_pointer(W25N01GV_Flash *flash) {
 	//	flash->current_page = 64;
 }
 
+void set_address_pointer(W25N01GV_Flash *flash, uint16_t page_adr, uint16_t column_adr) {
+	erase_block(flash, 0);
+
+	uint8_t current_page_8bit_array[2] = UNPACK_UINT16_TO_2_BYTES(flash->current_page);
+	uint8_t next_free_column_8bit_array[2] = UNPACK_UINT16_TO_2_BYTES(flash->next_free_column);
+
+	uint8_t address_info[4] = { current_page_8bit_array[0], current_page_8bit_array[1],
+			next_free_column_8bit_array[0], next_free_column_8bit_array[1] };
+
+	write_bytes_to_page(flash, address_info, 4, 0, 0);
+}
+
 /**
  * Initializes the flash memory chip with SPI and pin information, and sets
  * some parameters to an initial state.
@@ -758,16 +774,11 @@ void init_flash(W25N01GV_Flash *flash, SPI_HandleTypeDef *SPI_bus_in,
 	enable_buffer_mode(flash);  // -IG models start with buffer mode by default, -IT models don't
 
 	// Read in the address of the next free byte
-	read_address_pointer(flash);
-	/*
-	uint8_t address_buffer[4];  // Address is stored at the first 4 bytes of flash
-	read_bytes_from_page(flash, address_buffer, 4, 0, 0);
-	flash->current_page = PACK_2_BYTES_TO_UINT16(address_buffer);
-	flash->next_free_column = PACK_2_BYTES_TO_UINT16(address_buffer + 2);
-	*/
+	//read_address_pointer(flash); TODO uncomment this when ready
 
 	//TODO fix when it has no memory left: what to do? does next_column work fine?
 	// i think it does, but double check this
+	// UPDATE: i think i fixed it TODO: test
 
 	//
 }
@@ -782,8 +793,9 @@ void init_flash(W25N01GV_Flash *flash, SPI_HandleTypeDef *SPI_bus_in,
  *
  * @param data <uint8_t*> Array of data to write to flash
  * @param num_bytes <uint32_t> Number of bytes to write to flash
+ * @retval 0 if it wrote successfully, nonzero int if something went wrong
  */
-HAL_StatusTypeDef write_to_flash(W25N01GV_Flash *flash, uint8_t *data, uint32_t num_bytes) {
+uint8_t write_to_flash(W25N01GV_Flash *flash, uint8_t *data, uint32_t num_bytes) {
 
 	// if there's not enough space, truncate the data
 	uint32_t bytes_remaining = get_bytes_remaining(flash);
@@ -791,10 +803,10 @@ HAL_StatusTypeDef write_to_flash(W25N01GV_Flash *flash, uint8_t *data, uint32_t 
 		num_bytes = bytes_remaining;
 
 	uint32_t write_counter = 0;  // track how many bytes have been written so far
-	HAL_StatusTypeDef spi_status = HAL_OK;  // track spi errors
+	uint8_t failure_status = 0;  // track write and erase errors
 
 	// Disable write protection
-	unlock_flash(flash);
+	//unlock_flash(flash);
 
 	while (write_counter < num_bytes) {
 
@@ -804,7 +816,7 @@ HAL_StatusTypeDef write_to_flash(W25N01GV_Flash *flash, uint8_t *data, uint32_t 
 			num_bytes_to_write_on_page = PAGE_MAIN_ARRAY_NUM_BYTES - flash->next_free_column;
 
 		// write the array (or a part of it if it's too long for one page) to flash
-		spi_status |= write_bytes_to_page(flash, data + write_counter,
+		failure_status |= write_bytes_to_page(flash, data + write_counter,
 				num_bytes_to_write_on_page,	flash->current_page, flash->next_free_column);
 
 		write_counter += num_bytes_to_write_on_page;
@@ -824,21 +836,12 @@ HAL_StatusTypeDef write_to_flash(W25N01GV_Flash *flash, uint8_t *data, uint32_t 
 	}
 
 	// write the next free address into the first bytes of flash.
-	// requires splitting the struct members into 8bit numbers
-	erase_block(flash, 0);
-
-	uint8_t current_page_8bit_array[2] = UNPACK_UINT16_TO_2_BYTES(flash->current_page);
-	uint8_t next_free_column_8bit_array[2] = UNPACK_UINT16_TO_2_BYTES(flash->next_free_column);
-
-	uint8_t address_info[4] = { current_page_8bit_array[0], current_page_8bit_array[1],
-			next_free_column_8bit_array[0], next_free_column_8bit_array[1] };
-
-	write_bytes_to_page(flash, address_info, 4, 0, 0);
+	//set_address_pointer(flash, flash->current_page, flash->next_free_column); TODO uncomment this when ready
 
 	// Re enable write protection
-	lock_flash(flash);
+	//lock_flash(flash);
 
-	return spi_status;
+	return failure_status;
 }
 
 /**
@@ -882,25 +885,22 @@ HAL_StatusTypeDef read_next_2KB_from_flash(W25N01GV_Flash *flash, uint8_t *buffe
  * 	block failed to erase
  */
 uint8_t erase_flash(W25N01GV_Flash *flash) {
-	uint8_t erase_failure = 0;
+	uint8_t failure_status = 0;
 
 	// Loop through every block to erase them one by one
 	for (uint16_t block_count = 0; block_count < TOTAL_NUM_BLOCKS; block_count++) {
 		erase_block(flash, block_count * PAGES_PER_BLOCK);  // address of first page in each block
 
 		// check if the erase failed
-		erase_failure |= get_erase_failure_status(flash);
+		failure_status |= get_erase_failure_status(flash);
 	}
-
-	// Reset the address write pointer in flash memory
-	uint8_t address_info[4] = { 0, 64, 0, 0 };
-	write_bytes_to_page(flash, address_info, 4, 0, 0);
 
 	// Reset the address pointer - first block (64 pages) is reserved by this firmware
 	flash->current_page = 64;
 	flash->next_free_column = 0;
+	//set_address_pointer(flash, 64, 0); TODO uncomment this when fixed
 
-	return erase_failure;
+	return failure_status;
 }
 
 #endif	// end SPI include protection
