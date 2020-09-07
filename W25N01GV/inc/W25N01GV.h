@@ -5,7 +5,7 @@
  * Nathaniel Kalantar (nkalan@umich.edu)
  * Michigan Aeronautical Science Association
  * Created July 20, 2020
- * Last edited August 2, 2020
+ * Last edited September 6, 2020
  */
 
 #ifndef W25N01GV_H	// begin header include protection
@@ -14,8 +14,6 @@
 #include "stm32f4xx_hal.h"
 
 #ifdef HAL_SPI_MODULE_ENABLED	// begin SPI include protection
-
-const uint16_t TOTAL_PAGES_AVAILABLE = 65472;
 
 typedef struct {
 	SPI_HandleTypeDef *SPI_bus;   // SPI struct, specified by user
@@ -61,16 +59,19 @@ HAL_StatusTypeDef read_next_2KB_from_flash(W25N01GV_Flash *flash, uint8_t *buffe
 
 HAL_StatusTypeDef reset_flash(W25N01GV_Flash *flash);
 
+uint8_t read_status_register(W25N01GV_Flash *flash, uint8_t register_adr);
+
 //W25N01GV_ECC_Status get_ECC_status(W25N01GV_Flash *flash); TODO maybe call this in the read function?
 
 //uint8_t get_write_failure_status(W25N01GV_Flash *flash);
 
 uint8_t erase_flash(W25N01GV_Flash *flash);
 
-//void unlock_flash(W25N01GV_Flash *flash);
+void unlock_flash(W25N01GV_Flash *flash);
 
-//void lock_flash(W25N01GV_Flash *flash);
+void lock_flash(W25N01GV_Flash *flash);
 
+uint8_t flash_ID_is_correct(W25N01GV_Flash *flash);
 
 uint8_t write_bytes_to_page(W25N01GV_Flash *flash, uint8_t *buffer,
     uint16_t buffer_size, uint16_t page_adr, uint16_t column_adr);
@@ -78,6 +79,9 @@ uint8_t write_bytes_to_page(W25N01GV_Flash *flash, uint8_t *buffer,
 W25N01GV_ECC_Status read_bytes_from_page(W25N01GV_Flash *flash, uint8_t *buffer,
 		uint16_t buffer_size, uint16_t page_num, uint16_t column_num);
 
+uint8_t BBM_look_up_table_is_full(W25N01GV_Flash *flash);
+
+void read_BBM_look_up_table(W25N01GV_Flash *flash, uint16_t *logical_block_addresses, uint16_t *physical_block_addresses);
 
 #endif	// end SPI include protection
 #endif	// end header include protection

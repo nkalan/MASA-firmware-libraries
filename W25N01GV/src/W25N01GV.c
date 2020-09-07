@@ -30,10 +30,10 @@
  * Nathaniel Kalantar (nkalan@umich.edu)
  * Michigan Aeronautical Science Association
  * Created July 20, 2020
- * Last edited August 2, 2020
+ * Last edited September 5, 2020
  */
 
-//#include "W25N01GV.h"
+#include "W25N01GV.h"
 #ifdef HAL_SPI_MODULE_ENABLED  // begin SPI include protection
 
 //#include <math.h>
@@ -47,11 +47,11 @@ const uint8_t W25N01GV_CS_INACTIVE                    = GPIO_PIN_SET;
 
 const uint8_t SPI_TIMEOUT                             = 0xFF;
 
-const uint32_t TOTAL_NUM_PAGES                        = 65536;
 const uint16_t PAGE_MAIN_ARRAY_NUM_BYTES              = 2048;
 const uint16_t PAGE_SPARE_ARRAY_NUM_BYTES             = 64;
 const uint16_t PAGE_TOTAL_NUM_BYTES                   = 2112;  // main array + spare array
 
+const uint32_t TOTAL_NUM_PAGES                        = 65536;
 const uint16_t PAGES_PER_BLOCK                        = 64;
 const uint16_t TOTAL_NUM_BLOCKS                       = 1024;  // 1024 blocks with 64 pages each = 65536 pages
 
@@ -337,14 +337,25 @@ void unlock_flash(W25N01GV_Flash *flash) {
  * changing the block protect bits in the Protection register to a locked
  * configuration. It does not change the other bits in the register.
  *
+ * fix this function - first remove the bits, then add them back on
+ * TODO implemented, now test this fix
+ *
  * datasheet pg 15, 21
  */
 void lock_flash(W25N01GV_Flash *flash) {
 	// Read the current contents of the protection register
 	uint8_t protection_register = read_status_register(flash, SR1_PROTECTION_REGISTER_ADDRESS);
 
-	// Enabling bits BP3 and BP2 will lock the entire 128MB memory array
-	uint8_t locked_protection_register = protection_register
+	// Enabling bits BP3 and BP2 and disabling the others will lock the entire 128MB memory array
+	// First remove all protection bits
+	uint8_t locked_protection_register = protection_register & ~(SR1_BLOCK_PROTECT_BP3
+			| SR1_BLOCK_PROTECT_BP2
+			| SR1_BLOCK_PROTECT_BP1
+			| SR1_BLOCK_PROTECT_BP0
+			| SR1_BLOCK_PROTECT_TB);
+
+	// Then add on the bits that are needed to lock flash
+	locked_protection_register = protection_register
 			| (SR1_BLOCK_PROTECT_BP3 | SR1_BLOCK_PROTECT_BP2);
 
 	write_status_register(flash, SR1_PROTECTION_REGISTER_ADDRESS, locked_protection_register);
@@ -438,51 +449,6 @@ HAL_StatusTypeDef program_buffer_to_memory(W25N01GV_Flash *flash, uint16_t page_
 }
 
 /**
- * Erases all data in the block containing the specified page address.
- * Each block has 64 pages, for a total of 128KB. Data is erased by setting
- * each byte to 0xFF.
- *
- * The Write Enable Latch bit is first set high, and is automatically set low
- * after the erase process finishes.
- *
- * If the block containing the specified page address is protected by the
- * Block Protect bits in the protection register, then the erase command
- * will not execute.
- *
- * It takes up to 10 milliseconds to complete the process, but typically takes
- * 2 milliseconds (datasheet pg 59). If the command executes successfully,
- * the device will enter a BUSY state until it finishes.
- *
- * WARNING: Don't use this function unless you know what you're doing.
- *
- * Note: the input parameter is the address of a page in the block you want to
- * erase (between 0 and 2^16-1), not the block number (0 to 2023).
- *
- * @param page_adr <uint16_t> Address of the page whose block should be erased
- * @retval SPI error code
- */
-HAL_StatusTypeDef erase_block(W25N01GV_Flash *flash, uint16_t page_adr) {
-
-	while(flash_is_busy(flash));
-
-	HAL_StatusTypeDef spi_status_1, spi_status_2, spi_status_3;
-
-	unlock_flash(flash);
-	spi_status_1 = enable_write(flash);	// Set WEL bit high, it will automatically be set back to 0 after the command executes
-
-	uint8_t page_adr_8bit_array[2] = UNPACK_UINT16_TO_2_BYTES(page_adr);
-	uint8_t tx[4] = {BLOCK_ERASE_128KB, 0, page_adr_8bit_array[0], page_adr_8bit_array[1]};	// 2nd byte unused
-	spi_status_2 = spi_transmit(flash, tx, 4);
-
-	spi_status_3 = disable_write(flash);	// in case the command doesn't execute, if the block is protected
-	lock_flash(flash);
-
-	while (flash_is_busy(flash));  // wait for it to finish erasing
-
-	return spi_status_1 | spi_status_2 | spi_status_3;
-}
-
-/**
  * Returns whether or not the last program write command executed successfully.
  * Reads the status register (SR3) and checks the program failure bit.
  *
@@ -490,6 +456,8 @@ HAL_StatusTypeDef erase_block(W25N01GV_Flash *flash, uint16_t page_adr) {
  * protected part of the memory array (for this firmware, when flash is
  * locked), or if the write enable command is not given before writing.
  * In both cases, the memory array shouldn't be changed.
+ *
+ * TODO maybe integrate this with the write function
  *
  * @retval 0 if write was successful, nonzero int if unsuccessful
  */
@@ -502,11 +470,61 @@ uint8_t get_write_failure_status(W25N01GV_Flash *flash) {
  * Returns whether or not the last erase command executed successfully.
  * Reads the status register (SR3) and checks the erase failure bit.
  *
+ * TODO integrate this with the erase function
+ *
  * @retval 0 if erase was successful, nonzero int if unsuccessful
  */
 uint8_t get_erase_failure_status(W25N01GV_Flash *flash) {
 	uint8_t status_register = read_status_register(flash, SR3_STATUS_REGISTER_ADDRESS);
 	return status_register & SR3_ERASE_FAILURE;
+}
+
+/**
+ * Erases all data in the block containing the specified page address.
+ * Each block has 64 pages, for a total of 128KB. Data is erased by setting
+ * each byte to 0xFF.
+ *
+ * The Write Enable Latch bit is first set high, and is automatically set low
+ * after the erase process finishes.
+ *
+ * If the block containing the specified page address is protected by the
+ * Block Protect bits in the protection register, then the erase command
+ * will not execute.
+ *
+ * TODO add datasheet page
+ *
+ * It takes up to 10 milliseconds to complete the process, but typically takes
+ * 2 milliseconds (datasheet pg 59). If the command executes successfully,
+ * the device will enter a BUSY state until it finishes.
+ *
+ * WARNING: Don't use this function unless you know what you're doing.
+ *
+ * Note: the input parameter is the address of a page in the block you want to
+ * erase (between 0 and 2^16-1), not the block number (0 to 1023).
+ *
+ * TODO: change it to check the erase-fail bit in the status register and return it
+ * TODO write about unlocking/locking in the function header
+ *
+ * @param page_adr <uint16_t> Address of the page whose block should be erased
+ * @retval error code TODO make this more detailed
+ */
+uint8_t erase_block(W25N01GV_Flash *flash, uint16_t page_adr) {
+
+	while(flash_is_busy(flash));
+
+	//unlock_flash(flash);
+	enable_write(flash);	// Set WEL bit high, it will automatically be set back to 0 after the command executes
+
+	uint8_t page_adr_8bit_array[2] = UNPACK_UINT16_TO_2_BYTES(page_adr);
+	uint8_t tx[4] = {BLOCK_ERASE_128KB, 0, page_adr_8bit_array[0], page_adr_8bit_array[1]};	// 2nd byte unused
+	spi_transmit(flash, tx, 4);
+
+	disable_write(flash);	// in case the command doesn't execute, if the block is protected
+	//lock_flash(flash);
+
+	while (flash_is_busy(flash));  // wait for it to finish erasing
+
+	return get_erase_failure_status(flash);
 }
 
 /**
@@ -541,8 +559,6 @@ W25N01GV_ECC_Status get_ECC_status(W25N01GV_Flash *flash) {
  *
  * Uses the address counters in the flash struct to calcluate how much space
  * is currently taken up, then subtracts that from the total available space.
- * The first block is reserved by this firmware, so it's removed from
- * this calculation.
  *
  * @retval Number of free bytes remaining in the flash chip
  */
@@ -640,14 +656,14 @@ W25N01GV_ECC_Status read_bytes_from_page(W25N01GV_Flash *flash, uint8_t *buffer,
 uint8_t write_bytes_to_page(W25N01GV_Flash *flash, uint8_t *data, uint16_t num_bytes,
 		uint16_t page_adr, uint16_t column_adr) {
 
-	unlock_flash(flash);
+	//unlock_flash(flash);
 	enable_write(flash);
 
 	write_page_to_buffer(flash, data, num_bytes, column_adr);
 	program_buffer_to_memory(flash, page_adr);
 
 	disable_write(flash);	//just in case ;)
-	lock_flash(flash);
+	//lock_flash(flash);
 
 	return get_write_failure_status(flash);
 }
@@ -733,30 +749,6 @@ void enable_continuous_mode(W25N01GV_Flash *flash) {
 
 /* Public functions */
 
-void read_address_pointer(W25N01GV_Flash *flash) {
-	uint8_t address_buffer[4];  // Address is stored at the first 4 bytes of flash
-	read_bytes_from_page(flash, address_buffer, 4, 0, 0);
-	flash->current_page = PACK_2_BYTES_TO_UINT16(address_buffer);
-	flash->next_free_column = PACK_2_BYTES_TO_UINT16(address_buffer + 2);
-
-	// if the address read is somehow wrong, make sure the firmware doesn't write
-	// data to the first block, where it will get erased.
-	//if (flash->current_page < 64) TODO check if you need this
-	//	flash->current_page = 64;
-}
-
-void set_address_pointer(W25N01GV_Flash *flash, uint16_t page_adr, uint16_t column_adr) {
-	erase_block(flash, 0);
-
-	uint8_t current_page_8bit_array[2] = UNPACK_UINT16_TO_2_BYTES(flash->current_page);
-	uint8_t next_free_column_8bit_array[2] = UNPACK_UINT16_TO_2_BYTES(flash->next_free_column);
-
-	uint8_t address_info[4] = { current_page_8bit_array[0], current_page_8bit_array[1],
-			next_free_column_8bit_array[0], next_free_column_8bit_array[1] };
-
-	write_bytes_to_page(flash, address_info, 4, 0, 0);
-}
-
 /**
  * Initializes the flash memory chip with SPI and pin information, and sets
  * some parameters to an initial state.
@@ -766,15 +758,12 @@ void init_flash(W25N01GV_Flash *flash, SPI_HandleTypeDef *SPI_bus_in,
 	flash->SPI_bus = SPI_bus_in;
 	flash->cs_base = cs_base_in;
 	flash->cs_pin = cs_pin_in;
-	flash->next_page_to_read = 64;  // start the read pointer at the 2nd block
+	flash->next_page_to_read = 0;
 
 	reset_flash(flash);
 
 	enable_ECC(flash);  // should be enabled by default, but just in case
 	enable_buffer_mode(flash);  // -IG models start with buffer mode by default, -IT models don't
-
-	// Read in the address of the next free byte
-	//read_address_pointer(flash); TODO uncomment this when ready
 
 	//TODO fix when it has no memory left: what to do? does next_column work fine?
 	// i think it does, but double check this
@@ -806,7 +795,7 @@ uint8_t write_to_flash(W25N01GV_Flash *flash, uint8_t *data, uint32_t num_bytes)
 	uint8_t failure_status = 0;  // track write and erase errors
 
 	// Disable write protection
-	//unlock_flash(flash);
+	unlock_flash(flash);
 
 	while (write_counter < num_bytes) {
 
@@ -835,11 +824,8 @@ uint8_t write_to_flash(W25N01GV_Flash *flash, uint8_t *data, uint32_t num_bytes)
 		}
 	}
 
-	// write the next free address into the first bytes of flash.
-	//set_address_pointer(flash, flash->current_page, flash->next_free_column); TODO uncomment this when ready
-
 	// Re enable write protection
-	//lock_flash(flash);
+	lock_flash(flash);
 
 	return failure_status;
 }
@@ -850,7 +836,7 @@ uint8_t write_to_flash(W25N01GV_Flash *flash, uint8_t *data, uint32_t num_bytes)
  * times as needed, up to a max of ( TODO figure this out
  */
 void reset_flash_read_pointer(W25N01GV_Flash *flash) {
-	flash->next_page_to_read = 64;
+	flash->next_page_to_read = 0;
 }
 
 /**
@@ -887,6 +873,8 @@ HAL_StatusTypeDef read_next_2KB_from_flash(W25N01GV_Flash *flash, uint8_t *buffe
 uint8_t erase_flash(W25N01GV_Flash *flash) {
 	uint8_t failure_status = 0;
 
+	unlock_flash(flash);
+
 	// Loop through every block to erase them one by one
 	for (uint16_t block_count = 0; block_count < TOTAL_NUM_BLOCKS; block_count++) {
 		erase_block(flash, block_count * PAGES_PER_BLOCK);  // address of first page in each block
@@ -895,10 +883,11 @@ uint8_t erase_flash(W25N01GV_Flash *flash) {
 		failure_status |= get_erase_failure_status(flash);
 	}
 
-	// Reset the address pointer - first block (64 pages) is reserved by this firmware
-	flash->current_page = 64;
+	lock_flash(flash);
+
+	// Reset the address pointer
+	flash->current_page = 0;
 	flash->next_free_column = 0;
-	//set_address_pointer(flash, 64, 0); TODO uncomment this when fixed
 
 	return failure_status;
 }
