@@ -568,30 +568,6 @@ uint32_t get_bytes_remaining(W25N01GV_Flash *flash) {
 }
 
 /**
- * Check that the device's JEDEC ID matches the one listed in the datasheet.
- * Good way to check if the device is alive and working.
- *
- * Reads and checks the manufacturer ID and the device ID.
- * datasheet pg 27
- *
- * @retval 1 if the ID is correct, 0 if it's not
- */
-uint8_t flash_ID_is_correct(W25N01GV_Flash *flash) {
-
-	uint8_t tx[2] = {READ_JEDEC_ID, 0};	// second byte is unused
-	uint8_t rx[3];
-
-	spi_transmit_receive(flash, tx, 2, rx, 3);
-	uint8_t manufacturer_ID = rx[0];
-	uint16_t device_ID = PACK_2_BYTES_TO_UINT16(rx+1);
-
-	if (manufacturer_ID == W25N01GV_MANUFACTURER_ID && device_ID == W25N01GV_DEVICE_ID)
-		return 1;
-	else
-		return 0;
-}
-
-/**
  * Private function for testing; Reads the contents of the flash's
  * buffer into an array, starting at the specified column and going until
  * it reaches the end of the buffer or reads in buffer_size number of bytes
@@ -656,41 +632,18 @@ W25N01GV_ECC_Status read_bytes_from_page(W25N01GV_Flash *flash, uint8_t *buffer,
 uint8_t write_bytes_to_page(W25N01GV_Flash *flash, uint8_t *data, uint16_t num_bytes,
 		uint16_t page_adr, uint16_t column_adr) {
 
-	//unlock_flash(flash);
+	unlock_flash(flash);
 	enable_write(flash);
 
 	write_page_to_buffer(flash, data, num_bytes, column_adr);
 	program_buffer_to_memory(flash, page_adr);
 
 	disable_write(flash);	//just in case ;)
-	//lock_flash(flash);
+	lock_flash(flash);
 
 	//TODO set this so that it still returns an error if it doesn't explicitly read a 0
 	//maybe check HAL_status - right now it returns 0 even if flash isn't plugged in
 	return get_write_failure_status(flash);
-}
-
-/**
- * Resets the flash chip to it's power-on state. If the device is busy
- * when this function is called, it will first wait for the device
- * to finish it's current operation, then reset it.
- *
- * Note: the delay in this function while it waits for flash to stop
- * reading/writing could be quite long.
- *
- * datasheet pg 26
- *
- * @retval SPI error code
- */
-HAL_StatusTypeDef reset_flash(W25N01GV_Flash *flash) {
-	while(flash_is_busy(flash));  // wait for it to finish it's current operation
-
-	uint8_t tx[1] = { DEVICE_RESET };
-	uint8_t spi_status = spi_transmit(flash, tx, 1);
-
-	while(flash_is_busy(flash));  // wait for it to reset
-
-	return spi_status;
 }
 
 /**
@@ -749,12 +702,9 @@ void enable_continuous_mode(W25N01GV_Flash *flash) {
 		write_status_register(flash, SR2_CONFIGURATION_REGISTER_ADDRESS, buffer_enabled_register);
 }
 
-/* Public functions */
 
-/**
- * Initializes the flash memory chip with SPI and pin information, and sets
- * some parameters to an initial state.
- */
+/* Public function definitions */
+
 void init_flash(W25N01GV_Flash *flash, SPI_HandleTypeDef *SPI_bus_in,
 		GPIO_TypeDef *cs_base_in,	uint16_t cs_pin_in) {
 	flash->SPI_bus = SPI_bus_in;
@@ -773,19 +723,32 @@ void init_flash(W25N01GV_Flash *flash, SPI_HandleTypeDef *SPI_bus_in,
 
 	//
 }
+uint8_t is_flash_ID_correct(W25N01GV_Flash *flash) {
 
-/**
- * Writes data from an array to the W25N01GV flash memory chip.
- * It automatically tracks the address of data it writes, no address
- * management is required by the user. If it runs out of space, it
- * will stop writing data and do nothing.
- *
- * TODO: test
- *
- * @param data <uint8_t*> Array of data to write to flash
- * @param num_bytes <uint32_t> Number of bytes to write to flash
- * @retval 0 if it wrote successfully, nonzero int if something went wrong
- */
+	uint8_t tx[2] = {READ_JEDEC_ID, 0};	// second byte is unused
+	uint8_t rx[3];
+
+	spi_transmit_receive(flash, tx, 2, rx, 3);
+	uint8_t manufacturer_ID = rx[0];
+	uint16_t device_ID = PACK_2_BYTES_TO_UINT16(rx+1);
+
+	if (manufacturer_ID == W25N01GV_MANUFACTURER_ID && device_ID == W25N01GV_DEVICE_ID)
+		return 1;
+	else
+		return 0;
+}
+
+HAL_StatusTypeDef reset_flash(W25N01GV_Flash *flash) {
+	while(flash_is_busy(flash));  // wait for it to finish it's current operation
+
+	uint8_t tx[1] = { DEVICE_RESET };
+	uint8_t spi_status = spi_transmit(flash, tx, 1);
+
+	while(flash_is_busy(flash));  // wait for it to reset
+
+	return spi_status;
+}
+
 uint8_t write_to_flash(W25N01GV_Flash *flash, uint8_t *data, uint32_t num_bytes) {
 
 	// if there's not enough space, truncate the data
@@ -832,25 +795,10 @@ uint8_t write_to_flash(W25N01GV_Flash *flash, uint8_t *data, uint32_t num_bytes)
 	return failure_status;
 }
 
-/**
- * Sets the page counter to the first page available for reading.
- * Use this first, then call read_next_2KB_from_flash() as many
- * times as needed, up to a max of ( TODO figure this out
- */
 void reset_flash_read_pointer(W25N01GV_Flash *flash) {
 	flash->next_page_to_read = 0;
 }
 
-/**
- * Reads an entire 2KB page into the supplied buffer, then increments a counter so it
- * will output the next page the next time this function is called.
- *
- * To read out the entire memory array, call reset_read_pointer(), then call
- * this function TOTAL_PAGES_AVAILABLE number of times.
- *
- * @param buffer <uint8_t*> Buffer to hold 2048 bytes of data
- * @retval SPI error code
- */
 HAL_StatusTypeDef read_next_2KB_from_flash(W25N01GV_Flash *flash, uint8_t *buffer) {
 	HAL_StatusTypeDef spi_status = read_bytes_from_page(flash, buffer,
 			PAGE_MAIN_ARRAY_NUM_BYTES, flash->next_page_to_read, 0);
@@ -858,20 +806,6 @@ HAL_StatusTypeDef read_next_2KB_from_flash(W25N01GV_Flash *flash, uint8_t *buffe
 	return spi_status;
 }
 
-/**
- * Erase the entire chip and reset the address pointer.
- * Erasing means setting every byte to 0xFF.
- * Also resets the address pointer.
- *
- * Flash needs to be unlocked with unlock_flash() before using,
- * and preferably locked again with lock_flash() afterwards.
- *
- * WARNING: this function will erase all data, and causes a
- * substantial delay. Only use it if you're absolutely sure.
- *
- * @retval 0 if there's no problems, nonzero int if at least one
- * 	block failed to erase
- */
 uint8_t erase_flash(W25N01GV_Flash *flash) {
 	uint8_t failure_status = 0;
 
@@ -893,6 +827,23 @@ uint8_t erase_flash(W25N01GV_Flash *flash) {
 	flash->next_free_column = 0;
 
 	return failure_status;
+}
+
+uint16_t scan_bad_blocks(W25N01GV_Flash *flash, uint16_t *bad_blocks) {
+
+	uint8_t read_byte[1];
+	uint16_t num_bad_blocks = 0;
+
+	for (uint16_t block_adr = 0; block_adr < TOTAL_NUM_BLOCKS; block_adr++) {  // block 0, 1, ..., 1022, 1023
+		read_bytes_from_page(flash, read_byte, 1, block_adr*PAGES_PER_BLOCK, 0);  // page 0, 64, 128, ...
+
+		if (*read_byte != 0xFF) { // Look for non-0xFF bytes
+			bad_blocks[num_bad_blocks] = block_adr;
+			num_bad_blocks++;
+		}
+	}
+
+	return num_bad_blocks;
 }
 
 #endif	// end SPI include protection
