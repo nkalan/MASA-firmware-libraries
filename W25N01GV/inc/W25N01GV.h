@@ -5,7 +5,7 @@
  * Nathaniel Kalantar (nkalan@umich.edu)
  * Michigan Aeronautical Science Association
  * Created July 20, 2020
- * Last edited September 6, 2020
+ * Last edited September 12, 2020
  */
 
 #ifndef W25N01GV_H	// begin header include protection

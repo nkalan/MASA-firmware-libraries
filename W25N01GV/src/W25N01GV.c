@@ -30,7 +30,7 @@
  * Nathaniel Kalantar (nkalan@umich.edu)
  * Michigan Aeronautical Science Association
  * Created July 20, 2020
- * Last edited September 5, 2020
+ * Last edited September 12, 2020
  */
 
 #include "W25N01GV.h"
@@ -665,6 +665,8 @@ uint8_t write_bytes_to_page(W25N01GV_Flash *flash, uint8_t *data, uint16_t num_b
 	disable_write(flash);	//just in case ;)
 	//lock_flash(flash);
 
+	//TODO set this so that it still returns an error if it doesn't explicitly read a 0
+	//maybe check HAL_status - right now it returns 0 even if flash isn't plugged in
 	return get_write_failure_status(flash);
 }
 
@@ -876,6 +878,7 @@ uint8_t erase_flash(W25N01GV_Flash *flash) {
 	unlock_flash(flash);
 
 	// Loop through every block to erase them one by one
+	//for (uint16_t block_count = TOTAL_NUM_BLOCKS-1; block_count >= 0; block_count--) {
 	for (uint16_t block_count = 0; block_count < TOTAL_NUM_BLOCKS; block_count++) {
 		erase_block(flash, block_count * PAGES_PER_BLOCK);  // address of first page in each block
 
