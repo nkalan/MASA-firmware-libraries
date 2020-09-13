@@ -80,8 +80,18 @@ typedef struct GPIO_MAX11131_Pinfo {
 channels 0-13,15. Channel 14 is not initialized because it will be used for the
 CNVST pin in the Custom Internal Mode. Therefore, channel 14 will always read 0.
 
-4. To read current ADC values, call `read_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo, uint16_t* adc_out)`. The adc_out array that you pass in
-must be of size 16 to guarantee proper behavior.
+4. To read current ADC values, call `read_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo, uint16_t* adc_out)`. The adc_out array that you pass 
+in must be of size 16 to guarantee proper behavior. Keep in mind that because
+this function requires more than one SPI communication, it is should only be 
+called as needed. It requires ~1ms to complete after testing.
+
+5. If you want to change what channels are included in the conversion sequence,
+simply modify the `GPIO_MAX11131_Pinfo` configuration struct with the desired 
+pinouts and call`void set_read_adc_range(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo)`. This function also requires more than one SPI communication, and 
+should be used on the fly. If unique sets of adc channels are required often,
+consider implementing the SampleSet or Manual ADC read procedures. Information
+on how to do so is specified in the MAX11131 datasheet linked at the top of this
+document.
 
 ### Sample ADC Initialization Code
 

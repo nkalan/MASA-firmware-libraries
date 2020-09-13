@@ -132,6 +132,8 @@
 
 /* Global Var Definitions */
 #define MAX11131_MAX_CHANNELS       (uint8_t)   0x000F  // 15 Channels(0-13, 15)
+#define MAX11131_EOC_WAIT_TIME      (uint16_t)  0x0014  // Max wait time for EOC
+                                                        // to finish conversions
 
 // GPIO pinout memory addresses
 typedef struct GPIO_MAX11131_Pinfo {
@@ -175,7 +177,9 @@ enum SCAN_STATES {
 void init_adc(SPI_HandleTypeDef* SPI_BUS, GPIO_MAX11131_Pinfo *pins);
 
 /**
- *  Sets range to read from adc
+ *  Sets range to read from adc. This function takes a NONTRIVIAL amount
+ *  of time for completion, roughly 1ms, as it requires more than one SPI
+ *  communication transmission.
  *
  *  general documentation starts on datasheet pg 21
  *  @param SPI_BUS      <SPI_HandleTypeDef*>    SPI object adc is on
@@ -186,8 +190,10 @@ void set_read_adc_range(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo);
 
 /**
  *  Convenience function for reading from configured channels on adcx
- *  Note: this function assumes adc range to read from has already
- *          been set by set_read_adc_range()
+ *  This function takes a NONTRIVIAL amount of time for completion, roughly 1ms,
+ *  as it requires more than one SPI communication transmission. This function
+ *  also assumes the adc range to read from has already been set by
+ *  set_read_adc_range()
  *
  *  general documentation starts on datasheet pg 21
  *  @param SPI_BUS      <SPI_HandleTypeDef*> SPI object adc is on

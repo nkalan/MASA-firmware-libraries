@@ -30,7 +30,7 @@ static inline void set_adc(GPIO_MAX11131_Pinfo *pinfo, GPIO_PinState state);
  *  @param pinfo        <GPIO_MAX11131_Pinfo*>   contains ADC pin defs
  *
  */
-static inline void cycle_cnvst(GPIO_MAX11131_Pinfo *pinfo);
+void cycle_cnvst(GPIO_MAX11131_Pinfo *pinfo);
 
 /**
  * 	Convenience function for updating GPIO_MAX11131_Pinfo to read from pins 0-13
@@ -38,16 +38,17 @@ static inline void cycle_cnvst(GPIO_MAX11131_Pinfo *pinfo);
  * 	@param pinfo        <GPIO_MAX11131_Pinfo*>   contains ADC pin defs
  *
  */
-static inline void configure_read_adc_all(GPIO_MAX11131_Pinfo *pinfo);
+void configure_read_adc_all(GPIO_MAX11131_Pinfo *pinfo);
 
 /**
- *	Private function for transmit and receiving bytes to selected ADC
+ *  Private function for transmit and receiving bytes to selected ADC
  *
  *  @param SPI_BUS      <SPI_HandleTypeDef*> SPI object adc is on
  *  @param tx           <uint8_t*> bytes to transmit (expected size 2)
  *  @param adc_out      <uint8_t*> bytes to receive (expected size 2)
  */
 static inline void write_adc_reg(SPI_HandleTypeDef *SPI_BUS, uint8_t *tx, uint8_t *rx);
+
 
 /**
  *  Private function for packing 16 bit command to 8 bit chunks
@@ -120,13 +121,26 @@ void read_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo,
           3. Wait for EOC to be pulled low
           4. Set CS low and High to initiate serial communications
              Note: EOC stays low until CS or CNVST is pulled low again
-     */
+     
+     Note: When waiting for the EOC to be pulled low, it should require
+            a maximum acquisition time of 52 ns based on pg 6 of the datasheet.
+            As such, we track the number of elapsed cycles, and if the loop does 
+            not complete within the maximum acquistion time, we terminate
+            early to avoid an infinite loop
+    */
     /* ADC startup and FIFO register intialization */
 
     set_adc(pinfo, GPIO_PIN_SET);
     cycle_cnvst(pinfo);
+    
+    uint16_t elapsed_cycles = 0;
     while (HAL_GPIO_ReadPin(pinfo->MAX11131_EOC_PORT,
-                            pinfo->MAX11131_EOC_ADDR)) {}
+                            pinfo->MAX11131_EOC_ADDR)) {
+        if (elapsed_cycles > MAX11131_EOC_WAIT_TIME) {
+            break;
+        }
+        ++elapsed_cycles;
+    }
 
     /* Serial communications with ADC */
 
@@ -134,15 +148,19 @@ void read_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo,
     // number of channels * 2 (bytes for each channel)
     uint8_t rx[2] = {0};
     uint8_t tx[2] = {0};
+    uint16_t adc_counts = 0;
+    uint16_t channelId  = 0;
     for (uint8_t i = 0; i < pinfo->NUM_CHANNELS; ++i) {
+        rx[0] = rx[1] = 0;
+        tx[0] = tx[1] = 0;
         __disable_irq();
         set_adc(pinfo, GPIO_PIN_RESET);
         write_adc_reg(SPI_BUS, tx, rx);
         set_adc(pinfo, GPIO_PIN_SET);
         __enable_irq();
 
-        uint16_t adc_counts = ((rx[0]<<8)|rx[1]) & 0x0FFF;
-        uint16_t channelId = (rx[0] >> 4) & 0x0F;
+        adc_counts = ((rx[0]<<8)|rx[1]) & 0x0FFF;
+        channelId = (rx[0] >> 4) & 0x0F;
         adc_out[channelId] = adc_counts;
     }
 
@@ -202,17 +220,18 @@ void configure_read_adc_all(GPIO_MAX11131_Pinfo *pinfo) {
     pinfo->MAX11131_CHANNELS[14] = 15;
 }
 
-void write_adc_reg(SPI_HandleTypeDef *SPI_BUS, uint8_t *tx, uint8_t *rx) {
+static inline void write_adc_reg(SPI_HandleTypeDef *SPI_BUS, uint8_t *tx, uint8_t *rx) {
     if (HAL_SPI_TransmitReceive(SPI_BUS, tx, rx, 2, 1) == HAL_TIMEOUT) {
     }
 }
 
-void package_cmd(uint16_t cmd, uint8_t *tx) {
+
+static inline void package_cmd(uint16_t cmd, uint8_t *tx) {
     tx[0] = (cmd >> 8) & 0x00ff;
     tx[1] = (cmd & 0x00ff);
 }
 
-void set_adc(GPIO_MAX11131_Pinfo *pinfo, GPIO_PinState state) {
+static inline void set_adc(GPIO_MAX11131_Pinfo *pinfo, GPIO_PinState state) {
     HAL_GPIO_WritePin(pinfo->MAX11131_CS_PORT, pinfo->MAX11131_CS_ADDR, state);
 }
 
