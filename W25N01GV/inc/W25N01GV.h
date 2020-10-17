@@ -5,7 +5,73 @@
  * Nathaniel Kalantar (nkalan@umich.edu)
  * Michigan Aeronautical Science Association
  * Created July 20, 2020
- * Last edited September 12, 2020
+ * Last edited October 17, 2020
+ *
+ *
+ * ============================================================================
+ * EXAMPLE CODE
+ * ============================================================================
+ * // Always used for initialization
+ * W25N01GV_Flash flash;
+ * init_flash(&flash, &<spi_bus_name>, <GPIO_array>, <GPIO_pin>);
+ *
+ * // Checking if the SPI bus is working by flashing an LED
+ *
+ * while (is_flash_id_correct(&flash)) {
+ *   HAL_GPIO_TogglePin(...);
+ *   HAL_Delay(1000);
+ * }
+ *
+ * ============================================================================
+ *
+ * // Scanning a new W25N01GV flash chip for bad memory blocks. You should
+ * // only have to do this before writing to it for the very first time.
+ * // If scan_bad_blocks() returns a nonzero value, there is at least 1
+ * // corrupted memory block and you should consider using a different chip.
+ *
+ * uint16_t bad_blocks[1024];
+ * uint16_t num_bad_blocks = scan_bad_blocks(&flash, bad_blocks);
+ *
+ * ============================================================================
+ *
+ * // Reading all of flash in 2KB chunks
+ * // Note: the number of pages in flash is one greater than the maximum value
+ * // of a uint16_t, so you either have to declare the page counter with at
+ * // least 32bits or break out of the loop when the counter reaches
+ * // NUM_PAGES, or use some other control logic to avoid an infinite loop.
+ *
+ * uint32_t page = 0;
+ * uint8_t read_buffer[2048];
+ * reset_flash_read_pointer(&flash);
+ *
+ * while (page < NUM_PAGES) {
+ *   read_next_2KB_from_flash(&flash, read_buffer);
+ *   // Data gets read into read_buffer, do something with it here
+ * }
+ *
+ * ============================================================================
+ *
+ * // Writing an array of bytes to flash
+ * // Note: if there isn't enough space to write the data, anything over
+ * // capacity will get cut off and won't be written.
+ *
+ * // data is a uint8_t array, num_bytes is the size of data
+ * write_to_flash(&flash, data, num_bytes);
+ *
+ * ============================================================================
+ *
+ * // Miscelaneous functions
+ *
+ * // Erases all data on flash
+ * erase_flash(&flash);
+ *
+ * // Returns the number of bytes available to write to
+ * get_bytes_remaining(&flash)
+ *
+ * // Resets the flash chip to its power-on state
+ * reset_flash(&flash);
+ *
+ * TODO: include delays in all README function descriptions
  */
 
 #ifndef W25N01GV_H	// begin header include protection
@@ -138,12 +204,23 @@ void reset_flash_read_pointer(W25N01GV_Flash *flash);
 HAL_StatusTypeDef read_next_2KB_from_flash(W25N01GV_Flash *flash, uint8_t *buffer);
 
 /**
+ * Returns the number of bytes remaining in the flash memory array that are
+ * available to write to.
+ *
+ * Uses the address counters in the flash struct to calcluate how much space
+ * is currently taken up, then subtracts that from the total available space.
+ *
+ * @retval Number of free bytes remaining in the flash chip
+ */
+uint32_t get_bytes_remaining(W25N01GV_Flash *flash);
+
+/**
  * Scan flash for bad memory blocks before writing to it for the first time.
  *
  * Reads the first byte of each block and checks for a bad block marking.
  * Out of the factory, all bytes are set to 0xFF except for the first byte
- * of each bad block. This function looks for those bytes, writes the address
- * of any bad blocks found into bad_blocks, and returns the number of
+ * of each bad block. This function looks for those bytes, records the address
+ * of any bad blocks found into the bad_blocks array, and returns the number of
  * bad blocks it found.
  *
  * @param bad_blocks <uint16_t*> An array of size 1024 containing the address of each bad block.

@@ -30,7 +30,7 @@
  * Nathaniel Kalantar (nkalan@umich.edu)
  * Michigan Aeronautical Science Association
  * Created July 20, 2020
- * Last edited September 12, 2020
+ * Last edited October, 2020
  */
 
 #include "W25N01GV.h"
@@ -51,7 +51,7 @@ const uint16_t PAGE_MAIN_ARRAY_NUM_BYTES              = 2048;
 const uint16_t PAGE_SPARE_ARRAY_NUM_BYTES             = 64;
 const uint16_t PAGE_TOTAL_NUM_BYTES                   = 2112;  // main array + spare array
 
-const uint32_t TOTAL_NUM_PAGES                        = 65536;
+const uint32_t NUM_PAGES                              = 65536;
 const uint16_t PAGES_PER_BLOCK                        = 64;
 const uint16_t TOTAL_NUM_BLOCKS                       = 1024;  // 1024 blocks with 64 pages each = 65536 pages
 
@@ -552,21 +552,6 @@ W25N01GV_ECC_Status get_ECC_status(W25N01GV_Flash *flash) {
 	else  // else if (ECC1 && ECC0)
 		return ERROR_MULTIPLE_PAGES;
 }
-
-/**
- * Returns the number of bytes remaining in the flash memory array that are
- * available to write to.
- *
- * Uses the address counters in the flash struct to calcluate how much space
- * is currently taken up, then subtracts that from the total available space.
- *
- * @retval Number of free bytes remaining in the flash chip
- */
-uint32_t get_bytes_remaining(W25N01GV_Flash *flash) {
-	return (TOTAL_NUM_BLOCKS * PAGES_PER_BLOCK * PAGE_MAIN_ARRAY_NUM_BYTES)
-			- (flash->current_page * PAGE_MAIN_ARRAY_NUM_BYTES + flash->next_free_column);
-}
-
 /**
  * Private function for testing; Reads the contents of the flash's
  * buffer into an array, starting at the specified column and going until
@@ -779,7 +764,7 @@ uint8_t write_to_flash(W25N01GV_Flash *flash, uint8_t *data, uint32_t num_bytes)
 		if (flash->next_free_column + num_bytes_to_write_on_page < PAGE_MAIN_ARRAY_NUM_BYTES)
 			flash->next_free_column += num_bytes_to_write_on_page;
 		// if it fills the current page and runs out of pages
-		else if (flash->current_page == TOTAL_NUM_PAGES-1)
+		else if (flash->current_page == NUM_PAGES-1)
 			flash->next_free_column = PAGE_MAIN_ARRAY_NUM_BYTES;
 		// otherwise if there's more pages left, bring the address counter to the next page
 		else {
@@ -828,6 +813,12 @@ uint8_t erase_flash(W25N01GV_Flash *flash) {
 
 	return failure_status;
 }
+
+uint32_t get_bytes_remaining(W25N01GV_Flash *flash) {
+	return (TOTAL_NUM_BLOCKS * PAGES_PER_BLOCK * PAGE_MAIN_ARRAY_NUM_BYTES)
+			- (flash->current_page * PAGE_MAIN_ARRAY_NUM_BYTES + flash->next_free_column);
+}
+
 
 uint16_t scan_bad_blocks(W25N01GV_Flash *flash, uint16_t *bad_blocks) {
 
