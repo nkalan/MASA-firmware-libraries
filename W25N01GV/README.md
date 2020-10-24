@@ -1,5 +1,6 @@
 # W25N01GV Flash Memory User Guide (Last Updated: Oct 19 2020)
 This repository contains the MASA firmware library for the W25N01GV flash memory IC.
+
 [W25N01GV Datasheet](https://www.winbond.com/resource-files/w25n01gv%20revl%20050918%20unsecured.pdf)
 
 ## Quick Start: Testing if Flash Works
@@ -26,7 +27,7 @@ int main(void)
 }
 ```
 ## SPI Configuration
-The maximum SPI frequency allowed for this ADC is 104 MHz. In the STM32CubeIde SPI configuration, the configuration settings should be identical to those below. Note: the prescaler is not noted below but should be adjusted accordingly
+The maximum SPI frequency allowed for this chip is 104 MHz. In the STM32CubeIde SPI configuration, the configuration settings should be identical to those below. Note: the prescaler is not noted below but should be adjusted accordingly
 
 * Frame Format: Motorola
 * Data Size: 8 bits
