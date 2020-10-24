@@ -1,5 +1,6 @@
-# W25N01GV Flash Memory
+# W25N01GV Flash Memory User Guide (Last Updated: Oct 19 2020)
 This repository contains the MASA firmware library for the W25N01GV flash memory IC.
+[W25N01GV Datasheet](https://www.winbond.com/resource-files/w25n01gv%20revl%20050918%20unsecured.pdf)
 
 ## Quick Start: Testing if Flash Works
 1) Place `W25N01GV.h` in the `/Core/Inc` folder of your project, and place `W25N01GV.c` in the `/Core/Src` folder. Easiest way to do this is copy and paste (at least at this point in time). When it gets merged to the master branch, use the `git submodule` method described in the top-level directory's README.
@@ -25,10 +26,20 @@ int main(void)
 }
 ```
 ## SPI Configuration
-`TODO`
+The maximum SPI frequency allowed for this ADC is 104 MHz. In the STM32CubeIde SPI configuration, the configuration settings should be identical to those below. Note: the prescaler is not noted below but should be adjusted accordingly
+
+* Frame Format: Motorola
+* Data Size: 8 bits
+* First Bit: MSB First
+
+Clock configuration:
+* Clock Polarity: Low
+* Clock Phase: 1 Edge
+or
+* Clock Polarity: High
+* Clock Phase: 2 Edge
 
 ## Sample Code
-This section provides samples of code to execute the functions provided in the .h file.
 ### Initialization
 Always run the `init_flash()` function first, using the correct `SPI_HandleTypeDef` struct, `GPIO_TypeDef` pin array, and `uint16_t` pin number.
 ```
