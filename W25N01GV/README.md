@@ -1,4 +1,4 @@
-# W25N01GV Flash Memory User Guide (Last Updated: Oct 19 2020)
+# W25N01GV Flash Memory User Guide (Last Updated: Oct 24 2020)
 This repository contains the MASA firmware library for the W25N01GV flash memory IC.
 
 [W25N01GV Datasheet](https://www.winbond.com/resource-files/w25n01gv%20revl%20050918%20unsecured.pdf)
@@ -36,6 +36,7 @@ The maximum SPI frequency allowed for this chip is 104 MHz. In the STM32CubeIde 
 Clock configuration:
 * Clock Polarity: Low
 * Clock Phase: 1 Edge
+
 or
 * Clock Polarity: High
 * Clock Phase: 2 Edge
