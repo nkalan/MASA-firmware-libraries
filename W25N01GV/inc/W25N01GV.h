@@ -64,6 +64,7 @@
  * ============================================================================
  *
  * // Miscellaneous functions
+ * TODO reorganize these functions
  *
  * // Erases all data on flash
  * erase_flash(&flash);
@@ -102,6 +103,9 @@ typedef struct {
 	uint16_t next_free_column;    // Tracking columns while writing
 
 	uint16_t next_page_to_read;   // Tracking pages while reading
+
+	// TODO add a HAL status code here
+	// and have functions update that instead of returning codes
 } W25N01GV_Flash;
 
 /**
@@ -149,7 +153,7 @@ uint8_t is_flash_ID_correct(W25N01GV_Flash *flash);
  * this function is called, it will first wait for the device to finish its
  * current operation before resetting.
  *
- * Causes a delay between 5-500 microseconds
+ * Causes a typical delay of 5 microseconds and a max delay of 500 microseconds
  *
  * datasheet pg 26
  *

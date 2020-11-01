@@ -150,14 +150,17 @@ static HAL_StatusTypeDef spi_transmit_receive(W25N01GV_Flash *flash, uint8_t *tx
 	HAL_StatusTypeDef tx_status, rx_status;
 
 	__disable_irq();
-	HAL_GPIO_WritePin(flash->cs_base, flash->cs_pin, W25N01GV_CS_ACTIVE);  // select chip
+	HAL_GPIO_WritePin(flash->cs_base, flash->cs_pin, W25N01GV_CS_ACTIVE);  // Select chip
 	// Transmit/receive, and store the status code
 	tx_status = HAL_SPI_Transmit(flash->SPI_bus, tx, tx_size, W25N01GV_SPI_TIMEOUT);
 	rx_status = HAL_SPI_Receive(flash->SPI_bus, rx, rx_size, W25N01GV_SPI_TIMEOUT);
-	HAL_GPIO_WritePin(flash->cs_base, flash->cs_pin, W25N01GV_CS_INACTIVE);  // release chip
+	HAL_GPIO_WritePin(flash->cs_base, flash->cs_pin, W25N01GV_CS_INACTIVE);  // Release chip
 	__enable_irq();
 
-	return tx_status | rx_status;  // Return both status codes
+	// TODO if you want to return 2 codes bit shift one left
+	// TODO verify
+	// TODO change return type
+	return (tx_status << 2) | rx_status;  // Return both status codes
 }
 
 /**
@@ -225,7 +228,13 @@ static void write_status_register(W25N01GV_Flash *flash, uint8_t register_adr,
 
 	spi_transmit(flash, tx, 3);
 
-	while (flash_is_busy(flash));	 // Wait for writing to finish
+	// Wait for writing to finish
+	// TODO clean up the timeout
+	// TODO put timeouts on all of these while loops
+	uint32_t c = 0;
+	while (flash_is_busy(flash) && c < 100000000) {
+		c++;
+	}
 }
 
 /**
@@ -721,6 +730,7 @@ HAL_StatusTypeDef reset_flash(W25N01GV_Flash *flash) {
 	uint8_t tx[1] = { W25N01GV_DEVICE_RESET };
 	uint8_t spi_status = spi_transmit(flash, tx, 1);
 
+	// TODO add timeout
 	while(flash_is_busy(flash));  // Wait for it to reset
 
 	return spi_status;
