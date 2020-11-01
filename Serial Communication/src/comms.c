@@ -13,6 +13,8 @@ void init_board(uint8_t board_addr) {
 
 void init_data(uint8_t *buffer, uint8_t buffer_sz, CLB_Packet_Header* header) {
 	if (buffer_sz == -1) {	// standard telem
+	    // repack CLB_telem_data
+	    pack_telem_data(CLB_telem_data);
 		CLB_buffer = CLB_telem_data;
 		CLB_buffer_sz = NUM_TELEM_ITEMS;
 	} else {				// custom telem

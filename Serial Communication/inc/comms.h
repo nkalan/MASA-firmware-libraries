@@ -73,6 +73,9 @@ void init_board(uint8_t board_addr);
 /* Private Function Prototypes */
 
 // TODO: do definition
+extern void pack_telem_data(uint8_t* dst);
+
+// TODO: do definition
 void receive_packet(UART_HandleTypeDef* uartx, uint16_t sz);
 
 // TODO: do definition

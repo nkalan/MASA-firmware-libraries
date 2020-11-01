@@ -5,8 +5,16 @@ uint16_t pressures[2] = { 0x1234, 0x5678 };
 uint8_t test            = 3;
 
 #define NUM_TELEM_ITEMS     5
-#define TELEM_ITEM_0 ((int16_t) (pressure[0]*1)) >> 0
-#define TELEM_ITEM_1 ((int16_t) (pressure[0]*1)) >> 8
-#define TELEM_ITEM_2 ((int16_t) (pressure[1]*1)) >> 0
-#define TELEM_ITEM_3 ((int16_t) (pressure[1]*1)) >> 8
+#define TELEM_ITEM_0 ((int16_t) (pressures[0]*1)) >> 0
+#define TELEM_ITEM_1 ((int16_t) (pressures[0]*1)) >> 8
+#define TELEM_ITEM_2 ((int16_t) (pressures[1]*1)) >> 0
+#define TELEM_ITEM_3 ((int16_t) (pressures[1]*1)) >> 8
 #define TELEM_ITEM_4 (uint8_t) test
+
+void pack_telem_data(uint8_t* dst) {
+    *(dst) = TELEM_ITEM_0;
+    *(dst+1) = TELEM_ITEM_1;
+    *(dst+2) = TELEM_ITEM_2;
+    *(dst+3) = TELEM_ITEM_3;
+    *(dst+4) = TELEM_ITEM_4;
+}
