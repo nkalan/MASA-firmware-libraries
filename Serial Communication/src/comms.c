@@ -5,32 +5,145 @@
  *      Author: Jack Taliercio
  */
 
-#include "comms.h"
+#include "../inc/comms.h"
 
-
-uint8_t test;
-
-
-void init_data(){
-	test = 0;
-	*data_arr = &TELEM_ITEM_0;
-	//*(data_arr+1) = &TELEM_ITEM_1;
-	//*(data_arr+2) = &TELEM_ITEM_2;
-	//*(data_arr+3) = &TELEM_ITEM_3;
+void init_board(uint8_t board_addr) {
+	CLB_board_addr = board_addr;
 }
 
+void init_data(uint8_t *buffer, uint8_t buffer_sz, CLB_Packet_Header* header) {
+	if (buffer_sz == -1) {	// standard telem
+		CLB_buffer = CLB_telem_data;
+		CLB_buffer_sz = NUM_TELEM_ITEMS;
+	} else {				// custom telem
+		CLB_buffer = buffer;
+		CLB_buffer_sz = buffer_sz;
+	}
+	CLB_header = header;
+}
 
+uint8_t send_data(UART_HandleTypeDef* uartx) {
+	/* Procedure for sending data:
+		1. Compute checksum for given data, updating packet header
+		2. Stuff packet from buffer
+		3. Send packet via UART
+		4. Repeats steps 2-3 until buffer is fully transmitted
+		5. Return status/errors in transmission if they exist
+	*/
+	uint16_t clb_pos = 0;						// position in clb buffer
+	uint16_t clb_sz = CLB_buffer_sz;			// clb buffer sz
+	uint16_t ping_pos = 0;						// position in ping buffer
+	uint16_t ping_sz = PING_MAX_PACKET_SIZE;	// packet size
 
-void pack_data(uint8_t *unstuffed, size_t length){
-	for(size_t i = 0; i < length; i++){
-		*(unstuffed + i) = *(data_arr[i]);
+	// Note: assumes that header sz is less than 255 bytes
+	uint8_t header_buffer[CLB_HEADER_SZ] = {0};
+	CLB_header->checksum = compute_checksum();
+	pack_header(CLB_header, header_buffer);
+	pack_packet(header_buffer, CLB_ping_packet+ping_pos, CLB_HEADER_SZ);
+	ping_pos += CLB_HEADER_SZ;
+
+	while (clb_pos < CLB_buffer_sz) {
+		uint16_t clb_sz_left = clb_sz - clb_pos;
+		uint16_t ping_sz_left = ping_sz - ping_pos;
+		uint16_t transfer_sz_left = (clb_sz_left > ping_sz_left) ? 
+										ping_sz_left : clb_sz_left;
+		// fill up ping buffer as much as possible
+		pack_packet(CLB_buffer+clb_pos, CLB_ping_packet+ping_pos, 
+													transfer_sz_left);
+		
+		uint16_t stuffed_packet_sz = stuff_packet(CLB_ping_packet, 
+											CLB_pong_packet, transfer_sz_left);
+
+		transmit_packet(uartx, stuffed_packet_sz);
+
+		clb_pos += transfer_sz_left;
+		ping_pos += transfer_sz_left;
+
+		if (ping_pos >= ping_sz) {
+			ping_pos = 0;
+		}
+	}
+
+	return 0; // TODO: return better error handling
+}
+
+uint8_t receive_data(UART_HandleTypeDef* uartx) {
+	/**	Procedure for receiving data:
+	 * 	1. Receive first packet, parse header
+	 * 	2. Specific behavior depending on packet_type and target_addr
+	 *  3. Verify checksum after decoding all data
+	 * 
+	 * 	Note: 	The boards only expect to receive data/cmds within 254 bytes
+	 * 	       	any custom packet types that require more than 254 bytes will
+	 * 			have to be spread out over multiple packet type ids
+	 */
+	receive_packet(uartx, PONG_MAX_PACKET_SIZE);
+
+	uint16_t packet_sz = unstuff_packet(CLB_pong_packet, CLB_ping_packet, 
+														PONG_MAX_PACKET_SIZE);
+
+	CLB_Packet_Header header;
+	unpack_header(&header, CLB_ping_packet);
+
+	uint8_t checksum_status = verify_checksum(header.checksum);
+	if (checksum_status!=0) {
+		return 1; // drop transmission if checksum is bad
+	}
+
+	uint8_t cmd_status = 0;
+	if (CLB_board_addr == header.target_addr) {
+		(*cmds_ptr[header.packet_type])(CLB_ping_packet, &cmd_status);
+	}
+
+	// TODO: more error handling depending on cmd status
+	return cmd_status;
+}
+
+void receive_packet(UART_HandleTypeDef* uartx, uint16_t sz) {
+	HAL_UART_Receive(uartx, CLB_pong_packet, sz, 1);
+}
+
+void transmit_packet(UART_HandleTypeDef* uartx, uint16_t sz) {
+	// currently abstracted in case we need more transmisison options
+	// transmit packet via serial TODO: error handling
+	HAL_UART_Transmit(uartx, CLB_pong_packet, sz, 1);
+}
+
+void unpack_header(CLB_Packet_Header* header, uint8_t* header_buffer) {
+	header->packet_type = header_buffer[0];
+	header->target_addr = header_buffer[1];
+	header->priority	= header_buffer[2];
+	header->checksum	= (header_buffer[4]<<8)|header_buffer[3];
+}
+
+void pack_header(CLB_Packet_Header* header, uint8_t*header_buffer) {
+	header_buffer[0] = header->packet_type;
+	header_buffer[1] = header->target_addr;
+	header_buffer[2] = header->priority;
+	header_buffer[3] = 0xff&(header->checksum);		// little endian
+	header_buffer[4] = 0xff&((header->checksum)>>8);
+}
+
+void pack_packet(uint8_t *src, uint8_t *dst, uint8_t sz) {
+	uint8_t *curr = src;
+	uint8_t *end = src + sz;
+	while (curr != end) {
+		*dst++ = *curr++;
 	}
 }
 
+uint8_t verify_checksum(uint16_t checksum) {
+	// TODO: Implement checksum checking procedure
+	return 0;
+}
 
+uint16_t compute_checksum() {
+	// TODO: Implement checksum procedure, use 0 dummy value temporarily
+	return 0; 
+}
 
 //This code was shamelessly stolen from wikipedia, docs by me tho
-size_t stuff_packet(uint8_t *unstuffed, uint8_t *stuffed, size_t length){
+uint16_t stuff_packet(uint8_t *unstuffed, uint8_t *stuffed, uint16_t length) {
 
 	//Start just keeps track of the start point
 	uint8_t *start = stuffed;
@@ -67,4 +180,32 @@ size_t stuff_packet(uint8_t *unstuffed, uint8_t *stuffed, size_t length){
 	//Returns length of encoded data
 	return stuffed - start;
 
+}
+
+
+/*
+ * UnStuffData decodes "length" bytes of data at
+ * the location pointed to by "ptr", writing the
+ * output to the location pointed to by "dst".
+ *
+ * Returns the length of the decoded data
+ * (which is guaranteed to be <= length).
+ */
+uint16_t unstuff_packet(uint8_t *stuffed, uint8_t *unstuffed, uint16_t length)
+{
+	uint8_t *start = unstuffed, *end = stuffed + length;
+	uint8_t code = 0xFF, copy = 0;
+
+	for (; stuffed < end; copy--) {
+		if (copy != 0) {
+			*unstuffed++ = *stuffed++;
+		} else {
+			if (code != 0xFF)
+				*unstuffed++ = 0;
+			copy = code = *stuffed++;
+			if (code == 0)
+				break; /* Source length too long */
+		}
+	}
+	return unstuffed - start;
 }
