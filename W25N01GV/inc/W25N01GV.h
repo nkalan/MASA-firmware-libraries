@@ -89,24 +89,13 @@
 // the above documentation for use when reading from flash.
 #define W25N01GV_NUM_PAGES (uint32_t) 65536
 
-/*
- * Struct to store data related to flash, including pins
- * and address counters. A pointer to a struct of this type
- * is passed to each flash function.
- */
-typedef struct {
-	SPI_HandleTypeDef *SPI_bus;   // SPI struct, specified by user
-	GPIO_TypeDef *cs_base;        // Chip select GPIO base, specified by user
-	uint16_t cs_pin;              // Chip select GPIO pin, specified by user
+// Each page has a 2048-byte main data array to read/write
+#define W25N01GV_PAGE_MAIN_NUM_BYTES (uint16_t) 2048
 
-	uint16_t current_page;        // Tracking pages while writing
-	uint16_t next_free_column;    // Tracking columns while writing
-
-	uint16_t next_page_to_read;   // Tracking pages while reading
-
-	// TODO add a HAL status code here
-	// and have functions update that instead of returning codes
-} W25N01GV_Flash;
+// Writing small amounts of data causes flash malfunction,
+// so data is stored into an array and is only written when
+// it can write many bytes all at once.
+#define W25N01GV_MIN_WRITE_NUM_BYTES (uint16_t) 64
 
 /**
  * Value representing the status of the last read command. Error correction
@@ -120,8 +109,39 @@ typedef enum {
 	SUCCESS_NO_CORRECTIONS,    // ECC1 = 0, ECC0 = 0
 	SUCCESS_WITH_CORRECTIONS,  // ECC1 = 0, ECC0 = 1
 	ERROR_ONE_PAGE,            // ECC1 = 1, ECC0 = 0
-	ERROR_MULTIPLE_PAGES       // ECC1 = 1, ECC0 = 1, only used in continuous read mode
+	ERROR_MULTIPLE_PAGES,      // ECC1 = 1, ECC0 = 1, only used in continuous read mode
+	READ_ERROR_NO_ECC_STATUS   // Failed to read ECC bits
 } W25N01GV_ECC_Status;
+
+/*
+ * Struct to store data related to flash, including pins
+ * and address counters. A pointer to a struct of this type
+ * is passed to each flash function.
+ */
+typedef struct {
+	// Data buffer to store data before writing
+	// TODO add more detail here
+	//uint8_t write_buffer[W25N01GV_MIN_WRITE_NUM_BYTES];
+
+	SPI_HandleTypeDef *SPI_bus;   // SPI struct, specified by user
+	GPIO_TypeDef *cs_base;        // Chip select GPIO base, specified by user
+	uint16_t cs_pin;              // Chip select GPIO pin, specified by user
+
+	uint16_t current_page;        // Tracking pages while writing
+	uint16_t next_free_column;    // Tracking columns while writing
+
+	uint16_t next_page_to_read;   // Tracking pages while reading
+
+	// The firmware checks various status codes, all of
+	// which can be accessed at any time.
+	// (For these four, 0 is good, anything else is bad)
+	// TODO: write in the header comments which of these each functions updates
+	HAL_StatusTypeDef last_HAL_status;
+	W25N01GV_ECC_Status last_read_ECC_status;
+	uint8_t last_write_failure_status;
+	uint8_t last_erase_failure_status;
+
+} W25N01GV_Flash;
 
 /**
  * Initializes the flash memory chip with SPI and pin information,
@@ -150,17 +170,17 @@ uint8_t is_flash_ID_correct(W25N01GV_Flash *flash);
 
 /**
  * Resets the flash chip to it's power-on state. If the device is busy when
- * this function is called, it will first wait for the device to finish its
- * current operation before resetting.
+ * this function is called, it will ignore the command and return 0 to avoid
+ * corrupting data.
  *
  * Causes a typical delay of 5 microseconds and a max delay of 500 microseconds
  *
  * datasheet pg 26
  *
  * @param flash      <W25N01GV_Flash*>    Struct used to store flash pins and addresses
- * @retval SPI status code
+ * @retval 1 if the reset command executed, 0 if the device was busy and didn't reset.
  */
-HAL_StatusTypeDef reset_flash(W25N01GV_Flash *flash);
+uint8_t reset_flash(W25N01GV_Flash *flash);
 
 /**
  * Erase the entire flash memory chip. Erasing means setting every byte to 0xFF.
@@ -170,9 +190,9 @@ HAL_StatusTypeDef reset_flash(W25N01GV_Flash *flash);
  * on the order of 2-10 seconds. Only use it if you're absolutely sure.
  *
  * @param flash      <W25N01GV_Flash*>    Struct used to store flash pins and addresses
- * @retval 0 if there's no problems, nonzero int if at least one block failed to erase
+ * @retval The number of memory blocks that failed to erase
  */
-uint8_t erase_flash(W25N01GV_Flash *flash);
+uint16_t erase_flash(W25N01GV_Flash *flash);
 
 /**
  * Writes data from an array to the W25N01GV flash memory chip.
@@ -181,16 +201,24 @@ uint8_t erase_flash(W25N01GV_Flash *flash);
  * will stop writing data and do nothing.
  *
  * Note: It can only write data to memory locations that were previously
- * erased, so make sure to call erase_flash once before you start writing.
+ * erased, so make sure to call erase_flash() once before you start writing.
+ *
+ * TODO: add a note about the minimum write size and the data buffer
  *
  * TODO: test more
  *
  * @param flash      <W25N01GV_Flash*>    Struct used to store flash pins and addresses
  * @param data       <uint8_t*>           Array of data to write to flash
  * @param num_bytes  <uint32_t>           Number of bytes to write to flash
- * @retval 0 if it wrote successfully, nonzero int if something went wrong
+ * @retval The number of memory blocks that failed to write
  */
-uint8_t write_to_flash(W25N01GV_Flash *flash, uint8_t *data, uint32_t size);
+uint16_t write_to_flash(W25N01GV_Flash *flash, uint8_t *data, uint32_t size);
+
+/**
+ * TODO: write a big note about this function and why it's here
+ * TODO: also add this to the README
+ */
+//uint16_t finish_flash_write(W25N01GV_Flash *flash);
 
 /**
  * To be used before calling read_next_2KB_from_flash().
@@ -212,10 +240,8 @@ void reset_flash_read_pointer(W25N01GV_Flash *flash);
  *
  * @param flash      <W25N01GV_Flash*>    Struct used to store flash pins and addresses
  * @param buffer     <uint8_t*>           Buffer to hold 2048 bytes of data
- * @retval SPI status code
  */
-W25N01GV_ECC_Status read_next_2KB_from_flash(W25N01GV_Flash *flash,
-		uint8_t *buffer);
+void read_next_2KB_from_flash(W25N01GV_Flash *flash, uint8_t *buffer);
 
 /**
  * Returns the number of bytes remaining in the flash memory array that are

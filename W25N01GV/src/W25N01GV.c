@@ -31,9 +31,6 @@
 // Arbitrary timeout value
 #define W25N01GV_SPI_TIMEOUT                      (uint8_t)  0xFF
 
-// Each page has a 2048-byte main data array to read/write
-#define W25N01GV_PAGE_MAIN_NUM_BYTES              (uint16_t) 2048
-
 // 1024 blocks with 64 pages each = 65536 pages
 #define W25N01GV_PAGES_PER_BLOCK                  (uint16_t) 64
 #define W25N01GV_NUM_BLOCKS                       (uint16_t) 1024
@@ -85,6 +82,15 @@
 #define W25N01GV_SR3_WRITE_ENABLE_LATCH           (uint8_t) 0x02  // 0b00000010
 #define W25N01GV_SR3_OPERATION_IN_PROGRESS        (uint8_t) 0x01  // 0b00000001
 
+// Flash internal delays - datasheet pg 59
+// Used for firmware timeouts
+#define W25N01GV_RESET_MAX_TIME_US                    500  // datasheet pg 26
+#define W25N01GV_WRITE_STATUS_REGISTER_TIME_NS         50
+#define W25N01GV_BLOCK_ERASE_MAX_TIME_MS                4
+#define W25N01GV_READ_PAGE_DATA_ECC_ON_MAX_TIME_US     25
+#define W25N01GV_READ_PAGE_DATA_ECC_OFF_MAX_TIME_US    60
+#define W25N01GV_PAGE_PROGRAM_MAX_TIME_US             700
+
 
 /* Private functions */
 
@@ -117,19 +123,16 @@
  * @param flash      <W25N01GV_Flash*>    Struct used to store flash pins and addresses
  * @param tx         <uint8_t*>           Data buffer to transmit
  * @param size       <uint16_t>           Number of bytes to transmit
- * @retval The SPI status code
  */
-static HAL_StatusTypeDef spi_transmit(W25N01GV_Flash *flash, uint8_t *tx, uint16_t size) {
-	HAL_StatusTypeDef tx_status;
+static void spi_transmit(W25N01GV_Flash *flash, uint8_t *tx, uint16_t size) {
 
 	__disable_irq();
 	HAL_GPIO_WritePin(flash->cs_base, flash->cs_pin, W25N01GV_CS_ACTIVE);  // Select chip
 	// Transmit data and store the status code
-	tx_status = HAL_SPI_Transmit(flash->SPI_bus, tx, size, W25N01GV_SPI_TIMEOUT);
+	flash->last_HAL_status =  HAL_SPI_Transmit(flash->SPI_bus, tx, size, W25N01GV_SPI_TIMEOUT);
 	HAL_GPIO_WritePin(flash->cs_base, flash->cs_pin, W25N01GV_CS_INACTIVE);  // Release chip
 	__enable_irq();
 
-	return tx_status;
 }
 
 /**
@@ -143,24 +146,19 @@ static HAL_StatusTypeDef spi_transmit(W25N01GV_Flash *flash, uint8_t *tx, uint16
  * @param tx_size    <uint16_t>           Number of bytes to transmit
  * @param rx         <uint8_t*>           Buffer to receive data
  * @param rx_size    <uint16_t>           Number of bytes to receive
- * @retval The SPI status code
  */
-static HAL_StatusTypeDef spi_transmit_receive(W25N01GV_Flash *flash, uint8_t *tx,
+static void spi_transmit_receive(W25N01GV_Flash *flash, uint8_t *tx,
 		uint16_t tx_size,	uint8_t *rx, uint16_t rx_size) {
-	HAL_StatusTypeDef tx_status, rx_status;
 
 	__disable_irq();
 	HAL_GPIO_WritePin(flash->cs_base, flash->cs_pin, W25N01GV_CS_ACTIVE);  // Select chip
 	// Transmit/receive, and store the status code
-	tx_status = HAL_SPI_Transmit(flash->SPI_bus, tx, tx_size, W25N01GV_SPI_TIMEOUT);
-	rx_status = HAL_SPI_Receive(flash->SPI_bus, rx, rx_size, W25N01GV_SPI_TIMEOUT);
+	flash->last_HAL_status = HAL_SPI_Transmit(flash->SPI_bus, tx, tx_size, W25N01GV_SPI_TIMEOUT);
+	flash->last_HAL_status = HAL_SPI_Receive(flash->SPI_bus, rx, rx_size, W25N01GV_SPI_TIMEOUT);
+	// TODO the Transmit status will get lost, should it still be stored like this?
 	HAL_GPIO_WritePin(flash->cs_base, flash->cs_pin, W25N01GV_CS_INACTIVE);  // Release chip
 	__enable_irq();
 
-	// TODO if you want to return 2 codes bit shift one left
-	// TODO verify
-	// TODO change return type
-	return (tx_status << 2) | rx_status;  // Return both status codes
 }
 
 /**
@@ -207,13 +205,35 @@ static uint8_t flash_is_busy(W25N01GV_Flash *flash) {
 }
 
 /**
+ * Pings flash with the flash_is_busy() function to check if it's
+ * currently busy with an operation. It stays in this function waiting
+ * for the operation to finish when flash_is_busy() returns 0 or until
+ * it reaches the timeout.
+ *
+ * Note: this function should assume a 180 MHz maximum clock frequency, which
+ * corresponds to a minimum 5.5555 ns period.
+ *
+ * TODO (low priority): Change function to accurately count the times using timers,
+ * right now it's a duct tape solution
+ *
+ * @param flash      <W25N01GV_Flash*>    Struct used to store flash pins and addresses
+ * @param timeout    <uint32_t>           Maximum time to wait in nanoseconds.
+ */
+static void wait_for_operation(W25N01GV_Flash *flash, uint32_t timeout) {
+	uint32_t count = 0;
+	while (flash_is_busy(flash) && count < timeout) {
+		++count;
+	}
+}
+
+/**
  * Writes 1 byte to the selected status register. Takes at least 50 ns to complete.
  *
  * The status registers available to write are:
  * Protection Register (SR1)				Address: W25N01GV_SR1_PROTECTION_REG_ADR (0xA0)
  * Configuration Register (SR2)			Address: W25N01GV_SR2_CONFIG_REG_ADR (0xB0)
  *
- * TODO: specify delay
+ * Includes additional delay of 50 ns
  *
  * datasheet pg 29
  *
@@ -228,13 +248,7 @@ static void write_status_register(W25N01GV_Flash *flash, uint8_t register_adr,
 
 	spi_transmit(flash, tx, 3);
 
-	// Wait for writing to finish
-	// TODO clean up the timeout
-	// TODO put timeouts on all of these while loops
-	uint32_t c = 0;
-	while (flash_is_busy(flash) && c < 100000000) {
-		c++;
-	}
+	wait_for_operation(flash, W25N01GV_WRITE_STATUS_REGISTER_TIME_NS);
 }
 
 /**
@@ -286,17 +300,15 @@ static void read_BBM_look_up_table(W25N01GV_Flash *flash, uint16_t *logical_bloc
  *
  * @param flash      <W25N01GV_Flash*>    Struct used to store flash pins and addresses
  * @param page_num   <uint16_t>           Page number of data to load to the device's buffer
- * @retval SPI status code
  */
-static HAL_StatusTypeDef load_page(W25N01GV_Flash *flash, uint16_t page_num) {
+static void load_page(W25N01GV_Flash *flash, uint16_t page_num) {
 	uint8_t page_num_8bit_array[2] = W25N01GV_UNPACK_UINT16_TO_2_BYTES(page_num);
 	uint8_t tx[4] = {W25N01GV_PAGE_DATA_READ, 0, page_num_8bit_array[0], page_num_8bit_array[1]};  // 2nd byte is unused
 
-	HAL_StatusTypeDef spi_status = spi_transmit(flash, tx, 4);
+	spi_transmit(flash, tx, 4);
 
-  while(flash_is_busy(flash));  // Wait for the page to load
-
-  return spi_status;
+	// TODO currently assumes ECC is on, but needs to be more flexible
+  wait_for_operation(flash, W25N01GV_READ_PAGE_DATA_ECC_ON_MAX_TIME_US * 1000);  // Wait for the page to load
 }
 
 /**
@@ -366,11 +378,10 @@ static void lock_flash(W25N01GV_Flash *flash) {
  * datasheet pg 30
  *
  * @param flash      <W25N01GV_Flash*>    Struct used to store flash pins and addresses
- * @retval SPI status code
  */
-static HAL_StatusTypeDef enable_write(W25N01GV_Flash *flash) {
+static void enable_write(W25N01GV_Flash *flash) {
 	uint8_t tx[1] = { W25N01GV_WRITE_ENABLE };
-	return spi_transmit(flash, tx, 1);
+	spi_transmit(flash, tx, 1);
 }
 
 /**
@@ -384,11 +395,10 @@ static HAL_StatusTypeDef enable_write(W25N01GV_Flash *flash) {
  * datasheet pg 30
  *
  * @param flash      <W25N01GV_Flash*>    Struct used to store flash pins and addresses
- * @retval SPI status code
  */
-static HAL_StatusTypeDef disable_write(W25N01GV_Flash *flash) {
+static void disable_write(W25N01GV_Flash *flash) {
 	uint8_t tx[1] = { W25N01GV_WRITE_DISABLE };
-	return spi_transmit(flash, tx, 1);
+	spi_transmit(flash, tx, 1);
 }
 
 /**
@@ -402,9 +412,8 @@ static HAL_StatusTypeDef disable_write(W25N01GV_Flash *flash) {
  * @param data       <uint8_t*>           Data array containing data to write to flash
  * @param num_bytes  <uint16_t>           Number of bytes to write
  * @param column_adr <uint16_t>           Byte in buffer to start writing at
- * @retval SPI status code
  */
-static HAL_StatusTypeDef write_page_to_buffer(W25N01GV_Flash *flash, uint8_t *data,
+static void write_page_to_buffer(W25N01GV_Flash *flash, uint8_t *data,
 		uint16_t num_bytes, uint16_t column_adr) {
 
 	uint8_t column_adr_8bit_array[2] = W25N01GV_UNPACK_UINT16_TO_2_BYTES(column_adr);
@@ -416,17 +425,14 @@ static HAL_StatusTypeDef write_page_to_buffer(W25N01GV_Flash *flash, uint8_t *da
 	if (num_bytes > W25N01GV_PAGE_MAIN_NUM_BYTES)
 		num_bytes = W25N01GV_PAGE_MAIN_NUM_BYTES;
 
-	HAL_StatusTypeDef tx1_status, tx2_status;
-
 	// Not using spi_transmit() because I didn't want to mess with combining the tx arrays
 	__disable_irq();
 	HAL_GPIO_WritePin(flash->cs_base, flash->cs_pin, W25N01GV_CS_ACTIVE);
-	tx1_status = HAL_SPI_Transmit(flash->SPI_bus, tx1, 3, W25N01GV_SPI_TIMEOUT);
-	tx2_status = HAL_SPI_Transmit(flash->SPI_bus, data, num_bytes, W25N01GV_SPI_TIMEOUT);
+	flash->last_HAL_status = HAL_SPI_Transmit(flash->SPI_bus, tx1, 3, W25N01GV_SPI_TIMEOUT);
+	flash->last_HAL_status = HAL_SPI_Transmit(flash->SPI_bus, data, num_bytes, W25N01GV_SPI_TIMEOUT);
+	// TODO: the Transmit status will get lost, should it still be stored like this?
 	HAL_GPIO_WritePin(flash->cs_base, flash->cs_pin, W25N01GV_CS_INACTIVE);
 	__enable_irq();
-
-	return tx1_status | tx2_status;  // Return both status codes
 }
 
 /**
@@ -440,23 +446,21 @@ static HAL_StatusTypeDef write_page_to_buffer(W25N01GV_Flash *flash, uint8_t *da
  *
  * @param flash      <W25N01GV_Flash*>    Struct used to store flash pins and addresses
  * @param page_adr   <uint16_t>           The page for the buffer to be written to.
- * @retval SPI error code
  */
-static HAL_StatusTypeDef program_buffer_to_memory(W25N01GV_Flash *flash, uint16_t page_adr) {
+static void program_buffer_to_memory(W25N01GV_Flash *flash, uint16_t page_adr) {
 	uint8_t page_adr_8bit_array[2] = W25N01GV_UNPACK_UINT16_TO_2_BYTES(page_adr);
 	uint8_t tx[4] = {W25N01GV_PROGRAM_EXECUTE, 0, page_adr_8bit_array[0], page_adr_8bit_array[1]};  // 2nd byte unused
 
-	HAL_StatusTypeDef tx_status = spi_transmit(flash, tx, 4);
-	while (flash_is_busy(flash));	 // Wait for the data to be written to memory
-
-	return tx_status;
+	spi_transmit(flash, tx, 4);
+	wait_for_operation(flash, W25N01GV_PAGE_PROGRAM_MAX_TIME_US * 1000);	 // Wait for the data to be written to memory
 }
 
 /**
- * Returns whether or not the last program write command executed successfully
- * by reading the status register (SR3) and checking the program failure bit.
+ * Checks whether or not the last program write command executed successfully
+ * by reading the status register (SR3) and checking the program failure bit,
+ * then stores that bit in the W25N01GV_Flash struct.
  *
- * This should always return true if the last page written to is in a
+ * This should always return 1 if the last page written to is in a
  * protected part of the memory array (for this firmware, when flash is
  * locked), or if the write enable command is not given before writing.
  * In both cases, flash's memory array at that page shouldn't be changed.
@@ -464,25 +468,50 @@ static HAL_StatusTypeDef program_buffer_to_memory(W25N01GV_Flash *flash, uint16_
  * datasheet pg 20
  *
  * @param flash      <W25N01GV_Flash*>    Struct used to store flash pins and addresses
- * @retval 0 if write was successful, nonzero int if unsuccessful
+ * @retval 0x08 if it detects a write failure, 0 if no write failures were detected
  */
 static uint8_t get_write_failure_status(W25N01GV_Flash *flash) {
-	uint8_t status_register = read_status_register(flash, W25N01GV_SR3_STATUS_REG_ADR);
-	return status_register & W25N01GV_SR3_PROGRAM_FAILURE;
+	// If it can't read from flash, it will automatically return a write failure
+	if (is_flash_ID_correct(flash)) {
+		uint8_t status_register = read_status_register(flash, W25N01GV_SR3_STATUS_REG_ADR);
+		flash->last_write_failure_status = status_register & W25N01GV_SR3_PROGRAM_FAILURE;
+	}
+	else {
+		flash->last_write_failure_status = W25N01GV_SR3_PROGRAM_FAILURE;
+	}
+	// TODO: check if status bit returns error code if flash isn't plugged in
+
+	return flash->last_write_failure_status;
 }
 
 /**
- * Returns whether or not the last erase command executed successfully by
- * reading the status register (SR3) and checking the erase failure bit.
+ * Checks whether or not the last erase command executed successfully
+ * by reading the status register (SR3) and checking the erase failure bit,
+ * then stores that bit in the W25N01GV_Flash struct.
+ *
+ * This should always return 1 if the last page written to is in a
+ * protected part of the memory array (for this firmware, when flash is
+ * locked), or if the write enable command is not given before writing.
+ * In both cases, flash's memory array at that page shouldn't be changed.
  *
  * datasheet pg 20
  *
  * @param flash      <W25N01GV_Flash*>    Struct used to store flash pins and addresses
- * @retval 0 if erase was successful, nonzero int if unsuccessful
+ * @retval 0x04 if it detects an erase failure, 0 if no erase failures were detected
  */
 static uint8_t get_erase_failure_status(W25N01GV_Flash *flash) {
-	uint8_t status_register = read_status_register(flash, W25N01GV_SR3_STATUS_REG_ADR);
-	return status_register & W25N01GV_SR3_ERASE_FAILURE;
+	// If it can't read from flash, it will automatically return an erase failure
+	if (is_flash_ID_correct(flash)) {
+		uint8_t status_register = read_status_register(flash, W25N01GV_SR3_STATUS_REG_ADR);
+		flash->last_erase_failure_status = status_register & W25N01GV_SR3_ERASE_FAILURE;
+	}
+	else {
+		flash->last_erase_failure_status = W25N01GV_SR3_ERASE_FAILURE;
+	}
+	// TODO: check if status bit returns error code if flash isn't plugged in
+
+	return flash->last_erase_failure_status;
+
 }
 
 /**
@@ -507,10 +536,8 @@ static uint8_t get_erase_failure_status(W25N01GV_Flash *flash) {
  *
  * @param flash      <W25N01GV_Flash*>    Struct used to store flash pins and addresses
  * @param page_adr   <uint16_t>           Address of the page whose block should be erased
- * @retval 0 if erase was successful, nonzero int if at least 1 block failed to erase
  */
-static uint8_t erase_block(W25N01GV_Flash *flash, uint16_t page_adr) {
-	while(flash_is_busy(flash));  // Don't try to erase while flash is busy
+static void erase_block(W25N01GV_Flash *flash, uint16_t page_adr) {
 
 	enable_write(flash);	// Set WEL bit high, it will automatically be set back to 0 after the command executes
 
@@ -520,9 +547,9 @@ static uint8_t erase_block(W25N01GV_Flash *flash, uint16_t page_adr) {
 
 	disable_write(flash);	// Disable WEL just in case the erase block command doens't execute
 
-	while (flash_is_busy(flash));  // Wait for it to finish erasing
+	wait_for_operation(flash, W25N01GV_BLOCK_ERASE_MAX_TIME_MS * 1000000);  // Wait for it to finish erasing
 
-	return get_erase_failure_status(flash);
+	get_erase_failure_status(flash);
 }
 
 /**
@@ -537,22 +564,30 @@ static uint8_t erase_block(W25N01GV_Flash *flash, uint16_t page_adr) {
  * @param flash      <W25N01GV_Flash*>    Struct used to store flash pins and addresses
  * @retval The ECC status of the last read command
  */
-static W25N01GV_ECC_Status get_ECC_status(W25N01GV_Flash *flash) {
-	uint8_t status_register, ECC1, ECC0;
+static void get_ECC_status(W25N01GV_Flash *flash) {
 
-	status_register = read_status_register(flash, W25N01GV_SR3_STATUS_REG_ADR);
-	ECC1 = status_register & W25N01GV_SR3_ECC_STATUS_BIT_1;
-	ECC0 = status_register & W25N01GV_SR3_ECC_STATUS_BIT_0;
+	// If it can read from flash properly, check the ECC bits as normal
+	if (is_flash_ID_correct(flash)) {
+		uint8_t status_register, ECC1, ECC0;
 
-	// Return status according to table on datasheet pg 20
-	if (!ECC1 && !ECC0)
-		return SUCCESS_NO_CORRECTIONS;
-	else if (!ECC1 && ECC0)
-		return SUCCESS_WITH_CORRECTIONS;
-	else if (ECC1 && !ECC0)
-		return ERROR_ONE_PAGE;
-	else  // else if (ECC1 && ECC0)
-		return ERROR_MULTIPLE_PAGES;
+		status_register = read_status_register(flash, W25N01GV_SR3_STATUS_REG_ADR);
+		ECC1 = status_register & W25N01GV_SR3_ECC_STATUS_BIT_1;
+		ECC0 = status_register & W25N01GV_SR3_ECC_STATUS_BIT_0;
+
+		// Return status according to table on datasheet pg 20
+		if (!ECC1 && !ECC0)
+			flash->last_read_ECC_status = SUCCESS_NO_CORRECTIONS;
+		else if (!ECC1 && ECC0)
+			flash->last_read_ECC_status = SUCCESS_WITH_CORRECTIONS;
+		else if (ECC1 && !ECC0)
+			flash->last_read_ECC_status = ERROR_ONE_PAGE;
+		else  // else if (ECC1 && ECC0)
+			flash->last_read_ECC_status = ERROR_MULTIPLE_PAGES;
+
+	}
+	else {  // Otherwise record the read error
+		flash->last_read_ECC_status = READ_ERROR_NO_ECC_STATUS;
+	}
 }
 
 /**
@@ -571,17 +606,14 @@ static W25N01GV_ECC_Status get_ECC_status(W25N01GV_Flash *flash) {
  * @param buffer      <uint8_t*>           Array to read the contents of the device's buffer into
  * @param num_bytes   <uint16_t>           Number of bytes to read into buffer
  * @param column_adr  <uint16_t>           Starting column address of the data to be read in
- * @retval SPI status code
  */
-static HAL_StatusTypeDef read_flash_buffer(W25N01GV_Flash *flash, uint8_t *buffer,
+static void read_flash_buffer(W25N01GV_Flash *flash, uint8_t *buffer,
 		uint16_t num_bytes, uint16_t column_adr) {
 
 	uint8_t column_adr_8bit_array[2] = W25N01GV_UNPACK_UINT16_TO_2_BYTES(column_adr);
 	uint8_t tx[4] = {W25N01GV_READ_DATA, column_adr_8bit_array[0], column_adr_8bit_array[1], 0};  // last byte is unused
 
-	HAL_StatusTypeDef spi_status = spi_transmit_receive(flash, tx, 4, buffer, num_bytes);
-
-	return spi_status;
+	spi_transmit_receive(flash, tx, 4, buffer, num_bytes);
 }
 
 /**
@@ -604,23 +636,24 @@ static HAL_StatusTypeDef read_flash_buffer(W25N01GV_Flash *flash, uint8_t *buffe
  * @param num_bytes  <uint16_t>           Number of bytes to read in (see note on range)
  * @param page_adr   <uint16_t>           The page to read data from
  * @param column_adr <uint16_t>           The column to start reading data from
- * @retval ECC Status
  */
-static W25N01GV_ECC_Status read_bytes_from_page(W25N01GV_Flash *flash, uint8_t *buffer, uint16_t num_bytes,
+static void read_bytes_from_page(W25N01GV_Flash *flash, uint8_t *buffer, uint16_t num_bytes,
 		uint16_t page_adr, uint16_t column_adr) {
 
 	load_page(flash, page_adr);  // Load the page into flash's buffer
 	read_flash_buffer(flash, buffer, num_bytes, column_adr);
 
-	return get_ECC_status(flash);
+	get_ECC_status(flash);
 }
 
 /**
  * Writes the contents of data into flash at the specified page and column.
  * It writes to the device's buffer, then programs the buffer data into flash memory.
  *
+ * It then reads the write failure status bit and stores it to the W25N01GV_Flash struct.
+ *
  * This function incurs a delay that varies linearly with num_bytes
- * and the SPI clock period.
+ * and the SPI clock period.  // TODO is this note necessary?
  *
  * Note: unlock_flash() and enable_write() must be called before
  * calling this function, otherwise it will do nothing.
@@ -631,17 +664,14 @@ static W25N01GV_ECC_Status read_bytes_from_page(W25N01GV_Flash *flash, uint8_t *
  * @param num_bytes  <uint16_t>           Number of bytes to write to flash
  * @param page_adr   <uint16_t>           Page to write data to
  * @param column_adr <uint16_t>           Column of page to start writing data at
- * @retval Write failure status bit
  */
-static uint8_t write_bytes_to_page(W25N01GV_Flash *flash, uint8_t *data, uint16_t num_bytes,
+static void write_bytes_to_page(W25N01GV_Flash *flash, uint8_t *data, uint16_t num_bytes,
 		uint16_t page_adr, uint16_t column_adr) {
 
 	write_page_to_buffer(flash, data, num_bytes, column_adr);
 	program_buffer_to_memory(flash, page_adr);
 
-	// TODO set this so that it still returns an error if it doesn't explicitly read a 0
-	// maybe check HAL_status - right now it returns 0 even if flash isn't plugged in
-	return get_write_failure_status(flash);
+	get_write_failure_status(flash);
 }
 
 /**
@@ -703,6 +733,11 @@ void init_flash(W25N01GV_Flash *flash, SPI_HandleTypeDef *SPI_bus_in,
 	flash->cs_pin = cs_pin_in;
 	flash->next_page_to_read = 0;
 
+	flash->last_HAL_status = HAL_OK;
+	flash->last_read_ECC_status = SUCCESS_NO_CORRECTIONS;
+	flash->last_write_failure_status = 0;
+	flash->last_erase_failure_status = 0;
+
 	reset_flash(flash);
 
 	enable_ECC(flash);  // Should be enabled by default, but enable ECC just in case
@@ -724,19 +759,23 @@ uint8_t is_flash_ID_correct(W25N01GV_Flash *flash) {
 		return 0;
 }
 
-HAL_StatusTypeDef reset_flash(W25N01GV_Flash *flash) {
-	while(flash_is_busy(flash));  // Wait for it to finish its current operation
+uint8_t reset_flash(W25N01GV_Flash *flash) {
+	// The reset command will corrupt data if given while another
+	// operation is taking place, so just return in that case
+	if (flash_is_busy(flash))
+		return 0;
 
+	// Otherwise send the reset command
 	uint8_t tx[1] = { W25N01GV_DEVICE_RESET };
-	uint8_t spi_status = spi_transmit(flash, tx, 1);
+	spi_transmit(flash, tx, 1);
 
-	// TODO add timeout
-	while(flash_is_busy(flash));  // Wait for it to reset
+	// Wait for it to reset
+	wait_for_operation(flash, W25N01GV_RESET_MAX_TIME_US * 1000);
 
-	return spi_status;
+	return 1;
 }
 
-uint8_t write_to_flash(W25N01GV_Flash *flash, uint8_t *data, uint32_t num_bytes) {
+uint16_t write_to_flash(W25N01GV_Flash *flash, uint8_t *data, uint32_t num_bytes) {
 
 	// If there's not enough space, truncate the data
 	uint32_t bytes_remaining = get_bytes_remaining(flash);
@@ -744,7 +783,7 @@ uint8_t write_to_flash(W25N01GV_Flash *flash, uint8_t *data, uint32_t num_bytes)
 		num_bytes = bytes_remaining;
 
 	uint32_t write_counter = 0;  // Track how many bytes have been written so far
-	uint8_t failure_status = 0;  // Track write and erase errors
+	uint16_t write_failures = 0;  // Track write errors
 
 	// Disable write protection
 	unlock_flash(flash);
@@ -758,8 +797,13 @@ uint8_t write_to_flash(W25N01GV_Flash *flash, uint8_t *data, uint32_t num_bytes)
 			num_bytes_to_write_on_page = W25N01GV_PAGE_MAIN_NUM_BYTES - flash->next_free_column;
 
 		// Write the array (or a part of it if it's too long for one page) to flash
-		failure_status |= write_bytes_to_page(flash, data + write_counter,
-				num_bytes_to_write_on_page,	flash->current_page, flash->next_free_column);
+		write_bytes_to_page(flash, data + write_counter, num_bytes_to_write_on_page,
+				flash->current_page, flash->next_free_column);
+
+		// Check if the page was written to correctly
+		if (flash->last_write_failure_status) {
+			write_failures++;
+		}
 
 		write_counter += num_bytes_to_write_on_page;
 
@@ -785,32 +829,33 @@ uint8_t write_to_flash(W25N01GV_Flash *flash, uint8_t *data, uint32_t num_bytes)
 	disable_write(flash);
 	lock_flash(flash);
 
-	return failure_status;
+	return write_failures;
 }
 
 void reset_flash_read_pointer(W25N01GV_Flash *flash) {
 	flash->next_page_to_read = 0;
 }
 
-W25N01GV_ECC_Status read_next_2KB_from_flash(W25N01GV_Flash *flash, uint8_t *buffer) {
+void read_next_2KB_from_flash(W25N01GV_Flash *flash, uint8_t *buffer) {
 	read_bytes_from_page(flash, buffer,	W25N01GV_PAGE_MAIN_NUM_BYTES, flash->next_page_to_read, 0);
 	flash->next_page_to_read++;  // Increment the page read counter
 
-	return get_ECC_status(flash);
+	get_ECC_status(flash);
 	// TODO: continue testing for read errors
 }
 
-uint8_t erase_flash(W25N01GV_Flash *flash) {
-	uint8_t failure_status = 0;
+uint16_t erase_flash(W25N01GV_Flash *flash) {
+	uint16_t erase_failures = 0;
 
 	unlock_flash(flash);
 
 	// Loop through every block to erase them one by one
 	for (uint16_t block_count = 0; block_count < W25N01GV_NUM_BLOCKS; block_count++) {
-		erase_block(flash, block_count * W25N01GV_PAGES_PER_BLOCK);  // address of first page in each block
+		erase_block(flash, block_count * W25N01GV_PAGES_PER_BLOCK);  // Address of first page in each block
 
 		// Check if the erase failed
-		failure_status |= get_erase_failure_status(flash);
+		if (flash->last_erase_failure_status)
+			erase_failures++;
 	}
 
 	lock_flash(flash);
@@ -819,7 +864,7 @@ uint8_t erase_flash(W25N01GV_Flash *flash) {
 	flash->current_page = 0;
 	flash->next_free_column = 0;
 
-	return failure_status;
+	return erase_failures;
 }
 
 uint32_t get_bytes_remaining(W25N01GV_Flash *flash) {
