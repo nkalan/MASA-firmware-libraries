@@ -5,8 +5,9 @@
  * Nathaniel Kalantar (nkalan@umich.edu)
  * Michigan Aeronautical Science Association
  * Created July 20, 2020
- * Last edited October 24, 2020
+ * Last edited November 6, 2020
  *
+ * This code assumes the WP and HLD pins are always set high.
  *
  * ============================================================================
  * EXAMPLE CODE
@@ -58,8 +59,21 @@
  * // Note: if there isn't enough space to write the data, anything over
  * // capacity will get cut off and won't be written.
  *
+ * // You must call finish_flash_write() at the END of your program, before
+ * // the W25N01GV_Flash struct goes out of scope, or else you could lose
+ * // up to the last 512 bytes written. Do not call write_to_flash() anymore
+ * // finish_flash_write() has been called.
+ *
+ * TODO: add more details on why this is the case.
+ *
  * // data is a uint8_t array, num_bytes is the size of data
  * write_to_flash(&flash, data, num_bytes);
+ * :
+ * :
+ * :
+ * :
+ * :
+ * finish_flash_write(&flash);
  *
  * ============================================================================
  *
@@ -90,12 +104,14 @@
 #define W25N01GV_NUM_PAGES (uint32_t) 65536
 
 // Each page has a 2048-byte main data array to read/write
-#define W25N01GV_PAGE_MAIN_NUM_BYTES (uint16_t) 2048
+#define W25N01GV_BYTES_PER_PAGE (uint16_t) 2048
 
 // Writing small amounts of data causes flash malfunction,
 // so data is stored into an array and is only written when
 // it can write many bytes all at once.
-#define W25N01GV_MIN_WRITE_NUM_BYTES (uint16_t) 64
+// NOTE: this number can only be 512, 1024, or 2048
+// TODO: explain somewhere why this is the case
+#define W25N01GV_MIN_WRITE_NUM_BYTES (uint16_t) 512
 
 /**
  * Value representing the status of the last read command. Error correction
@@ -120,12 +136,13 @@ typedef enum {
  */
 typedef struct {
 	// Data buffer to store data before writing
-	// TODO add more detail here
-	//uint8_t write_buffer[W25N01GV_MIN_WRITE_NUM_BYTES];
+	uint8_t write_buffer[W25N01GV_MIN_WRITE_NUM_BYTES];
 
 	SPI_HandleTypeDef *SPI_bus;   // SPI struct, specified by user
 	GPIO_TypeDef *cs_base;        // Chip select GPIO base, specified by user
 	uint16_t cs_pin;              // Chip select GPIO pin, specified by user
+
+	uint16_t write_buffer_size;   // Tracking the bytes stored in the buffer while writing
 
 	uint16_t current_page;        // Tracking pages while writing
 	uint16_t next_free_column;    // Tracking columns while writing
@@ -203,7 +220,16 @@ uint16_t erase_flash(W25N01GV_Flash *flash);
  * Note: It can only write data to memory locations that were previously
  * erased, so make sure to call erase_flash() once before you start writing.
  *
- * TODO: add a note about the minimum write size and the data buffer
+ * Stores data in the struct's buffer and only transmits periodically,
+ * to prevent the ECC from getting corrupted.
+ *
+ * After you're done with your program and will no longer write to flash,
+ * call finish_flash_write() to store the remaining contents of the
+ * write buffer to flash. Note that any other function calls to write_flash()
+ * after finish_flash_write() has been called could potentially corrupt
+ * the error correction codes.
+ *
+ * TODO: add a note about the minimum write size and the write buffer
  *
  * TODO: test more
  *
@@ -215,10 +241,18 @@ uint16_t erase_flash(W25N01GV_Flash *flash);
 uint16_t write_to_flash(W25N01GV_Flash *flash, uint8_t *data, uint32_t size);
 
 /**
- * TODO: write a big note about this function and why it's here
- * TODO: also add this to the README
+ * Writes whatever is contained in the write buffer to flash.
+ * You MUST call this function at the end of your program, before the
+ * W25N10GV_Flash struct goes out of scope, or else you will lose
+ * up to the last 512 bytes of data.
+ *
+ * Note: Any call to write_to_flash() after this function has been called
+ * could potentially corrupt the flash chip's error correction codes.
+ * Only call this function when you're sure you don't want to write any more.
+ *
+ * @param flash      <W25N01GV_Flash*>    Struct used to store flash pins and addresses
  */
-//uint16_t finish_flash_write(W25N01GV_Flash *flash);
+uint16_t finish_flash_write(W25N01GV_Flash *flash);
 
 /**
  * To be used before calling read_next_2KB_from_flash().

@@ -7,6 +7,8 @@
  * Created July 20, 2020
  * Last edited October 24, 2020
  *
+ * This code assumes the WP and HLD pins are always set high.
+ *
  * ===============================================================================
  * Memory architecture described on datasheet pg 11
  * Device operational flow described on datasheet pg 12
@@ -14,7 +16,7 @@
  * Nathaniel Kalantar (nkalan@umich.edu)
  * Michigan Aeronautical Science Association
  * Created July 20, 2020
- * Last edited October 24, 2020
+ * Last edited November 6, 2020
  */
 
 #include "W25N01GV.h"
@@ -198,6 +200,8 @@ static uint8_t read_status_register(W25N01GV_Flash *flash, uint8_t register_adr)
  *
  * @param flash      <W25N01GV_Flash*>    Struct used to store flash pins and addresses
  * @retval 0 if the device is busy,  nonzero integer (1) if it's not.
+ *
+ * TODO: make sure if flash is broken/not plugged in it doens't return the wrong value/cause infinite loops
  */
 static uint8_t flash_is_busy(W25N01GV_Flash *flash) {
 	uint8_t status_register = read_status_register(flash, W25N01GV_SR3_STATUS_REG_ADR);
@@ -221,7 +225,7 @@ static uint8_t flash_is_busy(W25N01GV_Flash *flash) {
  */
 static void wait_for_operation(W25N01GV_Flash *flash, uint32_t timeout) {
 	uint32_t count = 0;
-	while (flash_is_busy(flash) && count < timeout) {
+	while (flash_is_busy(flash) && count < 6*timeout) {
 		++count;
 	}
 }
@@ -422,8 +426,8 @@ static void write_page_to_buffer(W25N01GV_Flash *flash, uint8_t *data,
 	// Ignore all data that would be written to column 2048 and after.
 	// You don't want to overwrite the extra memory at the end of the page.
 	// (If the onboard ECC is turned on, this happens automatically, but just in case)
-	if (num_bytes > W25N01GV_PAGE_MAIN_NUM_BYTES)
-		num_bytes = W25N01GV_PAGE_MAIN_NUM_BYTES;
+	if (num_bytes > W25N01GV_BYTES_PER_PAGE)
+		num_bytes = W25N01GV_BYTES_PER_PAGE;
 
 	// Not using spi_transmit() because I didn't want to mess with combining the tx arrays
 	__disable_irq();
@@ -655,8 +659,8 @@ static void read_bytes_from_page(W25N01GV_Flash *flash, uint8_t *buffer, uint16_
  * This function incurs a delay that varies linearly with num_bytes
  * and the SPI clock period.  // TODO is this note necessary?
  *
- * Note: unlock_flash() and enable_write() must be called before
- * calling this function, otherwise it will do nothing.
+ * Note: unlock_flash() must be called before calling this function,
+ * otherwise it will do nothing.
  *
  * TODO: add datasheet pages
  *
@@ -668,8 +672,13 @@ static void read_bytes_from_page(W25N01GV_Flash *flash, uint8_t *buffer, uint16_
 static void write_bytes_to_page(W25N01GV_Flash *flash, uint8_t *data, uint16_t num_bytes,
 		uint16_t page_adr, uint16_t column_adr) {
 
+	enable_write(flash);
+
 	write_page_to_buffer(flash, data, num_bytes, column_adr);
 	program_buffer_to_memory(flash, page_adr);
+
+	// This will happen automatically if program_buffer_to_memory() succeeds, but just in case
+	disable_write(flash);
 
 	get_write_failure_status(flash);
 }
@@ -742,6 +751,12 @@ void init_flash(W25N01GV_Flash *flash, SPI_HandleTypeDef *SPI_bus_in,
 
 	enable_ECC(flash);  // Should be enabled by default, but enable ECC just in case
 	enable_buffer_mode(flash);  // -IG models start with buffer mode by default, -IT models don't
+
+	// DEBUG CODE
+	//TODO remove this in final version
+	for (uint16_t i = 0; i < W25N01GV_MIN_WRITE_NUM_BYTES; ++i)
+		flash->write_buffer[i] = 0xFF;
+	// END DEBUG CODE
 }
 
 uint8_t is_flash_ID_correct(W25N01GV_Flash *flash) {
@@ -775,6 +790,60 @@ uint8_t reset_flash(W25N01GV_Flash *flash) {
 	return 1;
 }
 
+/**
+ * Old write function that writes everything immediately.
+ * it breaks flash when you give it lots of small arrays.
+ *
+ * ASSUMPTIONS:
+ * flash->next_free_column is a multiple of W25N01GV_MIN_WRITE_NUM_BYTES between [0, 2047].
+ * data can fit in flash's remaining space.
+ * flash->write_buffer is not full == flash->write_buffer_size < W25N01GV_MIN_WRITE_NUM_BYTES.
+ * Flash is unlocked.
+ *
+ */
+static uint16_t write_to_flash_contiguous(W25N01GV_Flash *flash, uint8_t *data, uint32_t num_bytes) {
+
+	uint32_t write_counter = 0;  // Track how many bytes have been written so far
+	uint16_t write_failures = 0;  // Track write errors
+
+	while (write_counter < num_bytes) {
+
+		// If there's not enough space on the page, only write as much as will fit
+		uint16_t num_bytes_to_write_on_page = num_bytes - write_counter;
+		if (num_bytes_to_write_on_page > W25N01GV_BYTES_PER_PAGE - flash->next_free_column)
+			num_bytes_to_write_on_page = W25N01GV_BYTES_PER_PAGE - flash->next_free_column;
+
+		// Write the array (or a part of it if it's too long for one page) to flash
+		write_bytes_to_page(flash, data + write_counter, num_bytes_to_write_on_page,
+				flash->current_page, flash->next_free_column);
+
+		// Check if the page was written to correctly
+		if (flash->last_write_failure_status)
+			write_failures++;
+
+		write_counter += num_bytes_to_write_on_page;
+
+		// If there's room left over at the end of the page,
+		// increment the column counter and leave the page counter the same
+		if (flash->next_free_column + num_bytes_to_write_on_page < W25N01GV_BYTES_PER_PAGE)
+			flash->next_free_column += num_bytes_to_write_on_page;
+
+		// If it fills the current page and runs out of pages, set the column counter over
+		// the limit so it can't write again (will make get_bytes_remaining() return 0)
+		else if (flash->current_page == W25N01GV_NUM_PAGES-1)
+			flash->next_free_column = W25N01GV_BYTES_PER_PAGE;
+
+		// Otherwise if there's more pages left, bring the address counter to the next page
+		// and reset the column counter
+		else {
+			flash->next_free_column = 0;
+			flash->current_page++;  // This function can assume it won't run out of pages
+		}
+	}
+
+	return write_failures;
+}
+
 uint16_t write_to_flash(W25N01GV_Flash *flash, uint8_t *data, uint32_t num_bytes) {
 
 	// If there's not enough space, truncate the data
@@ -782,48 +851,94 @@ uint16_t write_to_flash(W25N01GV_Flash *flash, uint8_t *data, uint32_t num_bytes
 	if (num_bytes > bytes_remaining)
 		num_bytes = bytes_remaining;
 
-	uint32_t write_counter = 0;  // Track how many bytes have been written so far
-	uint16_t write_failures = 0;  // Track write errors
+	uint16_t write_failures = 0;  // Track write failures
+
+	// Copy the front end into the write_buffer
+	uint8_t buffer_full = 0;  // Used to decide whether or not to write buffer contents to flash
+
+	// If write_buffer is not empty and data fills it completely
+	if (flash->write_buffer_size > 0 && flash->write_buffer_size + num_bytes >= W25N01GV_MIN_WRITE_NUM_BYTES) {
+		// Copy data into write_buffer until it's full,
+		uint16_t num_bytes_to_copy = W25N01GV_MIN_WRITE_NUM_BYTES - flash->write_buffer_size;
+		for (uint16_t i = 0; i < num_bytes_to_copy; ++i) {
+			flash->write_buffer[flash->write_buffer_size + i] = data[i];
+		}
+		flash->write_buffer_size = W25N01GV_MIN_WRITE_NUM_BYTES;
+		buffer_full = 1;
+
+		// Adjust data and num_bytes to reflect the front end being chopped off
+		data += num_bytes_to_copy;
+		num_bytes -= num_bytes_to_copy;
+	}
+	// If data doesn't fill write_buffer completely
+	else if (flash->write_buffer_size + num_bytes < W25N01GV_MIN_WRITE_NUM_BYTES) {
+		// Copy all data into write_buffer and return
+		for (uint16_t i = 0; i < num_bytes; ++i) {
+			flash->write_buffer[flash->write_buffer_size + i] = data[i];
+		}
+		flash->write_buffer_size += num_bytes;
+
+		return 0;
+	}
+
+	// In the case where write_buffer is empty and data would fill it completely,
+	// write_buffer isn't used and the write is handled separately.
+
+	// At this point, data and num_bytes should be adjusted so it starts at a multiple address.
+	// Use integer division to find out where the last unit is.
+	// If there are less than W25N01GV_MIN_WRITE_NUM_BYTES, then end_size == num_bytes and end_arr == data,
+	// so anything in data that doesn't get written in this function will get stored in write_buffer
+	uint32_t new_data_size = (num_bytes / W25N01GV_MIN_WRITE_NUM_BYTES) * W25N01GV_MIN_WRITE_NUM_BYTES;
+	uint16_t end_size = num_bytes % W25N01GV_MIN_WRITE_NUM_BYTES;
+	uint8_t* end_arr = data + new_data_size;
+
+	unlock_flash(flash);
+
+	// If the buffer got filled, write the buffer to flash using write_to_flash_contiguous()
+	if (buffer_full) {
+		write_failures += write_to_flash_contiguous(flash, flash->write_buffer, W25N01GV_MIN_WRITE_NUM_BYTES);
+		flash->write_buffer_size = 0;
+
+		// DEBUG CODE
+		//TODO remove this in final version
+		for (uint16_t i = 0; i < W25N01GV_MIN_WRITE_NUM_BYTES; ++i)
+			flash->write_buffer[i] = 0xFF;
+		// END DEBUG CODE
+	}
+
+	// Write the processed array into flash using write_to_flash_contiguous()
+	if (new_data_size > 0) {
+		enable_write(flash);
+		write_failures += write_to_flash_contiguous(flash, data, new_data_size);
+	}
+
+	lock_flash(flash);
+
+	// Copy the remaining data, if any, into write_buffer
+	for (uint16_t i = 0; i < end_size; ++i) {
+		flash->write_buffer[i] = end_arr[i];
+	}
+	flash->write_buffer_size = end_size;
+
+	return write_failures;
+
+}
+
+uint16_t finish_flash_write(W25N01GV_Flash *flash) {
+
+	// If there's not enough space, truncate the data.
+	// This should never happen, but just in case.
+	uint32_t bytes_remaining = get_bytes_remaining(flash);
+	if (flash->write_buffer_size > bytes_remaining)
+		flash->write_buffer_size = bytes_remaining;
 
 	// Disable write protection
 	unlock_flash(flash);
 	enable_write(flash);
 
-	while (write_counter < num_bytes) {
-
-		// If there's not enough space on the page, only write as much as will fit
-		uint16_t num_bytes_to_write_on_page = num_bytes - write_counter;
-		if (num_bytes_to_write_on_page > W25N01GV_PAGE_MAIN_NUM_BYTES - flash->next_free_column)
-			num_bytes_to_write_on_page = W25N01GV_PAGE_MAIN_NUM_BYTES - flash->next_free_column;
-
-		// Write the array (or a part of it if it's too long for one page) to flash
-		write_bytes_to_page(flash, data + write_counter, num_bytes_to_write_on_page,
-				flash->current_page, flash->next_free_column);
-
-		// Check if the page was written to correctly
-		if (flash->last_write_failure_status) {
-			write_failures++;
-		}
-
-		write_counter += num_bytes_to_write_on_page;
-
-		// If there's room left over at the end of the page,
-		// increment the column counter and leave the page counter the same
-		if (flash->next_free_column + num_bytes_to_write_on_page < W25N01GV_PAGE_MAIN_NUM_BYTES)
-			flash->next_free_column += num_bytes_to_write_on_page;
-
-		// If it fills the current page and runs out of pages, set the column counter over
-		// the limit so it can't write again (will make get_bytes_remaining() return 0)
-		else if (flash->current_page == W25N01GV_NUM_PAGES-1)
-			flash->next_free_column = W25N01GV_PAGE_MAIN_NUM_BYTES;
-
-		// Otherwise if there's more pages left, bring the address counter to the next page
-		// and reset the column counter
-		else {
-			flash->next_free_column = 0;
-			flash->current_page++;  // data got truncated earlier so no worries about running out of pages
-		}
-	}
+	uint16_t write_failures = write_to_flash_contiguous(flash, flash->write_buffer,
+			flash->write_buffer_size);
+	flash->write_buffer_size = 0;
 
 	// Re enable write protection
 	disable_write(flash);
@@ -837,11 +952,10 @@ void reset_flash_read_pointer(W25N01GV_Flash *flash) {
 }
 
 void read_next_2KB_from_flash(W25N01GV_Flash *flash, uint8_t *buffer) {
-	read_bytes_from_page(flash, buffer,	W25N01GV_PAGE_MAIN_NUM_BYTES, flash->next_page_to_read, 0);
+	read_bytes_from_page(flash, buffer,	W25N01GV_BYTES_PER_PAGE, flash->next_page_to_read, 0);
 	flash->next_page_to_read++;  // Increment the page read counter
 
 	get_ECC_status(flash);
-	// TODO: continue testing for read errors
 }
 
 uint16_t erase_flash(W25N01GV_Flash *flash) {
@@ -868,8 +982,12 @@ uint16_t erase_flash(W25N01GV_Flash *flash) {
 }
 
 uint32_t get_bytes_remaining(W25N01GV_Flash *flash) {
-	return (W25N01GV_NUM_BLOCKS * W25N01GV_PAGES_PER_BLOCK * W25N01GV_PAGE_MAIN_NUM_BYTES)
-			- (flash->current_page * W25N01GV_PAGE_MAIN_NUM_BYTES + flash->next_free_column);
+	return (W25N01GV_NUM_BLOCKS * W25N01GV_PAGES_PER_BLOCK * W25N01GV_BYTES_PER_PAGE)
+			- (flash->current_page * W25N01GV_BYTES_PER_PAGE + flash->next_free_column)
+			- flash->write_buffer_size;
+
+	// write_buffer hasn't been written to flash yet, but its size needs to be counted
+	// to get an accurate count for the user.
 }
 
 uint16_t scan_bad_blocks(W25N01GV_Flash *flash, uint16_t *bad_blocks) {
