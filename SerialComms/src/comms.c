@@ -2,16 +2,16 @@
  * comms.c
  *
  *  Created on: Jul 21, 2020
- *      Author: Jack Taliercio
+ *      Author: Arthur Zhang, Jack Taliercio
  */
 
-#include "../inc/comms.h"
+#include "../../SerialComms/inc/comms.h"
 
 void init_board(uint8_t board_addr) {
 	CLB_board_addr = board_addr;
 }
 
-void init_data(uint8_t *buffer, uint8_t buffer_sz, CLB_Packet_Header* header) {
+void init_data(uint8_t *buffer, int16_t buffer_sz, CLB_Packet_Header* header) {
 	if (buffer_sz == -1) {	// standard telem
 	    // repack CLB_telem_data
 	    pack_telem_data(CLB_telem_data);
@@ -44,6 +44,7 @@ uint8_t send_data(UART_HandleTypeDef* uartx) {
 	pack_packet(header_buffer, CLB_ping_packet+ping_pos, CLB_HEADER_SZ);
 	ping_pos += CLB_HEADER_SZ;
 
+	uint8_t send_termination_bit = 0;
 	while (clb_pos < CLB_buffer_sz) {
 		uint16_t clb_sz_left = clb_sz - clb_pos;
 		uint16_t ping_sz_left = ping_sz - ping_pos;
@@ -53,19 +54,32 @@ uint8_t send_data(UART_HandleTypeDef* uartx) {
 		pack_packet(CLB_buffer+clb_pos, CLB_ping_packet+ping_pos, 
 													transfer_sz_left);
 		
-		uint16_t stuffed_packet_sz = stuff_packet(CLB_ping_packet, 
-											CLB_pong_packet, transfer_sz_left);
-
-		transmit_packet(uartx, stuffed_packet_sz);
-
 		clb_pos += transfer_sz_left;
 		ping_pos += transfer_sz_left;
+
+		uint16_t stuffed_packet_sz = stuff_packet(CLB_ping_packet, 
+											CLB_pong_packet, ping_pos);
+
+		// add termination character to transmission if possible
+		if (clb_pos == clb_sz) {
+		    if (stuffed_packet_sz < 255) {
+		        CLB_pong_packet[stuffed_packet_sz++] = 0;
+		    } else {
+		        send_termination_bit = 1;
+		    }
+		}
+
+		transmit_packet(uartx, stuffed_packet_sz);
 
 		if (ping_pos >= ping_sz) {
 			ping_pos = 0;
 		}
 	}
 
+	if (send_termination_bit) {
+	    CLB_pong_packet[0] = 0;
+	    transmit_packet(uartx, 1);
+	}
 	return 0; // TODO: return better error handling
 }
 
@@ -108,7 +122,10 @@ void receive_packet(UART_HandleTypeDef* uartx, uint16_t sz) {
 void transmit_packet(UART_HandleTypeDef* uartx, uint16_t sz) {
 	// currently abstracted in case we need more transmisison options
 	// transmit packet via serial TODO: error handling
-	HAL_UART_Transmit(uartx, CLB_pong_packet, sz, 1);
+    for (uint16_t i = 0; i < sz; ++i) {
+        CLB_pong_packet[i] += '0'; // convert to ASCII before UART transmission
+    }
+	HAL_UART_Transmit(uartx, CLB_pong_packet, sz, HAL_MAX_DELAY);
 }
 
 void unpack_header(CLB_Packet_Header* header, uint8_t* header_buffer) {
@@ -126,7 +143,7 @@ void pack_header(CLB_Packet_Header* header, uint8_t*header_buffer) {
 	header_buffer[4] = 0xff&((header->checksum)>>8);
 }
 
-void pack_packet(uint8_t *src, uint8_t *dst, uint8_t sz) {
+void pack_packet(uint8_t *src, uint8_t *dst, uint16_t sz) {
 	uint8_t *curr = src;
 	uint8_t *end = src + sz;
 	while (curr != end) {
@@ -156,32 +173,26 @@ uint16_t stuff_packet(uint8_t *unstuffed, uint8_t *stuffed, uint16_t length) {
 
 	while (length--)
 	{
-		//If the current byte is not zero, add that byte to suffed data and increment
+		//If the current byte is not zero, add that byte to stuffed data and increment
 		//the position of the last zero (code)
 		if (*unstuffed){
-			*stuffed = *unstuffed;
+			*stuffed++ = *unstuffed;
 			++code;
 
 		}
 		//IF the current byte is not zero, OR if the current code is maxed out
 		//Update the last zero position with code, reset code, and set the code_ptr
 		//To the new stuffed position
-		else if (!*unstuffed || code == 0xFF){ /* Input is zero or complete block */
+		if (!*unstuffed++ || code == 0xFF){ /* Input is zero or complete block */
 			*code_ptr = code;
 			code = 1;
-			code_ptr = stuffed;
+			code_ptr = stuffed++;
 		}
-		//Move both unstuffed and stuffed forward
-		unstuffed++;
-		stuffed++;
 	}
 	//Set the final code
 	*code_ptr = code;
-	//Add ending 0
-	*stuffed = 0;
 	//Returns length of encoded data
 	return stuffed - start;
-
 }
 
 
