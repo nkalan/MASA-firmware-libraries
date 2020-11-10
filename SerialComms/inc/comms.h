@@ -15,7 +15,7 @@
 
 /* Included */
 #include "stdint.h"
-#include "stm32f4xx_hal.h" // TODO change back to f4 after testing
+#include "stm32l4xx_hal.h" // TODO change back to f4 after testing
 
 #include "../../SerialComms/inc/pack_cmd_defines.h"
 #include "../../SerialComms/inc/pack_telem_defines.h"

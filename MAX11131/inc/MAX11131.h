@@ -94,7 +94,7 @@
  /* Includes */
 #include "stdint.h"
 #include "stdlib.h"
-#include "stm32f4xx_hal.h"
+#include "stm32l4xx_hal.h"
 
 /* DEBUG ENABLER */
 #define MAX11131_DEBUG_EN    (uint16_t) 0x0001 // set to 1 to enable debugging

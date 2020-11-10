@@ -3,11 +3,11 @@
 
 extern void pack_telem_data(uint8_t* dst);
 
-#define NUM_TELEM_ITEMS     5
+#define NUM_TELEM_ITEMS             5
 #define TELEM_ITEM_0 ((int16_t) (pressures[0]*1)) >> 0
 #define TELEM_ITEM_1 ((int16_t) (pressures[0]*1)) >> 8
 #define TELEM_ITEM_2 ((int16_t) (pressures[1]*1)) >> 0
 #define TELEM_ITEM_3 ((int16_t) (pressures[1]*1)) >> 8
 #define TELEM_ITEM_4 (uint8_t) test
 
-void pack_telem_data(uint8_t* dst);
+//void pack_telem_data(uint8_t* dst);
