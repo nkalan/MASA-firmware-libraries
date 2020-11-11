@@ -9,6 +9,9 @@ Updated: November 9, 2020
 
 import time
 import sys
+import csv
+
+COLUMN_DELIMITER = ','
 
 # Open the telem template file
 filename = sys.argv[1]
@@ -28,8 +31,11 @@ pack_telem_defines_h_string = "/// pack_telem_defines.h\n" + \
 # For globals.h and globals.c
 globals_h_string = "/// globals.h\n" + autogen_label + "\n\n"
 globals_c_string = "/// globals.c\n" + autogen_label + "\n\n"
-prev_global_var_name = ""
-prev_global_var_is_array = False
+globals_prev_firmware_globals_type = ""
+globals_prev_firmware_type = ""
+globals_prev_var_is_array = False
+globals_prev_arr_index = -1  # Does it need this initialization?
+
 
 # For byte_packet_template.txt_sprintf-call.c
 format_string = ""
@@ -100,21 +106,24 @@ type_unpack_arg = {
 
 python_variables = []
 
+
+#with open(sys.argv[1], newline='') as csvfile:
+	
+
 # Iterate through each line of 
 num_telem_items = 0
 for line in template_file:
 	if(num_telem_items == 0):	# First line of the file
-		split_string = line.split('\t')
+		split_string = line.split(COLUMN_DELIMITER)
 		c = 0
 		for arg in split_string:
 			col[arg] = c
 			c += 1
-
+	
 	else:	# Rest of the file with real data
 
 		# Parse the row and store each datum into a variable
-		#split_string = line.split('\t')
-		split_string = line.split('\t')
+		split_string = line.split(COLUMN_DELIMITER)
 
 		name = split_string[col['name']]
 		firmware_variable  = split_string[col['firmware_variable']]
@@ -133,12 +142,17 @@ for line in template_file:
 		python_globals	 = split_string[col['python_globals']]
 		python_init  = split_string[col['python_init']]
 		
-		#firmware_globals_type = split_string[col['firmware_globals_type']]  # Technically firmware_globals_name but w/e
-		#should_generate = split_string[col['should_generate']]
+		firmware_globals_type = split_string[col['firmware_globals_type']]  # Technically firmware_globals_name but w/e
+		should_generate = split_string[col['should_generate']]
 
 		# Only write the value to pack_telem_defines.h if should_generate is 'yes'
-		#if (should_generate == 'n'):
-		#	continue
+		try:
+			assert(should_generate == 'y' or should_generate == 'n')
+		except:
+			print("Error: should_generate can only be 'y' or 'n'")
+		
+		if (should_generate != 'y'):
+			continue
 
 		""" Add line(s) to pack_telem_defines.h """
 
@@ -180,26 +194,36 @@ for line in template_file:
 		# if it is then keep checking until you reach the end of values that would be in that array
 
 		# Check if it's supposed to be an array
-		curr_global_var_is_array = False
-		if ('[' in firmware_variable):
-			# Make sure the closing bracket is there (idiot check)
+		globals_curr_var_is_array = False
+		open_bracket_index = firmware_variable.find("[")
+
+
+		# If the variable should be in an array, 
+		if (open_bracket_index != -1):
+			close_bracket_index = firmware_variable.find("]")
 			try:
-				assert(']' in firmware_variable)
+				assert(close_bracket_index != -1 and close_bracket_index != len(firmware_variable) - 1)
+				assert(firmware_variable[open_bracket_index + 1 : close_bracket_index].isdecimal())
 			except:
-				print("Invalid firmware variable type: '[' found but ']' not found")
-				print("Array variable names must include opening and closing brackets")
-			curr_global_var_is_array = True
+				print("Invalid firmware variable: items in arrays must be written as var_name[index]")
+
+			current_array_index = int(firmware_variable[open_bracket_index + 1 : close_bracket_index])
+			try:
+				assert(current_array_index == globals_prev_array_index + 1)
+			except:
+				print("Invalid firmware variable: items in arrays must be located contiguously in the table and be in ascending order")
+		else:
 		
 		# If you reach the end of a contiguous block of variable names (array)
-		#if (firmware_globals_type != prev_global_var_name and prev_global_var_is_array):
-		#	pass  # TODO finish this
-
+		if (firmware_globals_type != globals_prev_firmware_globals_type and globals_prev_var_is_array):
+			globals_h_string += firmware_type + " " + firmware_globals_type + "[" + globals_prev_array_index + "]" + '\n'
 
 		
+		
 
-		prev_global_var_is_array = curr_global_var_is_array
+		globals_prev_var_is_array = globals_curr_var_is_array
 
-
+		
 
 			
 		"""
