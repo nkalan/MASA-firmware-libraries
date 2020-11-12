@@ -58,6 +58,8 @@ uint8_t CLB_board_addr;
 */
 void init_data(uint8_t *buffer, int16_t buffer_sz, CLB_Packet_Header* header);
 
+uint8_t* return_telem_buffer(uint8_t*buffer_sz);
+
 /**
     Sends data currently in buffer
     @param  uartz       <UART_HandleTypeDef*> uart channel from which to send

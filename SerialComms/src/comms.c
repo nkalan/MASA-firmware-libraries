@@ -114,6 +114,11 @@ uint8_t receive_data(UART_HandleTypeDef* uartx) {
 	return cmd_status;
 }
 
+uint8_t* return_telem_buffer(uint8_t*buffer_sz) {
+    *buffer_sz = CLB_buffer_sz;
+    return CLB_buffer;
+}
+
 void receive_packet(UART_HandleTypeDef* uartx, uint16_t sz) {
 	HAL_UART_Receive(uartx, CLB_pong_packet, sz, 1);
 }
