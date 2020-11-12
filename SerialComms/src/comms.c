@@ -95,8 +95,7 @@ uint8_t receive_data(UART_HandleTypeDef* uartx) {
 	 */
 	receive_packet(uartx, PONG_MAX_PACKET_SIZE);
 
-	uint16_t packet_sz = unstuff_packet(CLB_pong_packet, CLB_ping_packet, 
-														PONG_MAX_PACKET_SIZE);
+	unstuff_packet(CLB_pong_packet, CLB_ping_packet, PONG_MAX_PACKET_SIZE);
 
 	CLB_Packet_Header header;
 	unpack_header(&header, CLB_ping_packet);
