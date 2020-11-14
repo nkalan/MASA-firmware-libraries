@@ -4,7 +4,7 @@
 #define NUM_CMD_ITEMS     3
 #include <stdint.h>
 
-void cmd0_ptr(uint8_t* data, uint8_t* status);
+void digital_write(uint8_t* data, uint8_t* status);
 
 void cmd1_ptr(uint8_t* data, uint8_t* status);
 
