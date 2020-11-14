@@ -151,3 +151,6 @@ pot 4,epot[4],,,Volts,float,%d,uint16_t,1000,zero,float,,,n
 pot 5,epot[5],,,Volts,float,%d,uint16_t,1000,zero,float,,,n
 pot 6,epot[6],,,Volts,float,%d,uint16_t,1000,zero,float,,,n
 pot 7,epot[7],,,Volts,float,%d,uint16_t,1000,zero,float,,,n
+Micros,micros,,,us,uint64_t,%i,uint64_t,1,zero,int,micros,,y
+Telem Rate,telem_rate,,,ms,uint32_t,%i,uint32_t,1,zero,int,,,y
+ADC Rate,adc_rate,,,ms,uint32_t,%i,uint32_t,1,zero,int,,,y
