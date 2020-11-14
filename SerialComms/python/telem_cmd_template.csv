@@ -1,0 +1,17 @@
+﻿packet_type,function_name,nums args,arg0,arg_type0,arg1,arg_type1,arg2,arg_type2,supported_target_addr,description
+8,digital_write,3,port_number,uint16_t,pin_number,uint16_t,state,uint8_t,0 1,write high/low to specific gpio pin
+9,send_telem_short,1,board_num,uint8_t,,,,,0 1,send short version of telem data
+10,send_telem_all,0,board_num,uint8_t,,,,,0 1,send full telem data
+11,set_stepper_speed,1,stepper_num,uint8_t,speed,uint32_t,,,0,set speed of stepper motor x
+12,set_stepper_direction,1,stepper_num,uint8_t,direction,uint8_t,,,0,set direction of stepper motor x
+13,set_kp,2,motor_num,uint8_t,gain,uint16_t,,,0,set kp value
+14,set_ki,2,motor_num,uint8_t,gain,uint16_t,,,0,set ki value
+15,set_kd,2,motor_num,uint8_t,gain,uint16_t,,,0,set kd value
+16,set_control_calc_rate,2,time,uint16_t,rate,uint16_t,,,0,rate of pid control loop time in hz
+17,set_state,1,state,uint8_t,,,,,0,"set state number of control loop, ref firmware code for state definitions"
+18,move_stepper_degrees,2,motor_num,uint8_t,deg,uint16_t,,,,moves the stepper motor degrees from current pos
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+Note: supported target addresses will be defined in a separate file in the future,,,,,,,,,,
