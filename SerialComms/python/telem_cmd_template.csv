@@ -1,5 +1,5 @@
 ﻿packet_type,function_name,nums args,arg0,arg_type0,arg1,arg_type1,arg2,arg_type2,supported_target_addr,description
-8,digital_write,3,port_number,uint16_t,pin_number,uint16_t,state,uint8_t,0 1,write high/low to specific gpio pin
+8,set_vlv,3,port_number,uint16_t,pin_number,uint16_t,state,uint8_t,0 1,write high/low to specific valve
 9,send_telem_short,1,board_num,uint8_t,,,,,0 1,send short version of telem data
 10,send_telem_all,0,board_num,uint8_t,,,,,0 1,send full telem data
 11,set_stepper_speed,1,stepper_num,uint8_t,speed,uint32_t,,,0,set speed of stepper motor x
