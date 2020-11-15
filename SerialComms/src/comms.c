@@ -107,7 +107,7 @@ uint8_t receive_data(UART_HandleTypeDef* uartx) {
 
 	uint8_t cmd_status = 0;
 	if (CLB_board_addr == header.target_addr) {
-		(*cmds_ptr[header.packet_type])(CLB_ping_packet, &cmd_status);
+		(*cmds_ptr[header.packet_type-8])(CLB_ping_packet, &cmd_status);
 	}
 
 	// TODO: more error handling depending on cmd status
@@ -137,14 +137,20 @@ void unpack_header(CLB_Packet_Header* header, uint8_t* header_buffer) {
 	header->target_addr = header_buffer[1];
 	header->priority	= header_buffer[2];
 	header->checksum	= (header_buffer[4]<<8)|header_buffer[3];
+	header->timestamp   = header_buffer[8]<<24|header_buffer[7]<<16|
+	                        header_buffer[6]<<8|header_buffer[5];
 }
 
 void pack_header(CLB_Packet_Header* header, uint8_t*header_buffer) {
 	header_buffer[0] = header->packet_type;
 	header_buffer[1] = header->target_addr;
 	header_buffer[2] = header->priority;
-	header_buffer[3] = 0xff&(header->checksum);		// little endian
+	header_buffer[3] = 0xff&(header->checksum);
 	header_buffer[4] = 0xff&((header->checksum)>>8);
+	header_buffer[5] = 0xff&(header->timestamp);
+	header_buffer[6] = 0xff&((header->timestamp)>>8);
+	header_buffer[7] = 0xff&((header->timestamp)>>16);     // little endian
+	header_buffer[8] = 0xff&((header->timestamp)>>24);
 }
 
 void pack_packet(uint8_t *src, uint8_t *dst, uint16_t sz) {

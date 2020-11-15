@@ -25,7 +25,7 @@
 /* Global Defines */
 #define PING_MAX_PACKET_SIZE        253
 #define PONG_MAX_PACKET_SIZE        255
-#define CLB_HEADER_SZ               5       // packet header struct size (bytes)
+#define CLB_HEADER_SZ               9       // packet header struct size (bytes)
 
 /* Public Function Prototypes */
 
@@ -35,6 +35,7 @@ typedef struct CLB_Packet_Header {
     uint8_t target_addr;        // target board address
     uint8_t priority;           // priority of packet
     uint16_t checksum;          // checksum to ensure robustness (generated)
+    uint32_t timestamp;         // timestamp for data
 } CLB_Packet_Header;
 
 /* Telemetry Data */
