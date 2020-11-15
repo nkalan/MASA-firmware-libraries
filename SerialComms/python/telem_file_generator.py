@@ -83,9 +83,9 @@ Reads in the .csv template and generates files from it
 def main():
 
     # Open the telem template file
-    #filename = sys.argv[1]
+    filename = sys.argv[1]
     #filename = "test1.csv"
-    filename = "telem_data_template.csv"
+    #filename = "telem_data_template.csv"
     template_file = open(filename)
     print("Reading " + filename + "...")
 
@@ -114,6 +114,11 @@ def main():
                                 "#include \"globals.h\"\n" + \
                                 "#include \"config.h\"\n" + \
                                 "\n"
+
+    # For pack_telem_defines.c
+    pack_telem_defines_c_string = begin_autogen_tag + "\n/// pack_telem_defines.c\n" + \
+                                autogen_label + "\n\n" + \
+                                "#include \"pack_telem_defines.h\"\n\nvoid pack_telem_data(uint8_t* dst){\n"
 
     # For globals.h and globals.c
     globals_h_string = begin_autogen_tag + "\n/// globals.h\n" + autogen_label + "\n\n"
@@ -325,9 +330,12 @@ def main():
     # Fill up telem defines with empty bytes until it reaches 254
     for m in range(packet_byte_length, 254):  # TODO: why 254?
         pack_telem_defines_h_string += "#define\tTELEM_ITEM_" + str(m) + "\t0\n"
-
     pack_telem_defines_h_string += "#define\tPACKET_SIZE\t" + str(packet_byte_length) + "\n"
 
+    # Fill up telem defines.c with unpacking code
+    for m in range(0, 254):
+        pack_telem_defines_c_string += "\t*(dst + " + str(m) + ") = TELEM_ITEM_" + str(m) + ";\n"
+    pack_telem_defines_c_string += "}"
 
     # This was commented when I got it, so it's not even used in the EC code
 
@@ -364,6 +372,7 @@ def main():
     #parsed_printf_file = open((filename + "_sprintf-call_.c"), "w+")
     parsed_python_file = open(("hotfire_packet.py"), "w+")
     pack_telem_defines_h = open("pack_telem_defines.h", "w+")  # Generates file in current folder
+    pack_telem_defines_c = open("pack_telem_defines.c", "w+")
     globals_h = open(("globals.h"), "w+")
     globals_c = open(("globals.c"), "w+")
 
@@ -377,6 +386,7 @@ def main():
                                 log_string)
 
     pack_telem_defines_h.write(pack_telem_defines_h_string)
+    pack_telem_defines_c.write(pack_telem_defines_c_string)
 
     globals_h.write(globals_h_string)
     globals_c.write(globals_c_string)
