@@ -1,5 +1,5 @@
 ﻿packet_type,function_name,nums args,arg0,arg_type0,xmit_scale,arg1,arg_type1,xmit_scale,arg2,arg_type2,xmit_scale,supported_target_addr,description
-8,set_vlv,3,vlv_num,uint32_t,1,state,uint8_t,,,,,0 1,write high/low to specific valve
+8,set_vlv,2,vlv_num,uint32_t,1,state,uint8_t,,,,,0 1,write high/low to specific valve
 9,send_telem_short,1,board_num,uint8_t,1,,,,,,,0 1,send short version of telem data
 10,send_telem_all,0,board_num,uint8_t,1,,,,,,,0 1,send full telem data
 11,set_stepper_period,1,stepper_num,uint8_t,1,period,uint32_t,,,,,0,set speed of stepper motor x the period refers to the time between each step

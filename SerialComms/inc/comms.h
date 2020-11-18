@@ -38,6 +38,10 @@ typedef struct CLB_Packet_Header {
     uint32_t timestamp;         // timestamp for data
 } CLB_Packet_Header;
 
+typedef struct Packet_Config {
+    uint8_t do_cobbs;           // 1 to enable cobbs encoding
+} Packet_Config;
+
 /* Telemetry Data */
 uint8_t CLB_ping_packet[PING_MAX_PACKET_SIZE];   // unencoded packet (ping)
 uint8_t CLB_pong_packet[PONG_MAX_PACKET_SIZE];   // encoded packet (pong)
