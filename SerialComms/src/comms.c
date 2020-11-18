@@ -11,7 +11,7 @@ void init_board(uint8_t board_addr) {
 	CLB_board_addr = board_addr;
 }
 
-void init_data(uint8_t *buffer, int16_t buffer_sz, CLB_Packet_Header* header) {
+void init_data(uint8_t *buffer, int16_t buffer_sz, CLB_Packet_Header* header, Packet_Config* config) {
 	if (buffer_sz == -1) {	// standard telem
 	    // repack CLB_telem_data
 	    pack_telem_data(CLB_telem_data);
@@ -21,6 +21,7 @@ void init_data(uint8_t *buffer, int16_t buffer_sz, CLB_Packet_Header* header) {
 		CLB_buffer = buffer;
 		CLB_buffer_sz = buffer_sz;
 	}
+	CLB_packet_config = config;
 	CLB_header = header;
 }
 
@@ -83,7 +84,7 @@ uint8_t send_data(UART_HandleTypeDef* uartx) {
 	return 0; // TODO: return better error handling
 }
 
-uint8_t receive_data(UART_HandleTypeDef* uartx) {
+uint8_t receive_data(UART_HandleTypeDef* uartx, uint8_t* buffer, uint16_t buffer_sz) {
 	/**	Procedure for receiving data:
 	 * 	1. Receive first packet, parse header
 	 * 	2. Specific behavior depending on packet_type and target_addr
@@ -93,7 +94,10 @@ uint8_t receive_data(UART_HandleTypeDef* uartx) {
 	 * 	       	any custom packet types that require more than 254 bytes will
 	 * 			have to be spread out over multiple packet type ids
 	 */
-	receive_packet(uartx, PONG_MAX_PACKET_SIZE);
+	//receive_packet(uartx, PONG_MAX_PACKET_SIZE);
+	for(uint16_t i = 0; i < buffer_sz; ++i) {
+		CLB_pong_packet[i] = buffer[i]; // copy items over for uart reception
+	}
 
 	unstuff_packet(CLB_pong_packet, CLB_ping_packet, PONG_MAX_PACKET_SIZE);
 
@@ -177,32 +181,39 @@ uint16_t stuff_packet(uint8_t *unstuffed, uint8_t *stuffed, uint16_t length) {
 
 	//Start just keeps track of the start point
 	uint8_t *start = stuffed;
-	//Code represents the number of positions till the next 0 and code_ptr
-	//holds the position of the last zero to be updated when the next 0 is found
-	uint8_t code = 1;
-	uint8_t *code_ptr = stuffed++; //Note: this sets code_ptr to stuffed, then ++ stuffed
+	if (CLB_packet_config->do_cobbs) {
+		//Code represents the number of positions till the next 0 and code_ptr
+			//holds the position of the last zero to be updated when the next 0 is found
+			uint8_t code = 1;
+			uint8_t *code_ptr = stuffed++; //Note: this sets code_ptr to stuffed, then ++ stuffed
 
-	while (length--)
-	{
-		//If the current byte is not zero, add that byte to stuffed data and increment
-		//the position of the last zero (code)
-		if (*unstuffed){
-			*stuffed++ = *unstuffed;
-			++code;
+			while (length--)
+			{
+				//If the current byte is not zero, add that byte to stuffed data and increment
+				//the position of the last zero (code)
+				if (*unstuffed){
+					*stuffed++ = *unstuffed;
+					++code;
 
-		}
-		//IF the current byte is not zero, OR if the current code is maxed out
-		//Update the last zero position with code, reset code, and set the code_ptr
-		//To the new stuffed position
-		if (!*unstuffed++ || code == 0xFF){ /* Input is zero or complete block */
+				}
+				//IF the current byte is not zero, OR if the current code is maxed out
+				//Update the last zero position with code, reset code, and set the code_ptr
+				//To the new stuffed position
+				if (!*unstuffed++ || code == 0xFF){ /* Input is zero or complete block */
+					*code_ptr = code;
+					code = 1;
+					code_ptr = stuffed++;
+				}
+			}
+			//Set the final code
 			*code_ptr = code;
-			code = 1;
-			code_ptr = stuffed++;
+			//Returns length of encoded data
+	} else {
+		for (uint16_t i = 0; i < length; ++i) {
+			*stuffed++ = *unstuffed++;
 		}
 	}
-	//Set the final code
-	*code_ptr = code;
-	//Returns length of encoded data
+
 	return stuffed - start;
 }
 
