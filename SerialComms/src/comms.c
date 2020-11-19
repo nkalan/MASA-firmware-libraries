@@ -110,10 +110,11 @@ uint8_t receive_data(UART_HandleTypeDef* uartx, uint8_t* buffer, uint16_t buffer
 	}
 
 	uint8_t cmd_status = 0;
+	/*
 	if (CLB_board_addr == header.target_addr) {
 	    // TODO: handle receiving different packet types besides cmd
 		(*cmds_ptr[header.packet_type-8])(CLB_ping_packet, &cmd_status);
-	}
+	}*/
 
 	// TODO: more error handling depending on cmd status
 	return cmd_status;
