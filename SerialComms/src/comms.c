@@ -132,9 +132,6 @@ void receive_packet(UART_HandleTypeDef* uartx, uint16_t sz) {
 void transmit_packet(UART_HandleTypeDef* uartx, uint16_t sz) {
 	// currently abstracted in case we need more transmisison options
 	// transmit packet via serial TODO: error handling
-    for (uint16_t i = 0; i < sz; ++i) {
-        CLB_pong_packet[i] += '0'; // convert to ASCII before UART transmission
-    }
 	HAL_UART_Transmit(uartx, CLB_pong_packet, sz, HAL_MAX_DELAY);
 }
 
