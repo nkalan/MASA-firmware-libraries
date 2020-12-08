@@ -2,7 +2,7 @@
 8,set_vlv,2,vlv_num,uint32_t,1,state,uint8_t,,,,,0 1,write high/low to specific valve
 9,send_telem_short,1,board_num,uint8_t,1,,,,,,,0 1,send short version of telem data
 10,send_telem_all,0,board_num,uint8_t,1,,,,,,,0 1,send full telem data
-11,set_stepper_period,1,stepper_num,uint8_t,1,period,uint32_t,,,,,0,set speed of stepper motor x the period refers to the time between each step
+11,set_stepper_period,1,stepper_num,uint8_t,1,period,uint16_t,,,,,0,set speed of stepper motor x the period refers to the time between each step
 12,set_stepper_direction,1,stepper_num,uint8_t,1,direction,int8_t,,,,,0,set direction of stepper motor x
 13,set_kp,2,motor_num,uint8_t,1,gain,double,100,,,,0,set kp value
 14,set_ki,2,motor_num,uint8_t,1,gain,double,100,,,,0,set ki value

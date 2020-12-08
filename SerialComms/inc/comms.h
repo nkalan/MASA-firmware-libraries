@@ -68,7 +68,7 @@ uint8_t* return_telem_buffer(uint8_t*buffer_sz);
 
 /**
     Sends data currently in buffer
-    @param  uartz       <UART_HandleTypeDef*> uart channel from which to send
+    @param  uartx       <UART_HandleTypeDef*> uart channel from which to send
                         data
     @returns            <uint8_t> status of data transmission 0 - no error
 */
