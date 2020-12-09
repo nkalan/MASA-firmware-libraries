@@ -39,6 +39,8 @@ In addition, the `target_addr` will be used in the future for allowing you to ad
 
 The `priority` byte can be used to set different priorities for each telem packet received if multiple are received in parallel. However, all mission critical commands should be notified using an external gpio interrupt instead to guarantee timely handling.
 
+The `do_cobbs` byte is used to indicate whether or not the latter packet is cobbs encoded or not. This is mainly used when encoding the data.
+
 Finally, the `timestamp` variable is used to specify a 32 bit unsigned integer that counts the time in milliseconds that have elapsed since the board thas started up. It is important to keep the counts of this timestamp in milliseconds to ensure consistent behavior across all boards. 
 
 Note: with a 32 bit unsigned integer for timestamps, we have log about 1100 hours, which is more than enough range.
@@ -49,6 +51,7 @@ typedef struct CLB_Packet_Header {
     uint8_t packet_type;        // CMD/DATA packet ID
     uint8_t target_addr;        // target board address
     uint8_t priority;           // priority of packet
+    uint8_t do_cobbs;           // 1 to enable cobbs encoding
     uint16_t checksum;          // checksum to ensure robustness (generated)
     uint32_t timestamp;         // timestamp for data
 } CLB_Packet_Header;
