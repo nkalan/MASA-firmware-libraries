@@ -11,17 +11,16 @@ void init_board(uint8_t board_addr) {
 	CLB_board_addr = board_addr;
 }
 
-void init_data(uint8_t *buffer, int16_t buffer_sz, CLB_Packet_Header* header, Packet_Config* config) {
+void init_data(uint8_t *buffer, int16_t buffer_sz, CLB_Packet_Header* header) {
 	if (buffer_sz == -1) {	// standard telem
 	    // repack CLB_telem_data
 	    pack_telem_data(CLB_telem_data);
 		CLB_buffer = CLB_telem_data;
-		CLB_buffer_sz = NUM_TELEM_ITEMS;
+		CLB_buffer_sz = CLB_NUM_TELEM_ITEMS;
 	} else {				// custom telem
 		CLB_buffer = buffer;
 		CLB_buffer_sz = buffer_sz;
 	}
-	CLB_packet_config = config;
 	CLB_header = header;
 }
 
@@ -139,6 +138,7 @@ void unpack_header(CLB_Packet_Header* header, uint8_t* header_buffer) {
 	header->packet_type = header_buffer[0];
 	header->target_addr = header_buffer[1];
 	header->priority	= header_buffer[2];
+	header->do_cobbs    = header_buffer[3];
 	header->checksum	= (header_buffer[4]<<8)|header_buffer[3];
 	header->timestamp   = header_buffer[8]<<24|header_buffer[7]<<16|
 	                        header_buffer[6]<<8|header_buffer[5];
@@ -148,12 +148,13 @@ void pack_header(CLB_Packet_Header* header, uint8_t*header_buffer) {
 	header_buffer[0] = header->packet_type;
 	header_buffer[1] = header->target_addr;
 	header_buffer[2] = header->priority;
-	header_buffer[3] = 0xff&(header->checksum);
-	header_buffer[4] = 0xff&((header->checksum)>>8);
-	header_buffer[5] = 0xff&(header->timestamp);
-	header_buffer[6] = 0xff&((header->timestamp)>>8);
-	header_buffer[7] = 0xff&((header->timestamp)>>16);     // little endian
-	header_buffer[8] = 0xff&((header->timestamp)>>24);
+	header_buffer[3] = header->do_cobbs;
+	header_buffer[4] = 0xff&(header->checksum);
+	header_buffer[5] = 0xff&((header->checksum)>>8);
+	header_buffer[6] = 0xff&(header->timestamp);
+	header_buffer[7] = 0xff&((header->timestamp)>>8);
+	header_buffer[8] = 0xff&((header->timestamp)>>16);     // little endian
+	header_buffer[9] = 0xff&((header->timestamp)>>24);
 }
 
 void pack_packet(uint8_t *src, uint8_t *dst, uint16_t sz) {
@@ -179,7 +180,7 @@ uint16_t stuff_packet(uint8_t *unstuffed, uint8_t *stuffed, uint16_t length) {
 
 	//Start just keeps track of the start point
 	uint8_t *start = stuffed;
-	if (CLB_packet_config->do_cobbs) {
+	if (CLB_header->do_cobbs) {
 		//Code represents the number of positions till the next 0 and code_ptr
 			//holds the position of the last zero to be updated when the next 0 is found
 			uint8_t code = 1;
@@ -228,7 +229,7 @@ uint16_t unstuff_packet(uint8_t *stuffed, uint8_t *unstuffed, uint16_t length)
 {
 	uint8_t *start = unstuffed, *end = stuffed + length;
 	uint8_t code = 0xFF, copy = 0;
-
+	// TODO: implement usage of not using cobbs
 	for (; stuffed < end; copy--) {
 		if (copy != 0) {
 			*unstuffed++ = *stuffed++;

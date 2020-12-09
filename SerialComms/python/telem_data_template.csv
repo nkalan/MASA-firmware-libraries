@@ -6,8 +6,8 @@ Pressure 2,pressure[2],-100,3000,counts,float,%.1f,int16_t,1,,float,motor_setpoi
 Pressure 3,pressure[3],-100,3000,counts,float,%.1f,int16_t,1,,float,main_cycle_time,0,y
 Pressure 4,pressure[4],-100,3000,counts,float,%.1f,int16_t,1,,float,motor_cycle_time,0,y
 Pressure 5,pressure[5],-100,3000,counts,float,%.1f,int16_t,1,,float,adc_cycle_time,0,y
-Pressure 6,pressure[6],-100,3000,counts,float,%.1f,int16_t,1,,float,telemetry_cycle_time,0,y
-Pressure 7,pressure[7],-100,3000,counts,float,%.1f,int16_t,1,,float,ebatt,0,y
+Pressure 6,pressure[6],-100,3000,counts,float,%.1f,int16_t,1,,float,telemetry_cycle_time,0,n
+Pressure 7,pressure[7],-100,3000,counts,float,%.1f,int16_t,1,,float,ebatt,0,n
 Pressure 8,pressure[8],-100,3000,counts,float,%.1f,int16_t,1,,float,ibus,0,n
 Pressure 9,pressure[9],-100,3000,counts,float,%.1f,int16_t,1,,float,telemetry_rate,0,n
 Pressure 10,pressure[10],-100,3000,counts,float,%.1f,int16_t,1,,float,motor_control_gain,[0]*4,n
@@ -22,9 +22,9 @@ Pressure 18,pressure[18],-100,3000,counts,float,%.1f,int16_t,1,,float,thrust_loa
 Pressure 19,pressure[19],-100,3000,counts,float,%.1f,int16_t,1,,float,thermocouple,[0]*4,n
 Pressure 20,pressure[20],-100,3000,counts,float,%.1f,int16_t,1,,float,ivlv,[0]*32,n
 Pressure 21,pressure[21],-100,3000,count,float,%.1f,int16_t,1,,float,evlv,[0]*32,n
-ebatt,ebatt,-20,20,Volts,float,%.2f,int16_t,1000,,float,LOG_TO_AUTO,0,y
-Bus Current,ibus,-10,150,Amps,float,%.2f,int16_t,100,main_cycle_time,int,auto_states,0,y
-STATE,STATE,0,127,,uint8_t,%u,uint8_t,1,motor_cycle_time,int,debug,[0]*8,y
+ebatt,e_batt,-20,20,Volts,float,%.2f,int16_t,1000,,float,LOG_TO_AUTO,0,y
+ibatt,i_batt,-10,150,Amps,float,%.2f,int16_t,100,main_cycle_time,int,auto_states,0,y
+STATE,STATE,0,127,,enum States,%u,uint8_t,1,motor_cycle_time,int,debug,[0]*8,y
 Load 0,load[0],,,counts,float,%.1f,uint16_t,1,adc_cycle_time,int,e5v,0,n
 Load 1,load[1],,,counts,float,%.1f,uint16_t,1,telemetry_cycle_time,float,e3v,0,n
 Load 2,load[2],,,counts,float,%.1f,uint16_t,1,,float,BOARD_ID,0,n
@@ -99,18 +99,18 @@ evlv 30,evlv[30],0,15,Volts,float,%.1f,uint8_t,10,,float,,,n
 evlv 31,evlv[31],0,15,Volts,float,%.1f,uint8_t,10,,float,,,n
 E 3V,e3v,0,5,Volts,float,%.2f,int32_t,100,,float,,,y
 E 5V,e5v,0,5,Volts,float,%.2f,int32_t,100,,float,,,y
-E 28V,e28v,0,30,Volts,float,%.3f,int16_t,100,,float,,,y
+E 28V,e28v,0,30,Volts,float,%.3f,int16_t,100,,float,,,n
 I 5V,i5v,0,2,amps,float,%.1f,uint8_t,100,,float,,,y
 I 3V,i3v,0,2,amps,float,%.1f,uint8_t,100,,float,,,y
 Last Command ID,last_command_id,,,,uint8_t,%d,uint16_t,100,,float,,,y
-tc 0,tc[0],,,K,float,%d,uint16_t,100,,float,,,y
-tc 1,tc[1],,,K,float,%d,uint16_t,100,,float,,,y
-tc 2,tc[2],,,K,float,%d,uint16_t,100,,float,,,y
-tc 3,tc[3],,,K,float,%d,uint16_t,100,,float,,,y
-tc 4,tc[4],,,K,float,%d,uint16_t,100,,float,,,y
-tc 5,tc[5],,,K,float,%d,uint16_t,100,,float,,,y
-tc 6,tc[6],,,K,float,%d,uint16_t,100,,float,,,y
-tc 7,tc[7],,,K,float,%d,uint16_t,100,,float,,,y
+tc 0,tc[0],,,K,float,%d,uint16_t,100,,float,,,n
+tc 1,tc[1],,,K,float,%d,uint16_t,100,,float,,,n
+tc 2,tc[2],,,K,float,%d,uint16_t,100,,float,,,n
+tc 3,tc[3],,,K,float,%d,uint16_t,100,,float,,,n
+tc 4,tc[4],,,K,float,%d,uint16_t,100,,float,,,n
+tc 5,tc[5],,,K,float,%d,uint16_t,100,,float,,,n
+tc 6,tc[6],,,K,float,%d,uint16_t,100,,float,,,n
+tc 7,tc[7],,,K,float,%d,uint16_t,100,,float,,,n
 tc 8,tc[8],,,K,float,%d,uint16_t,100,,float,,,n
 tc 9,tc[9],,,K,float,%d,uint16_t,100,,float,,,n
 tc 10,tc[10],,,K,float,%d,uint16_t,100,current_page,float,,,n
@@ -119,14 +119,14 @@ tc 12,tc[12],,,K,float,%d,uint16_t,100,,float,,,n
 tc 13,tc[13],,,K,float,%d,uint16_t,100,,float,,,n
 tc 14,tc[14],,,K,float,%d,uint16_t,100,,float,,,n
 tc 15,tc[15],,,K,float,%d,uint16_t,100,,float,,,n
-rtd 0,rtd[0],,,K,float,%d,uint16_t,100,,float,,,y
-rtd 1,rtd[1],,,K,float,%d,uint16_t,100,,float,,,y
-rtd 2,rtd[2],,,K,float,%d,uint16_t,100,,float,,,y
-rtd 3,rtd[3],,,K,float,%d,uint16_t,100,,float,,,y
-rtd 4,rtd[4],,,K,float,%d,uint16_t,100,,float,,,y
-rtd 5,rtd[5],,,K,float,%d,uint16_t,100,,float,,,y
-rtd 6,rtd[6],,,K,float,%d,uint16_t,100,,float,,,y
-rtd 7,rtd[7],,,K,float,%d,uint16_t,100,,float,,,y
+rtd 0,rtd[0],,,K,float,%d,uint16_t,100,,float,,,n
+rtd 1,rtd[1],,,K,float,%d,uint16_t,100,,float,,,n
+rtd 2,rtd[2],,,K,float,%d,uint16_t,100,,float,,,n
+rtd 3,rtd[3],,,K,float,%d,uint16_t,100,,float,,,n
+rtd 4,rtd[4],,,K,float,%d,uint16_t,100,,float,,,n
+rtd 5,rtd[5],,,K,float,%d,uint16_t,100,,float,,,n
+rtd 6,rtd[6],,,K,float,%d,uint16_t,100,,float,,,n
+rtd 7,rtd[7],,,K,float,%d,uint16_t,100,,float,,,n
 I Mtr 0A,i_mtr_ab[0],,,amps,float,%d,uint16_t,100,,float,,,y
 I Mtr 0B,i_mtr_ab[1],,,amps,float,%d,uint16_t,100,,float,,,y
 I Mtr 1A,i_mtr_ab[2],,,amps,float,%d,uint16_t,100,,float,,,y
@@ -154,3 +154,4 @@ pot 7,epot[7],,,Volts,float,%d,uint16_t,1000,zero,float,,,n
 Micros,micros,,,us,uint64_t,%i,uint64_t,1,zero,int,micros,,y
 Telem Rate,telem_rate,,,ms,uint32_t,%i,uint32_t,1,zero,int,,,y
 ADC Rate,adc_rate,,,ms,uint32_t,%i,uint32_t,1,zero,int,,,y
+Own Board Addr,own_board_addr,1,1,ul,uint8_t,%i,uint8_t,1,zero,int,,,y
