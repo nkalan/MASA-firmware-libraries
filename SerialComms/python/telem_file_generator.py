@@ -53,7 +53,8 @@ type_range_negative = {
     "int64_t"	:	-((2**64)/2)
 }
 
-# Used for python_string and hotfire_packet.py
+# Used for parser_data_dict_str and telem_parser.py
+# See https://docs.python.org/3/library/struct.html for details on byte formatting
 type_unpack_arg = {
     "char"		:	"\"<c\"",
     "uint8_t"	:	"\"<B\"",
@@ -83,9 +84,9 @@ Reads in the .csv template and generates files from it
 def main():
 
     # Open the telem template file
-    filename = sys.argv[1]
+    #filename = sys.argv[1]
     #filename = "test1.csv"
-    #filename = "telem_data_template.csv"
+    filename = "telem_data_template.csv"
     template_file = open(filename)
     print("Reading " + filename + "...")
 
@@ -113,12 +114,14 @@ def main():
                                 autogen_label + "\n\n" + \
                                 "#include \"globals.h\"\n" + \
                                 "#include \"config.h\"\n" + \
+                                "#include <stdint.h>\n" + \
+                                "\nextern void pack_telem_data(uint8_t* dst);\n" + \
                                 "\n"
 
     # For pack_telem_defines.c
     pack_telem_defines_c_string = begin_autogen_tag + "\n/// pack_telem_defines.c\n" + \
                                 autogen_label + "\n\n" + \
-                                "#include \"pack_telem_defines.h\"\n\nvoid pack_telem_data(uint8_t* dst){\n"
+                                "#include \"../inc/pack_telem_defines.h\"\n\nvoid pack_telem_data(uint8_t* dst){\n"
 
     # For globals.h and globals.c
     globals_h_string = begin_autogen_tag + "\n/// globals.h\n" + autogen_label + "\n\n"
@@ -130,27 +133,25 @@ def main():
     format_string = ""
     argument_string = ""
 
-    # For hotfire_packet.py
-    python_string = ""
-    csv_header = "Time (s),"
-    self_init = ""
-    log_string = "\t\tself.log_string = str(time.clock())+','"
+    # For telem_parser.py
+    parser_data_dict_str = ""
+    parser_units_dict_str = ""
+    parser_csv_header = "Time (s),"
+    parser_self_init_str = ""
+    parser_log_string = "\t\tself.log_string = str(time.clock()) + ','"
+    parser_items_list_str = list()
 
-    globals_string = "\t\t## GLOBALS ##\n"
+    #globals_string = "\t\t## GLOBALS ##\n"
     #device_list = []
-    col = {}  # Dictionary mapping column names to indices
+    col = dict()  # Dictionary mapping column names to indices
     packet_byte_length = 0	# Total bytes in packet (running total)
 
-    python_variables = []
-
-    #with open(sys.argv[1], newline='') as csvfile:
-
-    num_telem_items = 0  # Doesn't use enumerate to get telem items because not all lines get telem'd
+    num_items = 0  # Doesn't use enumerate to get telem items because not all lines get telem'd (should_generate column)
     for csv_row_num, line in enumerate(template_file):
         split_string = line.split(COLUMN_DELIMITER)
 
         # Create a dictionary mapping column names to column indices
-        if(num_telem_items == 0):	# First line of the file
+        if(csv_row_num == 0):	# First line of the file
             c = 0
             for arg in split_string:
                 col[arg.strip()] = c  # Last column header sometimes has '\n' at the end
@@ -287,37 +288,34 @@ def main():
             argument_string = argument_string + ("," + firmware_variable)
             """
 
-            # Update the hotfire_packet.py strings
+            # Update the telem_parser.py strings
             
             # Parse Globals
-            if(python_globals):
-                globals_string = globals_string + "\t\tglobal " + python_globals + '\n'
-                self_init += "\t\tself." + python_globals + " = " + python_init + "\n"
+            #if(python_globals):
+                #globals_string = globals_string + "\t\tglobal " + python_globals + '\n'
+                #parser_self_init_str += "\t\tself." + python_globals + " = " + python_init + "\n"
 
+            # Not sure what this line does
             python_variable = firmware_variable
             if(python_variable_override):
                 python_variable = python_variable_override
 
-            python_variables.append(python_variable)
+            parser_items_list_str.append(python_variable)
 
-            python_string += "\t\tbyte_rep = "
-            python_string += "packet[" + str(packet_byte_length - byte_length) + ":" + str(packet_byte_length) + "]"
-            python_string += "\n"
+            #TODO: check off-by-1 errors with num_items
+            parser_data_dict_str +=	"\t\tself.dict[self.items[" + str(num_items) + "]] = " + python_type + \
+                                "((float(struct.unpack(" + type_unpack_arg[type_cast] + ", packet[" + \
+                                str(packet_byte_length - byte_length) + ":" + str(packet_byte_length) + "])[0]))/" + xmit_scale + ")\n"
             
-            python_string +=	"\t\tself." + python_variable+" = " + python_type + \
-                                "((float(struct.unpack(" + type_unpack_arg[type_cast] + \
-                                ", byte_rep)[0]))/" + xmit_scale + ")\n"
+            parser_units_dict_str += "self.units[self.items[" + str(num_items) + "]] = " + unit + "\n"
 
-            python_string +=	"\t\tself.dict[self.items[" + str(num_telem_items - 1) + "]] = self." + python_variable + '\n'
-
-            csv_header += python_variable + ' (' + unit + '),'
-            log_string += "+str(self." + python_variable + ")+','"
+            parser_csv_header += python_variable + ' (' + unit + '),'
+            parser_log_string += " + str(self.dict[self.items[" + str(num_items) + "]])" + " + ','" 
             
-            
+            num_items += 1
             #device_list.append(split_string[5])  # unused
         #end else
 
-        num_telem_items += 1
     # end for
 
     # Parse through the global array dictionary and add them to the globals string
@@ -327,12 +325,13 @@ def main():
         globals_c_string += array_info[1][0] + " " + array_info[0] + "[" + str(array_info[1][1] + 1) + "] = {0};\n"
     globals_c_string += "\n" + end_autogen_tag
 
-    # Fill up telem defines with empty bytes until it reaches 254
-    for m in range(packet_byte_length, 254):  # TODO: why 254?
-        pack_telem_defines_h_string += "#define\tTELEM_ITEM_" + str(m) + "\t0\n"
+    # Fill up the pack_telem_defines.h #defines list with empty bytes until it reaches 254
+    #for m in range(packet_byte_length, 254):  # TODO: why 254? (Update: doesn't seem to be needed)
+    #    pack_telem_defines_h_string += "#define\tTELEM_ITEM_" + str(m) + "\t0\n"
     pack_telem_defines_h_string += "#define\tPACKET_SIZE\t" + str(packet_byte_length) + "\n"
+    pack_telem_defines_h_string += "#define\tNUM_TELEM_ITEMS\t" + str(num_items) + "\n"
 
-    # Fill up telem defines.c with unpacking code
+    # Fill up pack_telem_defines.c with unpacking code
     for m in range(0, 254):
         pack_telem_defines_c_string += "\t*(dst + " + str(m) + ") = TELEM_ITEM_" + str(m) + ";\n"
     pack_telem_defines_c_string += "}"
@@ -353,48 +352,48 @@ def main():
     # parse_csv_header +=  "\t\twrite_csv_header = False\n"
 
 
-    # More updating hotfire_packet.py strings
+    # More updating telem_parser.py strings
 
-    csv_header += "\\n\"\n"
+    parser_csv_header += "\\n\"\n"
 
-    self_init += "\t\tself.log_string = \"\"\n"
-    self_init += "\t\tself.num_items = " + str(num_telem_items) + "\n"
-    self_init += "\t\t\n"
-    self_init += "\t\tself.dict = {}\n"
-    self_init += "\t\t\n"
+    parser_self_init_str += "\t\tself.log_string = \"\"\n" + \
+                            "\t\tself.num_items = " + str(num_items) + "\n" + \
+                            "\t\t\n" + \
+                            "\t\tself.dict = {}\n" + \
+                            "\t\t\n" + \
+                            "\t\tself.items = [''] * self.num_items\n"
 
-    self_init += "\t\tself.items = [''] * self.num_items\n"
-
-    for index, var in enumerate(python_variables):
-        self_init += "\t\tself.items[" + str(index) + "] = \'" + var + "\' \n"
+    for index, var in enumerate(parser_items_list_str):
+        parser_self_init_str += "\t\tself.items[" + str(index) + "] = \'" + var + "\' \n"
 
 
     #parsed_printf_file = open((filename + "_sprintf-call_.c"), "w+")
-    parsed_python_file = open(("hotfire_packet.py"), "w+")
-    pack_telem_defines_h = open("pack_telem_defines.h", "w+")  # Generates file in current folder
-    pack_telem_defines_c = open("pack_telem_defines.c", "w+")
-    globals_h = open(("globals.h"), "w+")
-    globals_c = open(("globals.c"), "w+")
+    parsed_python_file = open("telem_parser.py", "w+")
+    pack_telem_defines_h = open("../inc/pack_telem_defines.h", "w+")  # Generates file in current folder
+    pack_telem_defines_c = open("../src/pack_telem_defines.c", "w+")
+    globals_h = open("../inc/globals.h", "w+")
+    globals_c = open("../src/globals.c", "w+")
 
     #parsed_printf_file.write("snprintf(line, sizeof(line), \"" + format_string + "\\r\\n\"" + argument_string + ");")
 
-    parsed_python_file.write(	"import time\nimport struct\n\nclass ECParse:\n\n" + \
+    parsed_python_file.write(	begin_autogen_tag + "\n\n/// telem_parser.py\n" + autogen_label + "\n\nimport time\nimport struct\n\nclass TelemParser:\n\n" + \
                                 "\tdef __init__(self):\n\t\tself.csv_header = \"" + \
-                                csv_header + self_init + "\n"
+                                parser_csv_header + parser_self_init_str + "\n"
                                 "\tdef parse_packet(self, packet):\n" + \
-                                python_string + \
-                                log_string)
+                                parser_data_dict_str + \
+                                parser_log_string)
 
     pack_telem_defines_h.write(pack_telem_defines_h_string)
     pack_telem_defines_c.write(pack_telem_defines_c_string)
 
     globals_h.write(globals_h_string)
+    
     globals_c.write(globals_c_string)
     globals_c.write(globals_c_user_string)  # Add the user-written section back in
 
     print(filename + " Successfully Parsed!")
     print(" --- Packet statistics --- ")
-    print("Packet items: " + str(num_telem_items))
+    print("Packet items: " + str(num_items))
     print("Packet length (bytes): " + str(packet_byte_length))
 
 if __name__ == '__main__':
