@@ -3,8 +3,9 @@ MASA telemetry format and global variables generator script
 
 Michigan Aeronautical Science Association
 Author: Nathaniel Kalantar (nkalan@umich.edu)
+Modified from Engine Controller 3 code
 Created: November 9, 2020
-Updated: November 9, 2020
+Updated: December 18, 2020
 """
 
 import time
@@ -67,15 +68,6 @@ type_unpack_arg = {
     "int64_t"	:	"\"<l\"",
 }
 
-"""
-Takes in a string, returns true if it's a valid C variable name.
-No array brackets allowed.
-"""
-def is_var_name(name):
-    if (name[0].isdecimal() or '-' in name or '[' in name or ']' in name or ' ' in name):
-        return False
-    else:
-        return True
 
 """
 Main program
@@ -98,7 +90,7 @@ def main():
     # Read through globals.c and store the user-written section, so it doesn't get overwritten
     globals_c_user_string = ""
     try:
-        globals_c = open("globals.c")
+        globals_c = open("../src/globals.c")
         user_section_found = False
         for line in globals_c:
             if (user_section_found):
@@ -113,7 +105,6 @@ def main():
     pack_telem_defines_h_string = begin_autogen_tag + "\n/// pack_telem_defines.h\n" + \
                                 autogen_label + "\n\n" + \
                                 "#include \"globals.h\"\n" + \
-                                "#include \"config.h\"\n" + \
                                 "#include <stdint.h>\n" + \
                                 "\nextern void pack_telem_data(uint8_t* dst);\n" + \
                                 "\n"
@@ -124,7 +115,7 @@ def main():
                                 "#include \"../inc/pack_telem_defines.h\"\n\nvoid pack_telem_data(uint8_t* dst){\n"
 
     # For globals.h and globals.c
-    globals_h_string = begin_autogen_tag + "\n/// globals.h\n" + autogen_label + "\n\n"
+    globals_h_string = begin_autogen_tag + "\n/// globals.h\n" + autogen_label + "\n\n" + "#include <stdint.h>" + "\n\n"
     globals_c_string = begin_autogen_tag + "\n/// globals.c\n" + autogen_label + "\n\n" + "#include \"globals.h\"" + "\n\n"
 
     global_arrays_generated = dict()  # Maps firmware_variable to list of [firmware_type, highest_index]
@@ -139,47 +130,45 @@ def main():
     parser_csv_header = "Time (s),"
     parser_self_init_str = ""
     parser_log_string = "\t\tself.log_string = str(time.clock()) + ','"
-    parser_items_list_str = list()
+    parser_items_list = list()
 
-    #globals_string = "\t\t## GLOBALS ##\n"
-    #device_list = []
     col = dict()  # Dictionary mapping column names to indices
     packet_byte_length = 0	# Total bytes in packet (running total)
 
-    num_items = 0  # Doesn't use enumerate to get telem items because not all lines get telem'd (should_generate column)
+    num_items = 0  # Doesn't use enumerate to get the number of items because not all lines get telem'd (should_generate column)
     for csv_row_num, line in enumerate(template_file):
-        split_string = line.split(COLUMN_DELIMITER)
+        split_string = line.strip().split(COLUMN_DELIMITER)  # strip() because last column sometimes has trailing '\n'
 
         # Create a dictionary mapping column names to column indices
         if(csv_row_num == 0):	# First line of the file
             c = 0
             for arg in split_string:
-                col[arg.strip()] = c  # Last column header sometimes has '\n' at the end
+                col[arg] = c  # Last column header sometimes has '\n' at the end
                 c += 1
         
-        else:	# Rest of the file with real data
+        else:  # Rest of the file with real data
 
             # Parse the row and store each datum into a variable
-            name = split_string[col['name']]
-            firmware_variable  = split_string[col['firmware_variable']]
-            min_val	 = split_string[col['min_val']]
-            max_val	 = split_string[col['max_val']]
-            unit  = split_string[col['unit']]
-            firmware_type  = split_string[col['firmware_type']]
-            printf_format  = split_string[col['printf_format']]
-            type_cast  = split_string[col['type_cast']]
-            xmit_scale	= split_string[col['xmit_scale']]
+            name                = split_string[col['name']]
+            firmware_variable   = split_string[col['firmware_variable']]
+            min_val	            = split_string[col['min_val']]
+            max_val	            = split_string[col['max_val']]
+            unit                = split_string[col['unit']]
+            firmware_type       = split_string[col['firmware_type']]
+            printf_format       = split_string[col['printf_format']]
+            type_cast           = split_string[col['type_cast']]
+            xmit_scale	        = split_string[col['xmit_scale']]
 
-            # Commented rows were used in the EC firmware, but not the new firmware.
-            #device	 = split_string[col['device']]
+            # These are used to generate the TelemParser gui class
             python_variable_override  = split_string[col['python_variable_override']]
             python_type  = split_string[col['python_type']]
             python_globals	 = split_string[col['python_globals']]
             python_init  = split_string[col['python_init']]
             
-            should_generate = split_string[col['should_generate']].strip()  # Last column has '\n'
+            # Only read the marked rows
+            should_generate = split_string[col['should_generate']]
 
-            # Only write the value to pack_telem_defines.h if should_generate is 'yes'
+            # Only write the value to pack_telem_defines.h if should_generate is 'y'
             try:
                 assert(should_generate == 'y' or should_generate == 'n')
             except:
@@ -213,36 +202,35 @@ def main():
                 print("Type limit: " + str(type_range_positive[type_cast]))
             ## End check xmit limits
 
+            # Increment the teletry byte count
             byte_length = type_byte_lengths[type_cast]
             packet_byte_length += byte_length
 
-            # Split the variable into byte-sized TELEM_ITEMs
-            for m in range(0, byte_length):
-                pack_telem_defines_h_string += "#define\tTELEM_ITEM_" + str(packet_byte_length - byte_length + m) + \
-                "\t((" + type_cast + ") (" + str(firmware_variable) + "*" + str(xmit_scale) + ")) >> " + str(8*m) + " \n"
+            # Split the variable into byte-sized TELEM_ITEMs and add them to the #defines list in pack_telem_defines.h
+            for b in range(0, byte_length):
+                pack_telem_defines_h_string += "#define\tTELEM_ITEM_" + str(packet_byte_length - byte_length + b) + \
+                "\t((" + type_cast + ") (" + str(firmware_variable) + "*" + str(xmit_scale) + ")) >> " + str(8*b) + " \n"
 
 
             """ Update globals.h / globals.c strings """
 
             # Check if the variable should be generated as an array
             open_bracket_index = firmware_variable.find("[")
+
+            # If it should be in an array ('[' was found in the variable name)
             if (open_bracket_index != -1):
-                array_name = firmware_variable[0 : open_bracket_index]  # Variable name without brackets and index
+
+                # Get the variable name without brackets and the array index
+                array_name = firmware_variable[0 : open_bracket_index]
                 close_bracket_index = firmware_variable.find("]")
-                array_index_str = firmware_variable[open_bracket_index + 1 : close_bracket_index]  # string
+                array_index_str = firmware_variable[open_bracket_index + 1 : close_bracket_index] # Leave it as a string to error check it
 
                 # Error check the array bracket formatting
                 try:
                     assert(close_bracket_index == len(firmware_variable) - 1)  # ']' should be the last character
-                    assert(array_index_str.isdecimal())
+                    assert(array_index_str.isdecimal()) # Make sure it's a number between the brackets
                 except:
                     print("[row " + str(csv_row_num + 1) + "] " + "Invalid firmware variable name: items in arrays must be written as var_name[index], index >= 1")
-
-                # Check the array name (without brackets) for being a valid variable name
-                try:
-                    assert(is_var_name(array_name))
-                except:
-                    print("[row " + str(csv_row_num + 1) + "] " + "Error: Invalid firmware_variable. Must be a valid C variable.")
 
                 # Update the array size in the globals dictionary if it's bigger than the current array size
                 array_index_decimal = int(array_index_str)
@@ -252,6 +240,7 @@ def main():
                         assert(firmware_type == global_arrays_generated[array_name][0])
                     except:
                         print("[row " + str(csv_row_num + 1) + "] " + "Error: All variables of the same array must be declared as the same type.")
+                    # End array type check
                         
                     global_arrays_generated[array_name][1] = max(array_index_decimal, global_arrays_generated[array_name][1])
                 # Otherwise create the list and set the array size manually
@@ -260,20 +249,15 @@ def main():
             
             # If it's not supposed to be an array (normal variable)
             else:
-                # Error check the (not-array) variable name
-                try:
-                    assert(is_var_name(firmware_variable))  # isalphanumeric
-                except:
-                    print("[row " + str(csv_row_num + 1) + "] " + "Error: Invalid firmware_variable. Must be a valid C variable.")
-                
                 #Add it to the file string
                 globals_h_string += "extern " + firmware_type + " " + firmware_variable + ";\n"
                 globals_c_string += firmware_type + " " + firmware_variable + " = 0;\n"
                 
             """
+            Note: nothing to do with this program, not sure why I wrote it here
             Pressure transducer calibration generator script:
 
-            3 column cvsv file
+            3 column csv file
             1: channel id (what channel it's connected to on the board)
             2: slope
             3: offest
@@ -290,19 +274,17 @@ def main():
 
             # Update the telem_parser.py strings
             
-            # Parse Globals
+            # Parse Globals  # Unused
             #if(python_globals):
                 #globals_string = globals_string + "\t\tglobal " + python_globals + '\n'
                 #parser_self_init_str += "\t\tself." + python_globals + " = " + python_init + "\n"
-
-            # Not sure what this line does
-            python_variable = firmware_variable
+           
+            python_variable = firmware_variable  # If the template csv says to give a variable a different name in the gui parser, do it here
             if(python_variable_override):
                 python_variable = python_variable_override
 
-            parser_items_list_str.append(python_variable)
+            parser_items_list.append(python_variable)
 
-            #TODO: check off-by-1 errors with num_items
             parser_data_dict_str +=	"\t\tself.dict[self.items[" + str(num_items) + "]] = " + python_type + \
                                 "((float(struct.unpack(" + type_unpack_arg[type_cast] + ", packet[" + \
                                 str(packet_byte_length - byte_length) + ":" + str(packet_byte_length) + "])[0]))/" + xmit_scale + ")\n"
@@ -313,47 +295,27 @@ def main():
             parser_log_string += " + str(self.dict[self.items[" + str(num_items) + "]])" + " + ','" 
             
             num_items += 1
-            #device_list.append(split_string[5])  # unused
         #end else
 
     # end for
 
-    # Parse through the global array dictionary and add them to the globals string
+    # Parse through the global array dictionary and add them to the globals.c/.h strings
     # array_info is (array_name, (firmware_type, highest_index))
     for array_info in global_arrays_generated.items():
         globals_h_string += "extern " + array_info[1][0] + " " + array_info[0] + "[" + str(array_info[1][1] + 1) + "];\n"
         globals_c_string += array_info[1][0] + " " + array_info[0] + "[" + str(array_info[1][1] + 1) + "] = {0};\n"
     globals_c_string += "\n" + end_autogen_tag
 
-    # Fill up the pack_telem_defines.h #defines list with empty bytes until it reaches 254
-    #for m in range(packet_byte_length, 254):  # TODO: why 254? (Update: doesn't seem to be needed)
-    #    pack_telem_defines_h_string += "#define\tTELEM_ITEM_" + str(m) + "\t0\n"
-    pack_telem_defines_h_string += "#define\tPACKET_SIZE\t" + str(packet_byte_length) + "\n"
-    pack_telem_defines_h_string += "#define\tNUM_TELEM_ITEMS\t" + str(num_items) + "\n"
+    # Add the number of TELEM_ITEMs to pack_telem_defines, and declare pack_telem_data() as non-extern. TODO: why?
+    pack_telem_defines_h_string += "#define\tCLB_NUM_TELEM_ITEMS\t" + str(packet_byte_length) + "\n"
+    pack_telem_defines_h_string += "\nvoid pack_telem_data(uint8_t* dst);\n"
 
     # Fill up pack_telem_defines.c with unpacking code
-    for m in range(0, 254):
+    for m in range(0, packet_byte_length):
         pack_telem_defines_c_string += "\t*(dst + " + str(m) + ") = TELEM_ITEM_" + str(m) + ";\n"
     pack_telem_defines_c_string += "}"
 
-    # This was commented when I got it, so it's not even used in the EC code
-
-    # parse_csv_header = "\tif(write_csv_header):\n"
-    # parse_csv_header +=  "\t\tdevice_list = [\'"
-    # for m in range(0, n-1):
-    #	parse_csv_header += device_list[m]
-    #	parse_csv_header += "\', \'"
-    # parse_csv_header += "\']\n"
-    # parse_csv_header +=  "\t\tfor device in range(0, len(device_list)):\n"
-    # parse_csv_header +=  "\t\t\tif device_list[device] in alias.keys():\n"
-    # parse_csv_header +=  "\t\t\t\tdevice_list[device] = alias[device_list[device]]\n"
-    # parse_csv_header +=  "\t\tcsv_header = \"Time (s),\"\n"
-    # parse_csv_header +=  "\t\t\tcsv_header.append(device, \",\")\n"
-    # parse_csv_header +=  "\t\twrite_csv_header = False\n"
-
-
-    # More updating telem_parser.py strings
-
+    # Updating telem_parser.py strings
     parser_csv_header += "\\n\"\n"
 
     parser_self_init_str += "\t\tself.log_string = \"\"\n" + \
@@ -363,12 +325,14 @@ def main():
                             "\t\t\n" + \
                             "\t\tself.items = [''] * self.num_items\n"
 
-    for index, var in enumerate(parser_items_list_str):
+    # Add the initialization for the items dict to the telem parser
+    for index, var in enumerate(parser_items_list):
         parser_self_init_str += "\t\tself.items[" + str(index) + "] = \'" + var + "\' \n"
 
+    """ Writing to files """
 
     #parsed_printf_file = open((filename + "_sprintf-call_.c"), "w+")
-    parsed_python_file = open("telem_parser.py", "w+")
+    telem_parser = open("telem_parser.py", "w+")
     pack_telem_defines_h = open("../inc/pack_telem_defines.h", "w+")  # Generates file in current folder
     pack_telem_defines_c = open("../src/pack_telem_defines.c", "w+")
     globals_h = open("../inc/globals.h", "w+")
@@ -376,7 +340,7 @@ def main():
 
     #parsed_printf_file.write("snprintf(line, sizeof(line), \"" + format_string + "\\r\\n\"" + argument_string + ");")
 
-    parsed_python_file.write(	begin_autogen_tag + "\n\n/// telem_parser.py\n" + autogen_label + "\n\nimport time\nimport struct\n\nclass TelemParser:\n\n" + \
+    telem_parser.write(	begin_autogen_tag + "\n\n/// telem_parser.py\n" + autogen_label + "\n\nimport time\nimport struct\n\nclass TelemParser:\n\n" + \
                                 "\tdef __init__(self):\n\t\tself.csv_header = \"" + \
                                 parser_csv_header + parser_self_init_str + "\n"
                                 "\tdef parse_packet(self, packet):\n" + \
