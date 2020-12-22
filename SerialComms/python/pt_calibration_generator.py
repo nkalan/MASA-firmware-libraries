@@ -25,49 +25,45 @@ def main():
     # Don't think I need to create a globals file
     # If globals needed, generate here
 
-    # Struct definition
-    struct_def = "struct Pt_calib {\n\tdouble slope;\n\tdouble offset;\n};"
-
     # Strings to hold what I want printed into the file
     pack_pt_calibration_h_str = ""
-    pack_pt_calibration_c_str = ""
 
     pack_pt_calibration_h_str += begin_autogen_tag + "\n/// pack_pt_calibration.h\n" + autogen_label + "\n\n"
-    pack_pt_calibration_h_str += struct_def + "\n\n"
-    pack_pt_calibration_h_str += "extern void pt_calibration_data(struct Pt_calib* data);\n\n"
-    pack_pt_calibration_h_str += "extern void update_temp(struct Pt_calib *temp, double slope, double offset);\n\n" \
-    + "struct Pt_calib temp = {0,0};\n\n"
-
-
-    pack_pt_calibration_c_str += begin_autogen_tag + "\n/// pack_pt_calibration.c\n" + autogen_label + "\n\n"
-
-    pack_pt_calibration_c_str += "#include \"../inc/pack_pt_calibration.h\"\n\n"
-    # pack_pt_calibration_c_str += "struct Pt_calib temp;\n\n"
-    # pack_pt_calibration_c_str += "void update_temp(struct Pt_calib* temp, double slope_in, double offset_in) {\n" \
-    # + "\ttemp->slope = slope_in;\n\ttemp->offset = offset_in;\n}\n\n"
-    pack_pt_calibration_c_str += "void pt_calibration_data(struct Pt_calib* data) {\n"
 
     # Loop through csv file using iterator
     # Hard coded filename. Should be passed in as command line arg
     channel_num = -1
+
+    # Holds values for slope and offset
+    calibration_h_slope = ""
+    calibration_h_offset = ""
+    # Iterate through csv file storing values of slopes and offsets
     with open('pt_calibration.csv') as csvfile:
         data_iter = csv.reader(csvfile, delimiter = COLUMN_DELIMITER)
         for row in data_iter:
+            if(channel_num > 0):
+                calibration_h_slope += ", "
+                calibration_h_offset += ", "
+                # New line every 5 numbers for readability
+                if (channel_num % 5 == 0):
+                    calibration_h_slope += "\n\t\t\t\t\t"
+                    calibration_h_offset += "\n\t\t\t\t\t"
             if (channel_num != -1): # Skips first row with column titles
-                pack_pt_calibration_c_str += "\tdata[" + str(channel_num) + "] = CHANNEL_" + str(channel_num) + "_CALIBS;\n"
-                pack_pt_calibration_h_str += "temp = {" + str(row[1]) + ", " + str(row[2]) + "};\n"
-                pack_pt_calibration_h_str += "#define CHANNEL_" + str(channel_num) + "_CALIBS temp\n"
+                calibration_h_slope += str(row[1])
+                calibration_h_offset += str(row[2])
             channel_num += 1
 
-    pack_pt_calibration_c_str += "}"
+
+    calibration_h_slope += "};\n\n"
+    calibration_h_offset += "};"
+    slope_declaration = "double pt_slope[" + str(channel_num) + "] = {"
+    offset_declaration = "double pt_offset[" + str(channel_num) + "] = {"
+
 
     # Print file strings to files
     pack_pt_calibration_h = open("../inc/pack_pt_calibration.h", "w+")
-    pack_pt_calibration_h.write(pack_pt_calibration_h_str)
-    pack_pt_calibration_c = open("../src/pack_pt_calibration.c", "w+")
-    pack_pt_calibration_c.write(pack_pt_calibration_c_str)
-
-
+    pack_pt_calibration_h.write(pack_pt_calibration_h_str + slope_declaration + \
+    calibration_h_slope + offset_declaration + calibration_h_offset)
 
 if __name__ == '__main__':
     main()
