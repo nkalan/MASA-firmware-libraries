@@ -14,6 +14,8 @@ import csv
 
 # Used to split() lines into columns
 COLUMN_DELIMITER = ','
+# File name hard coded. Should probably change to command line arg
+INPUT_FILE_NAME = 'pt_calibration.csv'
 
 def main():
 
@@ -30,18 +32,18 @@ def main():
 
     pack_pt_calibration_h_str += begin_autogen_tag + "\n/// pack_pt_calibration.h\n" + autogen_label + "\n\n"
 
-    # Loop through csv file using iterator
-    # Hard coded filename. Should be passed in as command line arg
     channel_num = -1
 
     # Holds values for slope and offset
     calibration_h_slope = ""
     calibration_h_offset = ""
     # Iterate through csv file storing values of slopes and offsets
-    with open('pt_calibration.csv') as csvfile:
+    more_than_zero_lines = False
+    with open(INPUT_FILE_NAME) as csvfile:
         data_iter = csv.reader(csvfile, delimiter = COLUMN_DELIMITER)
         for row in data_iter:
             if(channel_num > 0):
+                more_than_zero_lines = True
                 calibration_h_slope += ", "
                 calibration_h_offset += ", "
                 # New line every 5 numbers for readability
@@ -49,21 +51,35 @@ def main():
                     calibration_h_slope += "\n\t\t\t\t\t"
                     calibration_h_offset += "\n\t\t\t\t\t"
             if (channel_num != -1): # Skips first row with column titles
-                calibration_h_slope += str(row[1])
-                calibration_h_offset += str(row[2])
+                # Defaulting slope to 1 and offset to 0 if no value is given
+                if (str(row[1]) == ""):
+                    slope = 1
+                else:
+                    slope = row[1]
+                if (str(row[2]) == ""):
+                    offset = 0
+                else:
+                    offset = row[2]
+
+                calibration_h_slope += str(slope)
+                calibration_h_offset += str(offset)
+
             channel_num += 1
 
-
+    
     calibration_h_slope += "};\n\n"
     calibration_h_offset += "};"
     slope_declaration = "double pt_slope[" + str(channel_num) + "] = {"
     offset_declaration = "double pt_offset[" + str(channel_num) + "] = {"
 
-
     # Print file strings to files
     pack_pt_calibration_h = open("../inc/pack_pt_calibration.h", "w+")
-    pack_pt_calibration_h.write(pack_pt_calibration_h_str + slope_declaration + \
-    calibration_h_slope + offset_declaration + calibration_h_offset)
+    if more_than_zero_lines:
+        pack_pt_calibration_h.write(pack_pt_calibration_h_str + slope_declaration + \
+        calibration_h_slope + offset_declaration + calibration_h_offset)
+    else:
+        print("Error: No data in csv file")
+        pack_pt_calibration_h.write("Error: No data in csv file")
 
 if __name__ == '__main__':
     main()
