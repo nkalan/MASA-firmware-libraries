@@ -1,14 +1,11 @@
 import pandas as pd
 import numpy as np
 
-#print("CSV Filename (include .csv): ", end='')
-#file_name = input()
-
-#Change to filename when not in dev
-
-functions = pd.read_csv("telem_cmd_template.csv")
-#print("Board number: ", end='')
-#board_num = input()
+print("CSV Filename (include .csv): ", end='')
+file_name = input()
+functions = pd.read_csv(file_name)
+print("Board number: ", end='')
+board_num = input()
 
 with open("headerTest.h", 'w') as header_file:
 
@@ -17,25 +14,21 @@ with open("headerTest.h", 'w') as header_file:
     function_num = str(function_names.count())
     
 
-    ###Defines and includes and stuff for beginning of h file go here
+    #Defines and includes and stuff for beginning of h file go here
     header_file.write("#ifndef PACK_CMD_DEFINES_H\n#define PACK_CMD_DEFINES_H\n#define NUM_CMD_ITEMS " + function_num + "\n#include <stdint.h>\n\n")
 
 
-    ###For each function name in file, write out a function definition
+    #For each function name in file, write out a function definition
     for name in function_names:
         try:
             header_file.write("void " + name + "(uint8_t* data, uint8_t* status);\n\n")
         except TypeError:
-            #Skips over nan values (empty csv cells)
+            #Skips over nan values 
             pass
 
-
-    ###Writes pointer 
     header_file.write("typedef void (*Cmd_Pointer)(uint8_t* x, uint8_t* y);\n\n")
     header_file.write("static Cmd_Pointer cmds_ptr[NUM_CMD_ITEMS] = {\n")
     
-
-    ###This part will write function names in list
     function_name_index = 0
     for  name in function_names:
         try:
@@ -52,21 +45,8 @@ with open("headerTest.h", 'w') as header_file:
     #Write closing bracket and endif to file
     header_file.write("};\n\n\n#endif")
 
-
-
-
-#Autogenerate function headers for .c file 
-#c_file template example:
-#void digital_write(uint8_t* data, uint8_t* status) {
-  #uint16_t port_number = (data[0]<<8|data[1])/xmit scale;
-  #uint16_t pin_number = (data[2]<<8|data[3])/xmit scale;
-  #uint8_t state = (data[4])/xmit scale;
-#}
-#TODO:
-#user generated portion check for string "user" 
-
 def function_writer(row_number):
-    #Selects entire row (function along with all args and argtypes)
+    #selects entire row (function along with all args and argtypes)
     function_name = functions.iloc[row_number]
     num_args = int(function_name[2])
     c_file.write("void " + function_name[1] + "(uint8_t* data, uint8_t* status){\n\n\t")
@@ -104,17 +84,35 @@ def function_writer(row_number):
                 data_num += 1
 
         col_num += 3
-    c_file.write("\n")
+    c_file.write("\n}\n")
 
-    #write out function name
-    #loop through argument name, type, xmit scale and write
-    
-    
+#looks for keyword user and reads to end of file
+user_generated_code = ""  
+line_num = 0 
+with open("cfileTest.c", 'r') as c_file:
+    file_read = c_file.readlines()
+    for line in file_read:
+        line_num += 1
+        if "user" in line:
+            user_generated_code = file_read[line_num-1:]
+            
 
+    
 
 with open("cfileTest.c", 'w') as c_file:
+    board_supported = functions['supported_target_addr']
+    
+    #write functions from csv file to c_file
     for x in range(int(function_num)):
-        function_writer(x)
+        if board_num in str(board_supported[x]):
+            function_writer(x)
 
-    #TODO:
-    #Loop through rows but filter based on board number, etc.
+    #write user generated code to c_file
+    line_index = 0
+    for line in user_generated_code:
+        c_file.write(user_generated_code[line_index])
+        line_index += 1
+            
+    
+
+
