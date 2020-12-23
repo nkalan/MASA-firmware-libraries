@@ -1,29 +1,34 @@
 import pandas as pd
 import numpy as np
+import sys
 
 print("CSV Filename (include .csv): ", end='')
 file_name = input()
-functions = pd.read_csv(file_name)
+try:
+    functions = pd.read_csv(file_name)
+except FileNotFoundError:
+    print("File not found. Exiting now.")
+    sys.exit()
 print("Board number: ", end='')
 board_num = input()
 
 with open("headerTest.h", 'w') as header_file:
 
-    #Grab list of function names from csv
+    #grab list of function names from csv
     function_names = functions['function_name']
     function_num = str(function_names.count())
     
 
-    #Defines and includes and stuff for beginning of h file go here
+    #defines and includes and stuff for beginning of h file go here
     header_file.write("#ifndef PACK_CMD_DEFINES_H\n#define PACK_CMD_DEFINES_H\n#define NUM_CMD_ITEMS " + function_num + "\n#include <stdint.h>\n\n")
 
 
-    #For each function name in file, write out a function definition
+    #for each function name in file, write out a function definition
     for name in function_names:
         try:
             header_file.write("void " + name + "(uint8_t* data, uint8_t* status);\n\n")
         except TypeError:
-            #Skips over nan values 
+            #skips over nan values 
             pass
 
     header_file.write("typedef void (*Cmd_Pointer)(uint8_t* x, uint8_t* y);\n\n")
@@ -39,10 +44,10 @@ with open("headerTest.h", 'w') as header_file:
                 header_file.write(name + "\n")
 
         except TypeError:
-            #Skips over nan values
+            #skips over nan values
             pass
 
-    #Write closing bracket and endif to file
+    #write closing bracket and endif to file
     header_file.write("};\n\n\n#endif")
 
 def function_writer(row_number):
