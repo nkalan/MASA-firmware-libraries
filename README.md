@@ -3,7 +3,7 @@ Untested firmware changes should be pushed to their own branches. For instance, 
 
 `feature-IC_name_here-dev`
 
-Once the code on that branch is thoroughly tested on its feature branch, maintainer will merge into master.
+To create a new branch locally, first fetch all the changes from the branch that you would like to branch from, this can be done on the command line using `git pull origin branch_that_you_want_to_branch_from`. Before running this command, you will need to switch to the branch that you would like to branch from first by doing `git checkout branch_that_you_want_to_branch_from`. Once the code on that branch is thoroughly tested on its feature branch, maintainer will merge into master.
 The master branch should remain stable for use at all times.
 
 ## Structuring your new firmware library
@@ -28,7 +28,13 @@ IC_NAME/
 
 Remember to create your firmware library folder at the top level of the firmware-libraries directories. Happy firm-ing!
 
-# Important Information for Firmware Users
+# How to properly create merge request
+
+After creating your own branch using the steps above, you will need to make all your code changes on that branch. During the development process, it is crucial that you constantly pull in changes from your source branch (the branch that you originally branched from) into the branch that you are working on. You can do this by running `git pull origin source_branch_here` while you're on your development branch. By doing this frequently, you reduce the possibility of merge conflicts and save yourself a ton of headache down the line. 
+
+Once you feel that you've made substantial code changes on the development branch, you can create a merge request for it so that other developers can help review and provide feedback on your code. To do this, first make sure you add and commit all your modified files on the development branch. After doing this, simply push your development branch to the origin remote. Then, log on to the gitlab repository that you cloned and you should see a blue button on the top of Gitlab that asks if you would like to create a MR (merge request). Upon clicking on the MR button, please document the modifications for your code in detail in the MR description. Make sure that the checkbox `delete source branch on merge` is deselected. In addition, assign the MR to the person who assigned you the task. From now on, you should discuss all code specific questions on Gitlab.
+
+# How to setup STM32CubeIDE
 
 ## Setting up STM32CubeIDE project to use firmware libraries
 
