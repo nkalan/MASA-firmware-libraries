@@ -34,6 +34,8 @@ After creating your own branch using the steps above, you will need to make all 
 
 Once you feel that you've made substantial code changes on the development branch, you can create a merge request for it so that other developers can help review and provide feedback on your code. To do this, first make sure you add and commit all your modified files on the development branch. After doing this, simply push your development branch to the origin remote. Then, log on to the gitlab repository that you cloned and you should see a blue button on the top of Gitlab that asks if you would like to create a MR (merge request). Upon clicking on the MR button, please document the modifications for your code in detail in the MR description. Make sure that the checkbox `delete source branch on merge` is deselected. In addition, assign the MR to the person who assigned you the task. From now on, you should discuss all code specific questions on Gitlab.
 
+Note: you should never create a merge request to merge your branch into master!! For most cases, you should create a merge request to merge into the dev branch instead! We should only be merging dev into master when we know the system is stable.
+
 # How to setup STM32CubeIDE
 
 ## Setting up STM32CubeIDE project to use firmware libraries
