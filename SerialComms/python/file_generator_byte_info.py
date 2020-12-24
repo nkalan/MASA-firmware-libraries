@@ -12,7 +12,8 @@ type_byte_lengths = {
     "uint32_t"	:	4,
     "int32_t"	:	4,
     "uint64_t"	:	8,
-    "int64_t"	:	8
+    "int64_t"	:	8,
+    "double"    :   8
 }
 
 # Upper bound for a given variable type
