@@ -59,7 +59,7 @@ def main():
             # Parse the row and grab the variables
             packet_type             = int(line[col["packet_type"]])
             function_name           = line[col["function_name"]]
-            num_args                = int(line[col["num_args"]])            
+            num_args                = int(line[col["nums args"]])            
             supported_target_addr   = line[col["supported_target_addr"]]  # Note: this will be defined in a separate file in the future
             description             = line[col["description"]]  # Only for the gui, not used in firmware (I think)
 
@@ -69,11 +69,11 @@ def main():
             # Insert the function argument info into the proper list in the dictionary
             cmd_args[packet_type] = list()
 
-            # Args are grouped in columns of 3, starting at the column immediately after num_args (see template for example)
+            # Args are grouped in columns of 3, starting at the column immediately after nums args (see template for example)
             for n in range(num_args):
-                arg_name    = line[col["num_args"] + 3*n + 1]
-                arg_type    = line[col["num_args"] + 3*n + 2]
-                xmit_scale  = int(line[col["num_args"] + 3*n + 3])
+                arg_name    = line[col["nums args"] + 3*n + 1]
+                arg_type    = line[col["nums args"] + 3*n + 2]
+                xmit_scale  = int(line[col["nums args"] + 3*n + 3])
 
                 # Error check function parameters
                 try:
