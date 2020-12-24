@@ -16,7 +16,7 @@ void init_data(uint8_t *buffer, int16_t buffer_sz, CLB_Packet_Header* header) {
 	    // repack CLB_telem_data
 	    pack_telem_data(CLB_telem_data);
 		CLB_buffer = CLB_telem_data;
-		CLB_buffer_sz = NUM_TELEM_ITEMS;
+		CLB_buffer_sz = CLB_NUM_TELEM_ITEMS;
 	} else {				// custom telem
 		CLB_buffer = buffer;
 		CLB_buffer_sz = buffer_sz;
@@ -83,7 +83,7 @@ uint8_t send_data(UART_HandleTypeDef* uartx) {
 	return 0; // TODO: return better error handling
 }
 
-uint8_t receive_data(UART_HandleTypeDef* uartx) {
+uint8_t receive_data(UART_HandleTypeDef* uartx, uint8_t* buffer, uint16_t buffer_sz) {
 	/**	Procedure for receiving data:
 	 * 	1. Receive first packet, parse header
 	 * 	2. Specific behavior depending on packet_type and target_addr
@@ -93,10 +93,12 @@ uint8_t receive_data(UART_HandleTypeDef* uartx) {
 	 * 	       	any custom packet types that require more than 254 bytes will
 	 * 			have to be spread out over multiple packet type ids
 	 */
-	receive_packet(uartx, PONG_MAX_PACKET_SIZE);
+	//receive_packet(uartx, PONG_MAX_PACKET_SIZE);
+	for(uint16_t i = 0; i < buffer_sz; ++i) {
+		CLB_pong_packet[i] = buffer[i]; // copy items over for uart reception
+	}
 
-	uint16_t packet_sz = unstuff_packet(CLB_pong_packet, CLB_ping_packet, 
-														PONG_MAX_PACKET_SIZE);
+	unstuff_packet(CLB_pong_packet, CLB_ping_packet, PONG_MAX_PACKET_SIZE);
 
 	CLB_Packet_Header header;
 	unpack_header(&header, CLB_ping_packet);
@@ -107,12 +109,19 @@ uint8_t receive_data(UART_HandleTypeDef* uartx) {
 	}
 
 	uint8_t cmd_status = 0;
+	/*
 	if (CLB_board_addr == header.target_addr) {
-		(*cmds_ptr[header.packet_type])(CLB_ping_packet, &cmd_status);
-	}
+	    // TODO: handle receiving different packet types besides cmd
+		(*cmds_ptr[header.packet_type-8])(CLB_ping_packet, &cmd_status);
+	}*/
 
 	// TODO: more error handling depending on cmd status
 	return cmd_status;
+}
+
+uint8_t* return_telem_buffer(uint8_t*buffer_sz) {
+    *buffer_sz = CLB_buffer_sz;
+    return CLB_buffer;
 }
 
 void receive_packet(UART_HandleTypeDef* uartx, uint16_t sz) {
@@ -122,9 +131,6 @@ void receive_packet(UART_HandleTypeDef* uartx, uint16_t sz) {
 void transmit_packet(UART_HandleTypeDef* uartx, uint16_t sz) {
 	// currently abstracted in case we need more transmisison options
 	// transmit packet via serial TODO: error handling
-    for (uint16_t i = 0; i < sz; ++i) {
-        CLB_pong_packet[i] += '0'; // convert to ASCII before UART transmission
-    }
 	HAL_UART_Transmit(uartx, CLB_pong_packet, sz, HAL_MAX_DELAY);
 }
 
@@ -132,15 +138,23 @@ void unpack_header(CLB_Packet_Header* header, uint8_t* header_buffer) {
 	header->packet_type = header_buffer[0];
 	header->target_addr = header_buffer[1];
 	header->priority	= header_buffer[2];
+	header->do_cobbs    = header_buffer[3];
 	header->checksum	= (header_buffer[4]<<8)|header_buffer[3];
+	header->timestamp   = header_buffer[8]<<24|header_buffer[7]<<16|
+	                        header_buffer[6]<<8|header_buffer[5];
 }
 
 void pack_header(CLB_Packet_Header* header, uint8_t*header_buffer) {
 	header_buffer[0] = header->packet_type;
 	header_buffer[1] = header->target_addr;
 	header_buffer[2] = header->priority;
-	header_buffer[3] = 0xff&(header->checksum);		// little endian
-	header_buffer[4] = 0xff&((header->checksum)>>8);
+	header_buffer[3] = header->do_cobbs;
+	header_buffer[4] = 0xff&(header->checksum);
+	header_buffer[5] = 0xff&((header->checksum)>>8);
+	header_buffer[6] = 0xff&(header->timestamp);
+	header_buffer[7] = 0xff&((header->timestamp)>>8);
+	header_buffer[8] = 0xff&((header->timestamp)>>16);     // little endian
+	header_buffer[9] = 0xff&((header->timestamp)>>24);
 }
 
 void pack_packet(uint8_t *src, uint8_t *dst, uint16_t sz) {
@@ -166,32 +180,39 @@ uint16_t stuff_packet(uint8_t *unstuffed, uint8_t *stuffed, uint16_t length) {
 
 	//Start just keeps track of the start point
 	uint8_t *start = stuffed;
-	//Code represents the number of positions till the next 0 and code_ptr
-	//holds the position of the last zero to be updated when the next 0 is found
-	uint8_t code = 1;
-	uint8_t *code_ptr = stuffed++; //Note: this sets code_ptr to stuffed, then ++ stuffed
+	if (CLB_header->do_cobbs) {
+		//Code represents the number of positions till the next 0 and code_ptr
+			//holds the position of the last zero to be updated when the next 0 is found
+			uint8_t code = 1;
+			uint8_t *code_ptr = stuffed++; //Note: this sets code_ptr to stuffed, then ++ stuffed
 
-	while (length--)
-	{
-		//If the current byte is not zero, add that byte to stuffed data and increment
-		//the position of the last zero (code)
-		if (*unstuffed){
-			*stuffed++ = *unstuffed;
-			++code;
+			while (length--)
+			{
+				//If the current byte is not zero, add that byte to stuffed data and increment
+				//the position of the last zero (code)
+				if (*unstuffed){
+					*stuffed++ = *unstuffed;
+					++code;
 
-		}
-		//IF the current byte is not zero, OR if the current code is maxed out
-		//Update the last zero position with code, reset code, and set the code_ptr
-		//To the new stuffed position
-		if (!*unstuffed++ || code == 0xFF){ /* Input is zero or complete block */
+				}
+				//IF the current byte is not zero, OR if the current code is maxed out
+				//Update the last zero position with code, reset code, and set the code_ptr
+				//To the new stuffed position
+				if (!*unstuffed++ || code == 0xFF){ /* Input is zero or complete block */
+					*code_ptr = code;
+					code = 1;
+					code_ptr = stuffed++;
+				}
+			}
+			//Set the final code
 			*code_ptr = code;
-			code = 1;
-			code_ptr = stuffed++;
+			//Returns length of encoded data
+	} else {
+		for (uint16_t i = 0; i < length; ++i) {
+			*stuffed++ = *unstuffed++;
 		}
 	}
-	//Set the final code
-	*code_ptr = code;
-	//Returns length of encoded data
+
 	return stuffed - start;
 }
 
@@ -208,7 +229,7 @@ uint16_t unstuff_packet(uint8_t *stuffed, uint8_t *unstuffed, uint16_t length)
 {
 	uint8_t *start = unstuffed, *end = stuffed + length;
 	uint8_t code = 0xFF, copy = 0;
-
+	// TODO: implement usage of not using cobbs
 	for (; stuffed < end; copy--) {
 		if (copy != 0) {
 			*unstuffed++ = *stuffed++;
