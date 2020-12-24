@@ -12,6 +12,19 @@ except FileNotFoundError:
 print("Board number: ", end='')
 board_num = input()
 
+#looks for keyword user and reads to end of file
+user_generated_code_h = ""  
+line_num_h = 0 
+try:
+    with open("headerTest.h", 'r') as h_file:
+        file_read = h_file.readlines()
+        for line in file_read:
+            line_num_h += 1
+            if "user" in line:
+                user_generated_code_h = file_read[line_num_h-1:]
+except FileNotFoundError:
+    pass
+
 with open("headerTest.h", 'w') as header_file:
 
     #grab list of function names from csv
@@ -48,8 +61,15 @@ with open("headerTest.h", 'w') as header_file:
             pass
 
     #write closing bracket and endif to file
-    header_file.write("};\n\n\n#endif")
+    header_file.write("};\n\n\n#endif\n")
 
+    #write user generated code to h file
+    line_index_h = 0
+    for line in user_generated_code_h:
+        header_file.write(user_generated_code_h[line_index_h])
+        line_index_h += 1
+
+#writes a function to the c file
 def function_writer(row_number):
     #selects entire row (function along with all args and argtypes)
     function_name = functions.iloc[row_number]
@@ -94,13 +114,15 @@ def function_writer(row_number):
 #looks for keyword user and reads to end of file
 user_generated_code = ""  
 line_num = 0 
-with open("cfileTest.c", 'r') as c_file:
-    file_read = c_file.readlines()
-    for line in file_read:
-        line_num += 1
-        if "user" in line:
-            user_generated_code = file_read[line_num-1:]
-            
+try:
+    with open("cfileTest.c", 'r') as c_file:
+        file_read = c_file.readlines()
+        for line in file_read:
+            line_num += 1
+            if "user" in line:
+                user_generated_code = file_read[line_num-1:]
+except FileNotFoundError:
+    pass         
 
     
 
