@@ -42,6 +42,9 @@ def main():
     except:
         filepath = "./"
     
+    if filepath[len(filepath)-1] != "/":
+        filepath += "/"
+    
     with open(filename, newline='') as template_file:
         print("Reading " + filename + "...")
         csvread = csv.reader(template_file)  # csv.reader objects work with iterators and are not indexable
@@ -98,25 +101,26 @@ def main():
     # Generate s2_command() documentation
     s2_command_str = "\t\"\"\"\n\tEncodes command info and arguments with COBS and transmits them over serial\n\t@params\n" \
         + "\t\tser (pyserial object)  - serial obejct to write to\n" \
-        + "\t\ttarget_id (integer)    - ID of board the command is going to\n" \
-        + "\t\tcommand_id (integer)   - packet_type of the command being sent\n" \
-        + "\t\targc (integer)         - number of function arguments for the command\n" \
-        + "\t\targv (array)           - list of function arguments as they appear in the parameter list\n" \
+        + "\t\tcmd_info (dict)        - dictionary with the following key value pairs:\n" \
+        + "\t\t\t\"function_name\" : function name (string)\n" \
+        + "\t\t\t\"target_board_addr\" : address of board to send command to (integer)\n" \
+        + "\t\t\t\"timestamp\" : time the command was sent (integer)\n" \
+        + "\t\t\t\"args\" : list of arguments to send to the function (list)\n" \
         + "\t\"\"\"\n"
 
-    s2_command_str += "\tdef s2_command(ser, target_id, command_id, argc, argv):\n"
+    s2_command_str += "\tdef s2_command(self, ser, cmd_info):\n"
     s2_command_str += "\t\t#Initialize empty packet\n\t\tpacket = list()\n" \
         + "\n\t\t#Fill first 10 bytes of packet with CLB packet header information\n" \
-        + "\t\tpacket.append(command_id)\t# packet_type\n" \
-        + "\t\tpacket.append(target_id)\t# target_addr\n" \
+        + "\t\tpacket.append(self.cmd_names_dict[cmd_info[\"function_name\"]])\t# packet_type\n" \
+        + "\t\tpacket.append(cmd_info[\"target_board_addr\"])\t# target_addr\n" \
         + "\t\tpacket.append(1)\t# priority\n" \
         + "\t\tpacket.append(1)\t# do_cobbs\n" \
         + "\t\tpacket.append(0)\t# checksum\n" \
         + "\t\tpacket.append(0)\t# checksum\n" \
-        + "\t\tpacket.append()\t# timestamp\n" \
-        + "\t\tpacket.append()\t# timestamp\n" \
-        + "\t\tpacket.append()\t# timestamp\n" \
-        + "\t\tpacket.append()\t# timestamp\n" \
+        + "\t\tpacket.append((cmd_info[\"timestamp\"] >> 0) & 0xFF)\t# timestamp\n" \
+        + "\t\tpacket.append((cmd_info[\"timestamp\"] >> 8) & 0xFF)\t# timestamp\n" \
+        + "\t\tpacket.append((cmd_info[\"timestamp\"] >> 16) & 0xFF)\t# timestamp\n" \
+        + "\t\tpacket.append((cmd_info[\"timestamp\"] >> 24) & 0xFF)\t# timestamp\n" \
         + "\n"
         
     #TODO: how to determine priority and checksum
@@ -141,7 +145,7 @@ def main():
 
             s2_command_str += "\t\t\t# " + arg_name + "\n"
             for b in range(byte_length):
-                s2_command_str += "\t\t\tpacket.append(((argv[" + str(arg_num) + "]*" \
+                s2_command_str += "\t\t\tpacket.append(((cmd_info[\"args\"][" + str(arg_num) + "]*" \
                     + str(xmit_scale) + ") >> " + str(8*b) + ") & 0xFF)\n"
                 packet_index += 1
 
@@ -184,7 +188,7 @@ def main():
     cmd_args_dict_str = "\t\t# A dictionary mapping packet_type (command ID) to a list of function argument information.\n" \
         + "\t\t# The nth tuple in each list corresponds to the nth argument for that command's function,\n" \
         + "\t\t# in the order (arg_name, arg_type, xmit_scale)\n"
-    cmd_args_dict_str += "\t\tself.cmd_args_dict = {\n"  # TODO: should there be a self.?
+    cmd_args_dict_str += "\t\tself.cmd_args_dict = {\n"
 
     # This part is functionaly the same as doing 'gui_dict_str += str(cmd_args)',
     # but it formats each key-value pair onto its own line
@@ -197,7 +201,7 @@ def main():
     Generate the dict mapping function name to id/packet_type, using the {packet_type : function_name} dictionary used by this file
     """
     cmd_names_dict_str = "\t\t# A dictionary mapping command name to packet_type (command ID)\n" \
-        + "\t\tself.cmd_names_dict = {\n"  # TODO: should there be a self.?
+        + "\t\tself.cmd_names_dict = {\n"
     
     for packet_type, function_name in cmd_id_to_name.items():
         cmd_names_dict_str += "\t\t\t" + function_name + "\t:\t" + str(packet_type) + ",\n"
