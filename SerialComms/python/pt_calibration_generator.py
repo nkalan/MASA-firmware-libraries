@@ -11,8 +11,8 @@ REQUIRES: 1. csv contains columns labeled offset and slope.
           2. Command line args are formatted as follows:
                 python3 pt_calibration_generator.py [csv file name] [.h relative path] [.c relative path]
 
-             The .h and .c relative paths are optional and will default to ../inc/pt_calibration.h and
-             ../src/pt_calibration.c respectively if not given a command line arg
+             The .h and .c relative paths are optional and will default to ../inc/pt_calibrations.h and
+             ../src/pt_calibrations.c respectively if not given a command line arg
 """
 import time
 import sys
@@ -26,8 +26,8 @@ try:
 except IndexError:
     sys.exit("No command line arg. Program requires the at least the name of the input file as a command line arg.")
 
-h_file_path = "../inc/pt_calibration.h"
-c_file_path = "../src/pt_calibration.c"
+h_file_path = "../inc/pt_calibrations.h"
+c_file_path = "../src/pt_calibrations.c"
 
 if len(sys.argv) > 2:
     if sys.argv[2][-1] == 'c':
@@ -57,8 +57,8 @@ def main():
     # If globals needed, generate here
 
     # Strings to hold header of output files
-    pt_calibration_c_header = begin_autogen_tag + "\n/// pt_calibration.c\n" + autogen_label + "\n\n"
-    pt_calibration_h_header = begin_autogen_tag + "\n/// pt_calibration.h\n" + autogen_label + "\n\n"
+    pt_calibration_c_header = begin_autogen_tag + "\n/// pt_calibrations.c\n" + autogen_label + "\n\n"
+    pt_calibration_h_header = begin_autogen_tag + "\n/// pt_calibrations.h\n" + autogen_label + "\n\n"
 
     channel_num = -1
     # Holds values for slope and offset
