@@ -33,8 +33,7 @@ def main():
     """
 
     # Open the telem template file
-    #filename = sys.argv[1]
-    filename = "telem_cmd_template.csv"  # TODO get rid of this line, uncomment the line above it
+    filename = sys.argv[1]
 
     # Determine the directory to generate the file into
     try:
