@@ -71,10 +71,12 @@ def main():
 
             # Args are grouped in columns of 3, starting at the column immediately after nums args (see template for example)
             for n in range(num_args):
-                arg_name    = line[col["nums args"] + 3*n + 1]
-                arg_type    = line[col["nums args"] + 3*n + 2]
-                xmit_scale  = int(line[col["nums args"] + 3*n + 3])
-
+                arg_name = line[col["nums args"] + 3*n + 1]
+                arg_type = line[col["nums args"] + 3*n + 2]
+                try:  # default xmit_scale is 1
+                    xmit_scale = int(line[col["nums args"] + 3*n + 3])
+                except:
+                    xmit_scale = 1
                 # Error check function parameters
                 try:
                     assert(arg_name != "" and arg_type != "" and xmit_scale != "")
@@ -141,7 +143,7 @@ def main():
             s2_command_str += "\t\t\t# " + arg_name + "\n"
             for b in range(byte_length):
                 s2_command_str += "\t\t\tpacket.append(((argv[" + str(arg_num) + "]*" \
-                    + str(xmit_scale) + ") >> " + str(8*(byte_length-b-1)) + ") & 0xFF)\n"
+                    + str(xmit_scale) + ") >> " + str(8*b) + ") & 0xFF)\n"
                 packet_index += 1
 
     s2_command_str += "\n\t\t# Encode the packet with COBS\n\t\tstuff_array(packet, separator=0)\n"
@@ -206,14 +208,14 @@ def main():
     """
     Write all contents to the _S2_Interface_Auto.py file
     """
-    with open(filepath + "_S2_Interface_Auto.py", "w+") as s2_auto:
-        s2_auto.write(begin_autogen_tag + "\n### _S2_Interface_Auto.py\n" + autogen_label + "\n\n" \
-            + "import serial\n\nclass _S2_Interface_Auto:\n\tdef __init__(self):\n" \
+    with open(filepath + "_S2_InterfaceAutogen.py", "w+") as s2_auto:
+        s2_auto.write(begin_autogen_tag + "\n### _S2_InterfaceAutogen.py\n" + autogen_label + "\n\n" \
+            + "import serial\n\nclass _S2_InterfaceAutogen:\n\tdef __init__(self):\n" \
             + cmd_names_dict_str + "\n" \
             + cmd_args_dict_str + "\n" \
             + s2_command_str + "\n" \
             + stuff_array_str + "\n")
-        print("Created/updated " + filepath + "_S2_Interface_Auto.py")
+        print("Created/updated " + filepath + "_S2_InterfaceAutogen.py")
 
 
 if __name__ == '__main__':

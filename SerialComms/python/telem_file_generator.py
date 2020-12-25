@@ -259,7 +259,7 @@ def main():
     """ Writing to files """
 
     #parsed_printf_file = open((filename + "_sprintf-call_.c"), "w+")
-    telem_parser = open("../gui/telem_parser.py", "w+")
+    telem_parser = open("../gui/telemParse.py", "w+")
     pack_telem_defines_h = open("../inc/pack_telem_defines.h", "w+")  # Generates file in current folder
     pack_telem_defines_c = open("../src/pack_telem_defines.c", "w+")
     globals_h = open("../inc/globals.h", "w+")
@@ -267,7 +267,7 @@ def main():
 
     #parsed_printf_file.write("snprintf(line, sizeof(line), \"" + format_string + "\\r\\n\"" + argument_string + ");")
 
-    telem_parser.write(	"### " + begin_autogen_tag + "\n### telem_parser.py\n" + "### " + autogen_label + "\n\nimport time\nimport struct\n\nclass TelemParser:\n\n" + \
+    telem_parser.write(	"### " + begin_autogen_tag + "\n### telemParse.py\n" + "### " + autogen_label + "\n\nimport time\nimport struct\n\nclass TelemParse:\n\n" + \
                                 "\tdef __init__(self):\n\t\tself.csv_header = \"" + \
                                 parser_csv_header + parser_self_init_str + "\n"
                                 "\tdef parse_packet(self, packet):\n" + \
@@ -282,6 +282,7 @@ def main():
     globals_c.write(globals_c_string)
     globals_c.write(globals_c_user_string)  # Add the user-written section back in
 
+    # Close all files
     telem_parser.close()
     pack_telem_defines_h.close()
     pack_telem_defines_c.close()
@@ -292,7 +293,7 @@ def main():
     print(" --- Packet statistics --- ")
     print("Packet items: " + str(num_items))
     print("Packet length (bytes): " + str(packet_byte_length))
-    print("\nCreated/updated 5 files:\n../gui/telem_parser.py\n../inc/pack_telem_defines.h\n../src/pack_telem_defines.c\n../inc/globals.h\n../src/globals.c\n")
+    print("\nCreated/updated 5 files:\n../gui/telemParse.py\n../inc/pack_telem_defines.h\n../src/pack_telem_defines.c\n../inc/globals.h\n../src/globals.c\n")
 
 if __name__ == '__main__':
     main()
