@@ -1,4 +1,4 @@
-﻿packet_type,function_name,nums args,arg0,arg_type0,xmit_scale,arg1,arg_type1,xmit_scale,arg2,arg_type2,xmit_scale,supported_target_addr,description
+packet_type,function_name,nums args,arg0,arg_type0,xmit_scale,arg1,arg_type1,xmit_scale,arg2,arg_type2,xmit_scale,supported_target_addr,description
 8,set_vlv,2,vlv_num,uint32_t,1,state,uint8_t,,,,,0 1,write high/low to specific valve
 9,send_telem_short,1,board_num,uint8_t,1,,,,,,,0 1,send short version of telem data
 10,send_telem_all,0,board_num,uint8_t,1,,,,,,,0 1,send full telem data
@@ -15,4 +15,4 @@
 ,,,,,,,,,,,,,
 ,,,,,,,,,,,,,
 Note: supported target addresses will be defined in a separate file in the future,,,,,,,,,,,,,
-Note: the values will be big endian ordered,,,,,,,,,,,,,
+Note: the values will be little endian ordered,,,,,,,,,,,,,
