@@ -4,23 +4,51 @@ MASA pressure transducer calibration generator script
 Michigan Aeronautical Science Association
 Author: Leif Gullstad (leifg@umich.edu)
 Created: December 20, 2020 
-Updated: December 23, 2020
+Updated: December 24, 2020
 
 REQUIRES: 1. csv contains columns labeled offset and slope.
              Script does not care about the location nor order they appear in.
-          2. The name of the input csv file is passed as a command line arg.
+          2. Command line args are excepted as follows
+            python3 pt_calibration_generator.py [csv file name] [.h relative file path] [.c relative file path]
+            The csv file name is required, but including file paths is optional.
+            If no file path is specified:
+                .h will default to ../inc/pt_calibrations.h
+                .c will default to ../src/pt_calibrations.c
 """
 import time
 import sys
 import csv
 
-# Used to split() lines into columns
+# Used by csv.reader()
 COLUMN_DELIMITER = ','
-# File name hard coded. Should probably change to command line arg
+
 try:
     INPUT_FILE_NAME = sys.argv[1]
 except IndexError:
-    sys.exit("No command line arg found. Program requires the name of the input file as a command line arg.")
+    sys.exit("No command line arg found. Program requires at least the name of the input file as a command line arg.")
+
+# Default file paths for output
+h_file_path = "../inc/pt_calibrations.h"
+c_file_path = "../src/pt_calibrations.c"
+
+if len(sys.argv) > 2:
+    if sys.argv[2][-1] == 'c':
+        c_file_path = sys.argv[2]
+    elif sys.argv[2][-1] == 'h':
+        h_file_path = sys.argv[2]
+    else:
+        sys.exit("ERROR: Command line args after input file must be paths for .h or .c files with the file name "
+                 "included in the path.")
+    try:
+        if sys.argv[3][-1] == 'c':
+            c_file_path = sys.argv[3]
+        elif sys.argv[3][-1] == 'h':
+            h_file_path = sys.argv[3]
+        else:
+            sys.exit("ERROR: Command line args after input file must be paths for .h or .c files with the file name "
+                     "included in the path.")
+    except IndexError:
+        pass
 
 
 def main():
@@ -33,14 +61,16 @@ def main():
     # If globals needed, generate here
 
     # Strings to hold what I want printed into the file
-    pack_pt_calibration_h_str = ""
+    pt_calibration_h_header = ""
+    pt_calibration_c_header = ""
 
-    pack_pt_calibration_h_str += begin_autogen_tag + "\n/// pack_pt_calibration.h\n" + autogen_label + "\n\n"
+    pt_calibration_h_header += begin_autogen_tag + "\n/// pt_calibrations.h\n" + autogen_label + "\n\n"
+    pt_calibration_c_header += begin_autogen_tag + "\n/// pt_calibrations.c\n" + autogen_label + "\n\n"
 
     channel_num = -1
     # Holds values for slope and offset
-    calibration_h_slope = ""
-    calibration_h_offset = ""
+    calibration_c_slope = ""
+    calibration_c_offset = ""
     slope_col = 0
     offset_col = 0
     # Iterate through csv file storing values of slopes and offsets
@@ -51,12 +81,12 @@ def main():
             for row in data_iter:
                 if channel_num > 0:
                     more_than_zero_lines = True
-                    calibration_h_slope += ", "
-                    calibration_h_offset += ", "
+                    calibration_c_slope += ", "
+                    calibration_c_offset += ", "
                     # New line every 5 numbers for readability
                     if channel_num % 5 == 0:
-                        calibration_h_slope += "\n\t\t\t\t\t"
-                        calibration_h_offset += "\n\t\t\t\t\t"
+                        calibration_c_slope += "\n\t\t\t\t\t"
+                        calibration_c_offset += "\n\t\t\t\t\t"
                 if channel_num != -1:  # Skips first row with column titles
                     # Defaults slope to 1 and offset to 0 if no value is given
                     if str(row[slope_col]) == "":
@@ -68,8 +98,8 @@ def main():
                     else:
                         offset = row[offset_col]
 
-                    calibration_h_slope += str(slope)
-                    calibration_h_offset += str(offset)
+                    calibration_c_slope += str(slope)
+                    calibration_c_offset += str(offset)
                 # For loop below finds which column the slope and offset data are in
                 else:  # Implies that channel_num == -1
                     slope_col_found = False
@@ -93,18 +123,20 @@ def main():
     if not offset_col_found:
         sys.exit("ERROR: Column label \"offset\" not found.")
 
-    calibration_h_slope += "};\n\n"
-    calibration_h_offset += "};"
-    slope_declaration = "double pt_slope[" + str(channel_num) + "] = {"
-    offset_declaration = "double pt_offset[" + str(channel_num) + "] = {"
+    calibration_c_slope += "};\n\n"
+    calibration_c_offset += "};"
+    slope_declaration = "double pt_slope[" + str(channel_num) + "]"
+    offset_declaration = "double pt_offset[" + str(channel_num) + "]"
 
     # Print file strings to files
-    pack_pt_calibration_h = open("../inc/pt_calibrations.h", "w+")
+    pt_calibrations_h = open(h_file_path, "w+")
+    pt_calibrations_c = open(c_file_path, "w+")
     if more_than_zero_lines:
-        pack_pt_calibration_h.write(pack_pt_calibration_h_str + slope_declaration + \
-                                    calibration_h_slope + offset_declaration + calibration_h_offset)
+        pt_calibrations_h.write(pt_calibration_h_header + slope_declaration + ";\n\n" + offset_declaration + ";")
+        pt_calibrations_c.write(pt_calibration_c_header + slope_declaration + " = {" + calibration_c_slope \
+                                + offset_declaration + " = {" + calibration_c_offset)
     else:
-        sys.exit("Error: No data in csv file")
+        sys.exit("ERROR: No data in csv file")
 
     print("csv file successfully parsed")
 
