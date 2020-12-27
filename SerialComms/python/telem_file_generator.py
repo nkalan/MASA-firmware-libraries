@@ -2,10 +2,10 @@
 MASA telemetry format and global variables generator script
 
 Michigan Aeronautical Science Association
-Author: Nathaniel Kalantar (nkalan@umich.edu)
+Authors: Nathaniel Kalantar (nkalan@umich.edu) and Leif Gullstad (leifg@umich.edu)
 Modified from Engine Controller 3 code
 Created: November 9, 2020
-Updated: December 18, 2020
+Updated: December 26, 2020
 """
 
 import file_generator_byte_info as byte_info
@@ -69,8 +69,18 @@ def main():
     format_string = ""
     argument_string = ""
 
+    # Hardcoded packet header for parse_packet function
+    packet_header_byte_size = 10
+    parser_dict_header_str = "\t\tself.dict[self.items[0]] = int((float(struct.unpack(\"<I\", packet[0:1])[0]))/1)\n" \
+                             "\t\tself.dict[self.items[1]] = int((float(struct.unpack(\"<I\", packet[1:2])[0]))/1)\n" \
+                             "\t\tself.dict[self.items[2]] = int((float(struct.unpack(\"<I\", packet[2:3])[0]))/1)\n" \
+                             "\t\tself.dict[self.items[3]] = int((float(struct.unpack(\"<I\", packet[3:4])[0]))/1)\n" \
+                             "\t\tself.dict[self.items[4]] = int((float(struct.unpack(\"<I\", packet[4:6])[0]))/1)\n" \
+                             "\t\tself.dict[self.items[5]] = int((float(struct.unpack(\"<I\", packet[6:10])[0]))/1)\n"
+
     # For telem_parser.py
-    parser_data_dict_str = ""
+    # Starts off the parser data with the hard coded packet header
+    parser_data_dict_str = parser_dict_header_str
     parser_units_dict_str = ""
     parser_csv_header = "Time (s),"
     parser_self_init_str = ""
@@ -78,9 +88,10 @@ def main():
     parser_items_list = list()
 
     col = dict()  # Dictionary mapping column names to indices
-    packet_byte_length = 0	# Total bytes in packet (running total)
+    packet_byte_length = packet_header_byte_size	# Total bytes in packet (running total)
 
-    num_items = 0  # Doesn't use enumerate to get the number of items because not all lines get telem'd (should_generate column)
+    # num_items begins at 6 to account for the hardcoded packet header
+    num_items = 6  # Doesn't use enumerate to get the number of items because not all lines get telem'd (should_generate column)
     for csv_row_num, line in enumerate(template_file):
         split_string = line.strip().split(COLUMN_DELIMITER)  # strip() because last column sometimes has trailing '\n'
 
@@ -249,11 +260,20 @@ def main():
                             "\t\t\n" + \
                             "\t\tself.dict = {}\n" + \
                             "\t\t\n" + \
-                            "\t\tself.items = [''] * self.num_items\n"
+                            "\t\tself.items = [''] * self.num_items\n" \
+                            "\t\tself.items[0] = 'packet_type'\n" \
+                            "\t\tself.items[1] = 'target_addr'\n" \
+                            "\t\tself.items[2] = 'priority'\n" \
+                            "\t\tself.items[3] = 'do_cobbs'\n" \
+                            "\t\tself.items[4] = 'checksum'\n" \
+                            "\t\tself.items[5] = 'timestamp'\n" \
+                            # End Hardcoded packet header
 
     # Add the initialization for the items dict to the telem parser
+    # Index has a "+ 6" to account for the first 6 parts of items which is the
+    #   hardcoded packet header
     for index, var in enumerate(parser_items_list):
-        parser_self_init_str += "\t\tself.items[" + str(index) + "] = \'" + var + "\' \n"
+        parser_self_init_str += "\t\tself.items[" + str(index + 6) + "] = \'" + var + "\' \n"
 
 
     """ Writing to files """
