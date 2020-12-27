@@ -23,6 +23,9 @@ Main program
 Reads in the .csv template and generates files from it
 """
 def main():
+    # error_ocurred variable will be used to avoid the program print out that it was
+    # successful without having to terminate the program when the first error ocurrs
+    error_ocurred = False
     # Open the telem template file
     filename = sys.argv[1]
     template_file = open(filename)
@@ -128,6 +131,7 @@ def main():
             try:
                 assert(should_generate == 'y' or should_generate == 'n')
             except:
+                error_ocurred = True
                 print("[row " + str(csv_row_num + 1) + "] " + "Error: should_generate can only be 'y' or 'n'")
             
             if (should_generate != 'y'):
@@ -139,6 +143,7 @@ def main():
             try:
                 assert type_cast in byte_info.type_byte_lengths.keys()
             except:
+                error_ocurred = True
                 print("[row " + str(csv_row_num + 1) + "] " + "Invalid type cast. Valid Types are:\n" + str(type_byte_lengths.keys()))
 
             ## Check xmit limits: make sure the float scaler doesn't make it go out of range
@@ -146,6 +151,7 @@ def main():
                 if(min_val):
                     assert (float(min_val)*float(xmit_scale) >= byte_info.type_range_negative[type_cast])
             except:
+                error_ocurred = True
                 print("[row " + str(csv_row_num + 1) + "] " + "Invalid type cast for given range on item " + name)
                 print("Min val: " + str(float(min_val)*float(xmit_scale)))
                 print("Type limit: " + str(byte_info.type_range_negative[type_cast]))
@@ -153,6 +159,7 @@ def main():
                 if(max_val):
                     assert (float(max_val)*float(xmit_scale) <= byte_info.type_range_positive[type_cast])
             except:
+                error_ocurred = True
                 print("[row " + str(csv_row_num + 1) + "] " + "Invalid type cast for given range on item " + name)
                 print("Max val: " + str(float(max_val)*float(xmit_scale)))
                 print("Type limit: " + str(byte_info.type_range_positive[type_cast]))
@@ -186,6 +193,7 @@ def main():
                     assert(close_bracket_index == len(firmware_variable) - 1)  # ']' should be the last character
                     assert(array_index_str.isdecimal()) # Make sure it's a number between the brackets
                 except:
+                    error_ocurred = True
                     print("[row " + str(csv_row_num + 1) + "] " + "Invalid firmware variable name: items in arrays must be written as var_name[index], index >= 1")
 
                 # Update the array size in the globals dictionary if it's bigger than the current array size
@@ -195,6 +203,7 @@ def main():
                     try:
                         assert(firmware_type == global_arrays_generated[array_name][0])
                     except:
+                        error_ocurred = True
                         print("[row " + str(csv_row_num + 1) + "] " + "Error: All variables of the same array must be declared as the same type.")
                     # End array type check
                         
@@ -309,11 +318,15 @@ def main():
     globals_h.close()
     globals_c.close()
 
-    print(filename + " Successfully Parsed!")
-    print(" --- Packet statistics --- ")
-    print("Packet items: " + str(num_items))
-    print("Packet length (bytes): " + str(packet_byte_length))
-    print("\nCreated/updated 5 files:\n../gui/telemParse.py\n../inc/pack_telem_defines.h\n../src/pack_telem_defines.c\n../inc/globals.h\n../src/globals.c\n")
+    if not error_ocurred:
+        print(filename + " Successfully Parsed!")
+        print(" --- Packet statistics --- ")
+        print("Packet items: " + str(num_items))
+        print("Packet length (bytes): " + str(packet_byte_length))
+        print("\nCreated/updated 5 files:\n../gui/telemParse.py\n../inc/pack_telem_defines.h\n../src/pack_telem_defines.c\n../inc/globals.h\n../src/globals.c\n")
+    else:
+        print("\nScript failed to complete. One or more errors occurred. See command line or terminal interface for "
+              "details.\n")
 
 if __name__ == '__main__':
     main()
