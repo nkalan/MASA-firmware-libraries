@@ -37,12 +37,22 @@ def main():
     print("Reading " + filename + "...")
 
     output_file = "./telemParse.py"
+    output_globals_h_file = "../inc/globals.h"
+    output_globals_c_file = "../src/globals.c"
 
     if len(sys.argv) > 2:
-        if sys.argv[2][-1] == "y" and sys.argv[2][-3:-1] == ".p":
+        if sys.argv[2][-3:] == ".py":
             output_file = sys.argv[2]
         else:
             sys.exit("Second command line arg must be a py file.")
+        if (len(sys.argv)>=3 and sys.argv[3][-2:])==".h":
+            output_globals_h_file = sys.argv[3]
+        else:
+            sys.exit("Third command line arg must be a h file.")
+        if (len(sys.argv)>=4 and sys.argv[4][-2:])==".c":
+            output_globals_c_file = sys.argv[4]
+        else:
+            sys.exit("Third command line arg must be a c file.")
 
 
     # Autogeneration label and timestamp - comments not included in some because they're put into C and python files
@@ -53,7 +63,7 @@ def main():
     # Read through globals.c and store the user-written section, so it doesn't get overwritten
     globals_c_user_string = ""
     try:
-        globals_c = open("../src/globals.c")
+        globals_c = open(output_globals_c_file)
         user_section_found = False
         for line in globals_c:
             if (user_section_found):
@@ -63,6 +73,21 @@ def main():
     except:
         print("globals.c not found. Generating new file...")
 
+    # Read through globals.h and store the user-written section, so it doesn't get overwritten
+    globals_h_user_string = "\n" + end_autogen_tag_c
+    try:
+        globals_h = open(output_globals_h_file)
+        user_section_found = False
+        for line in globals_h:
+            if (user_section_found):
+                globals_h_user_string += line
+            if (line == end_autogen_tag_c):
+                user_section_found = True
+    except:
+        print("globals.h not found. Generating new file...")
+
+    if (not user_section_found):
+        globals_h_user_string += "\n#endif /*INC_GLOBALS_H*/\n"
 
     # For pack_telem_defines.h
     pack_telem_defines_h_string = "/// " + begin_autogen_tag + "\n/// pack_telem_defines.h\n" + \
@@ -77,9 +102,12 @@ def main():
                                 "#include \"../inc/pack_telem_defines.h\"\n\nvoid pack_telem_data(uint8_t* dst){\n"
 
     # For globals.h and globals.c
-    globals_h_string = "/// " + begin_autogen_tag + "\n/// globals.h\n" + "/// " + autogen_label + "\n\n" + "#include <stdint.h>" + "\n\n"
+    globals_h_string = "/// " + begin_autogen_tag + "\n/// globals.h\n" + "/// " + \
+                        autogen_label + "\n\n" + \
+                        "#ifndef INC_GLOBALS_H_\n" + \
+                        "#define INC_GLOBALS_H_\n" + \
+                        "#include <stdint.h>" + "\n\n"
     globals_c_string = "/// " + begin_autogen_tag + "\n/// globals.c\n" + "/// " + autogen_label + "\n\n" + "#include \"globals.h\"" + "\n\n"
-
     global_arrays_generated = dict()  # Maps firmware_variable to list of [firmware_type, highest_index]
 
     # For byte_packet_template.txt_sprintf-call.c
@@ -306,8 +334,8 @@ def main():
     telem_parser = open(output_file, "w+")
     pack_telem_defines_h = open("../inc/pack_telem_defines.h", "w+")  # Generates file in current folder
     pack_telem_defines_c = open("../src/pack_telem_defines.c", "w+")
-    globals_h = open("../inc/globals.h", "w+")
-    globals_c = open("../src/globals.c", "w+")
+    globals_h = open(output_globals_h_file, "w+")
+    globals_c = open(output_globals_c_file, "w+")
 
     #parsed_printf_file.write("snprintf(line, sizeof(line), \"" + format_string + "\\r\\n\"" + argument_string + ");")
 
@@ -322,6 +350,7 @@ def main():
     pack_telem_defines_c.write(pack_telem_defines_c_string)
 
     globals_h.write(globals_h_string)
+    globals_h.write(globals_h_user_string)
     
     globals_c.write(globals_c_string)
     globals_c.write(globals_c_user_string)  # Add the user-written section back in
@@ -338,7 +367,10 @@ def main():
         print(" --- Packet statistics --- ")
         print("Packet items: " + str(num_items))
         print("Packet length (bytes): " + str(packet_byte_length))
-        print("\nCreated/updated 5 files:\n"+ output_file +"\n../inc/pack_telem_defines.h\n../src/pack_telem_defines.c\n../inc/globals.h\n../src/globals.c\n")
+        print("\nCreated/updated 5 files:\n"+ output_file + \
+                    "\n../src/pack_telem_defines.h" + \
+                    "\n../src/pack_telem_defines.c\n" + \
+                    output_globals_h_file + "\n" + output_globals_c_file + "\n")
     else:
         print("\nScript failed to complete. One or more errors occurred. See command line or terminal interface for "
               "details.\n")

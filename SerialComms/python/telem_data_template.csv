@@ -23,13 +23,13 @@ Pressure 19,pressure[19],-100,3000,counts,float,%.1f,int16_t,1,,float,thermocoup
 Pressure 20,pressure[20],-100,3000,counts,float,%.1f,int16_t,1,,float,ivlv,[0]*32,n
 Pressure 21,pressure[21],-100,3000,count,float,%.1f,int16_t,1,,float,evlv,[0]*32,n
 ebatt,e_batt,-20,20,Volts,float,%.2f,int16_t,1000,,float,LOG_TO_AUTO,0,y
-ibatt,i_batt,-10,150,Amps,float,%.2f,int16_t,100,main_cycle_time,int,auto_states,0,y
-STATE,STATE,0,127,,enum States,%u,uint8_t,1,motor_cycle_time,int,debug,[0]*8,y
-Load 0,load[0],,,counts,float,%.1f,uint16_t,1,adc_cycle_time,int,e5v,0,n
-Load 1,load[1],,,counts,float,%.1f,uint16_t,1,telemetry_cycle_time,float,e3v,0,n
+ibatt,i_batt,-10,150,Amps,float,%.2f,int16_t,100,,int,auto_states,0,y
+STATE,STATE,0,127,,enum States,%u,uint8_t,1,,int,debug,[0]*8,y
+Load 0,load[0],,,counts,float,%.1f,uint16_t,1,,int,e5v,0,n
+Load 1,load[1],,,counts,float,%.1f,uint16_t,1,,float,e3v,0,n
 Load 2,load[2],,,counts,float,%.1f,uint16_t,1,,float,BOARD_ID,0,n
 Load 3,load[3],,,counts,float,%.1f,uint16_t,1,,float,last_packet_number,-1,n
-Load 4,load[4],,,counts,float,%.1f,uint16_t,1,telemetry_rate,float,last_command_id,-1,n
+Load 4,load[4],,,counts,float,%.1f,uint16_t,1,,float,last_command_id,-1,n
 Load 5,load[5],,,counts,float,%.1f,uint16_t,1,,float,imtr,[0]*2,n
 Load 6,load[6],,,counts,float,%.1f,uint16_t,1,,float,tbrd,0,n
 Load 7,load[7],,,counts,float,%.1f,uint16_t,1,,float,tvlv,0,n
@@ -113,7 +113,7 @@ tc 6,tc[6],,,K,float,%d,uint16_t,100,,float,,,n
 tc 7,tc[7],,,K,float,%d,uint16_t,100,,float,,,n
 tc 8,tc[8],,,K,float,%d,uint16_t,100,,float,,,n
 tc 9,tc[9],,,K,float,%d,uint16_t,100,,float,,,n
-tc 10,tc[10],,,K,float,%d,uint16_t,100,current_page,float,,,n
+tc 10,tc[10],,,K,float,%d,uint16_t,100,,float,,,n
 tc 11,tc[11],,,K,float,%d,uint16_t,100,,float,,,n
 tc 12,tc[12],,,K,float,%d,uint16_t,100,,float,,,n
 tc 13,tc[13],,,K,float,%d,uint16_t,100,,float,,,n
@@ -138,20 +138,20 @@ I Mtr 3B,i_mtr_ab[7],,,amps,float,%d,uint16_t,100,,float,,,n
 I Mtr 0,i_mtr[0],,,amps,float,%d,uint16_t,100,,float,,,y
 I Mtr 1,i_mtr[1],,,amps,float,%d,uint16_t,100,,float,,,y
 I Mtr 2,i_mtr[2],,,amps,float,%d,uint16_t,100,,float,,,n
-I Mtr 3,i_mtr[3],,,amps,float,%d,uint16_t,100,zero,float,,,n
-I Mtr 4,i_mtr[4],,,amps,float,%d,uint16_t,100,zero,float,,,n
-I Mtr 5,i_mtr[5],,,amps,float,%d,uint16_t,100,zero,float,,,n
-I Mtr 6,i_mtr[6],,,amps,float,%d,uint16_t,100,zero,float,,,n
-I Mtr 7,i_mtr[7],,,amps,float,%d,uint16_t,100,zero,float,,,n
-pot 0,epot[0],,,Volts,float,%d,uint16_t,1000,zero,float,,,y
-pot 1,epot[1],,,Volts,float,%d,uint16_t,1000,zero,float,,,y
-pot 2,epot[2],,,Volts,float,%d,uint16_t,1000,zero,float,,,y
-pot 3,epot[3],,,Volts,float,%d,uint16_t,1000,zero,float,,,y
-pot 4,epot[4],,,Volts,float,%d,uint16_t,1000,zero,float,,,n
-pot 5,epot[5],,,Volts,float,%d,uint16_t,1000,zero,float,,,n
-pot 6,epot[6],,,Volts,float,%d,uint16_t,1000,zero,float,,,n
-pot 7,epot[7],,,Volts,float,%d,uint16_t,1000,zero,float,,,n
-Micros,micros,,,us,uint64_t,%i,uint64_t,1,zero,int,micros,,y
-Telem Rate,telem_rate,,,ms,uint32_t,%i,uint32_t,1,zero,int,,,y
-ADC Rate,adc_rate,,,ms,uint32_t,%i,uint32_t,1,zero,int,,,y
-Own Board Addr,own_board_addr,1,1,ul,uint8_t,%i,uint8_t,1,zero,int,,,y
+I Mtr 3,i_mtr[3],,,amps,float,%d,uint16_t,100,,float,,,n
+I Mtr 4,i_mtr[4],,,amps,float,%d,uint16_t,100,,float,,,n
+I Mtr 5,i_mtr[5],,,amps,float,%d,uint16_t,100,,float,,,n
+I Mtr 6,i_mtr[6],,,amps,float,%d,uint16_t,100,,float,,,n
+I Mtr 7,i_mtr[7],,,amps,float,%d,uint16_t,100,,float,,,n
+pot 0,epot[0],,,Volts,float,%d,uint16_t,1000,,float,,,y
+pot 1,epot[1],,,Volts,float,%d,uint16_t,1000,,float,,,y
+pot 2,epot[2],,,Volts,float,%d,uint16_t,1000,,float,,,y
+pot 3,epot[3],,,Volts,float,%d,uint16_t,1000,,float,,,y
+pot 4,epot[4],,,Volts,float,%d,uint16_t,1000,,float,,,n
+pot 5,epot[5],,,Volts,float,%d,uint16_t,1000,,float,,,n
+pot 6,epot[6],,,Volts,float,%d,uint16_t,1000,,float,,,n
+pot 7,epot[7],,,Volts,float,%d,uint16_t,1000,,float,,,n
+Micros,micros,,,us,uint64_t,%i,uint64_t,1,,int,micros,,y
+Telem Rate,telem_rate,,,ms,uint32_t,%i,uint32_t,1,,int,,,y
+ADC Rate,adc_rate,,,ms,uint32_t,%i,uint32_t,1,,int,,,y
+Own Board Addr,own_board_addr,1,1,ul,uint8_t,%i,uint8_t,1,,int,,,y
