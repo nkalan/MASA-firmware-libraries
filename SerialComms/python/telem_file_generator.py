@@ -91,7 +91,7 @@ def main():
     parser_items_list = list()
 
     col = dict()  # Dictionary mapping column names to indices
-    packet_byte_length = packet_header_byte_size	# Total bytes in packet (running total)
+    packet_byte_length = 0  # Total bytes in packet (running total)
 
     # num_items begins at 6 to account for the hardcoded packet header
     num_items = 6  # Doesn't use enumerate to get the number of items because not all lines get telem'd (should_generate column)
@@ -231,7 +231,8 @@ def main():
 
             parser_data_dict_str +=	"\t\tself.dict[self.items[" + str(num_items) + "]] = " + python_type + \
                                 "((float(struct.unpack(" + byte_info.type_unpack_arg[type_cast] + ", packet[" + \
-                                str(packet_byte_length - byte_length) + ":" + str(packet_byte_length) + "])[0]))/" + xmit_scale + ")\n"
+                                str(packet_byte_length + packet_header_byte_size - byte_length) + ":" + \
+                                str(packet_byte_length + packet_header_byte_size) + "])[0]))/" + xmit_scale + ")\n"
             
             parser_units_dict_str += "self.units[self.items[" + str(num_items) + "]] = " + unit + "\n"
 
