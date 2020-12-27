@@ -8,12 +8,11 @@ Updated: December 24, 2020
 
 REQUIRES: 1. csv contains columns labeled offset and slope.
              Script does not care about the location nor order they appear in.
-          2. Command line args are excepted as follows
-            python3 pt_calibration_generator.py [csv file name] [.h relative file path] [.c relative file path]
-            The csv file name is required, but including file paths is optional.
-            If no file path is specified:
-                .h will default to ../inc/pt_calibrations.h
-                .c will default to ../src/pt_calibrations.c
+          2. Command line args are formatted as follows:
+                python3 pt_calibration_generator.py [csv file name] [.h relative path] [.c relative path]
+
+             The .h and .c relative paths are optional and will default to ../inc/pt_calibrations.h and
+             ../src/pt_calibrations.c respectively if not given a command line arg
 """
 import time
 import sys
@@ -25,9 +24,8 @@ COLUMN_DELIMITER = ','
 try:
     INPUT_FILE_NAME = sys.argv[1]
 except IndexError:
-    sys.exit("No command line arg found. Program requires at least the name of the input file as a command line arg.")
+    sys.exit("No command line arg. Program requires the at least the name of the input file as a command line arg.")
 
-# Default file paths for output
 h_file_path = "../inc/pt_calibrations.h"
 c_file_path = "../src/pt_calibrations.c"
 
@@ -37,16 +35,14 @@ if len(sys.argv) > 2:
     elif sys.argv[2][-1] == 'h':
         h_file_path = sys.argv[2]
     else:
-        sys.exit("ERROR: Command line args after input file must be paths for .h or .c files with the file name "
-                 "included in the path.")
+        sys.exit("ERROR: Command line args for file path must end in .h or .c")
     try:
         if sys.argv[3][-1] == 'c':
             c_file_path = sys.argv[3]
         elif sys.argv[3][-1] == 'h':
             h_file_path = sys.argv[3]
         else:
-            sys.exit("ERROR: Command line args after input file must be paths for .h or .c files with the file name "
-                     "included in the path.")
+            sys.exit("ERROR: Command line args for file path must end in .h or .c")
     except IndexError:
         pass
 
@@ -60,12 +56,9 @@ def main():
     # Don't think I need to create a globals file
     # If globals needed, generate here
 
-    # Strings to hold what I want printed into the file
-    pt_calibration_h_header = ""
-    pt_calibration_c_header = ""
-
-    pt_calibration_h_header += begin_autogen_tag + "\n/// pt_calibrations.h\n" + autogen_label + "\n\n"
-    pt_calibration_c_header += begin_autogen_tag + "\n/// pt_calibrations.c\n" + autogen_label + "\n\n"
+    # Strings to hold header of output files
+    pt_calibration_c_header = begin_autogen_tag + "\n/// pt_calibrations.c\n" + autogen_label + "\n\n"
+    pt_calibration_h_header = begin_autogen_tag + "\n/// pt_calibrations.h\n" + autogen_label + "\n\n"
 
     channel_num = -1
     # Holds values for slope and offset
@@ -129,14 +122,14 @@ def main():
     offset_declaration = "double pt_offset[" + str(channel_num) + "]"
 
     # Print file strings to files
-    pt_calibrations_h = open(h_file_path, "w+")
-    pt_calibrations_c = open(c_file_path, "w+")
+    pt_calibration_h = open(h_file_path, "w+")
+    pt_calibration_c = open(c_file_path, "w+")
     if more_than_zero_lines:
-        pt_calibrations_h.write(pt_calibration_h_header + slope_declaration + ";\n\n" + offset_declaration + ";")
-        pt_calibrations_c.write(pt_calibration_c_header + slope_declaration + " = {" + calibration_c_slope \
-                                + offset_declaration + " = {" + calibration_c_offset)
+        pt_calibration_h.write(pt_calibration_h_header + slope_declaration + ";\n\n" + offset_declaration + ";")
+        pt_calibration_c.write(pt_calibration_c_header + slope_declaration + " = {" + calibration_c_slope
+                               + offset_declaration + " = {" + calibration_c_offset)
     else:
-        sys.exit("ERROR: No data in csv file")
+        sys.exit("Error: No data in csv file")
 
     print("csv file successfully parsed")
 
