@@ -20,12 +20,17 @@ COLUMN_DELIMITER = ','
 
 """
 Main program
-Reads in the .csv template and generates files from it
+Reads in the telem data .csv template and generates packet decoding .py and
+global variable definitions for firmware
 
 REQUIREMENTS:
     1. First command line arg is the input csv file which is required
     2. Second command line arg is optional and is the output py file
         If no second arg is provided, the file will default to ./telemParse.py
+    3. Third command line arg is optional and is the output header file
+        If no third arg is provided, the file will default to ../inc/globals.h
+    3. Fourth command line arg is optional and is the output c file
+        If no fourth arg is provided, the file will default to ../inc/globals.c
 """
 def main():
     # error_ocurred variable will be used to avoid the program print out that it was
@@ -116,11 +121,11 @@ def main():
 
     # Hardcoded packet header for parse_packet function
     packet_header_byte_size = 10
-    parser_dict_header_str = "\t\tself.dict[self.items[0]] = int((float(struct.unpack(\"<I\", packet[0:1])[0]))/1)\n" \
-                             "\t\tself.dict[self.items[1]] = int((float(struct.unpack(\"<I\", packet[1:2])[0]))/1)\n" \
-                             "\t\tself.dict[self.items[2]] = int((float(struct.unpack(\"<I\", packet[2:3])[0]))/1)\n" \
-                             "\t\tself.dict[self.items[3]] = int((float(struct.unpack(\"<I\", packet[3:4])[0]))/1)\n" \
-                             "\t\tself.dict[self.items[4]] = int((float(struct.unpack(\"<I\", packet[4:6])[0]))/1)\n" \
+    parser_dict_header_str = "\t\tself.dict[self.items[0]] = int((float(struct.unpack(\"<B\", packet[0:1])[0]))/1)\n" \
+                             "\t\tself.dict[self.items[1]] = int((float(struct.unpack(\"<B\", packet[1:2])[0]))/1)\n" \
+                             "\t\tself.dict[self.items[2]] = int((float(struct.unpack(\"<B\", packet[2:3])[0]))/1)\n" \
+                             "\t\tself.dict[self.items[3]] = int((float(struct.unpack(\"<B\", packet[3:4])[0]))/1)\n" \
+                             "\t\tself.dict[self.items[4]] = int((float(struct.unpack(\"<H\", packet[4:6])[0]))/1)\n" \
                              "\t\tself.dict[self.items[5]] = int((float(struct.unpack(\"<I\", packet[6:10])[0]))/1)\n"
 
     # For telem_parser.py
