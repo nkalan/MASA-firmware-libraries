@@ -62,9 +62,9 @@ def main():
 
     # Read through globals.c and store the user-written section, so it doesn't get overwritten
     globals_c_user_string = ""
+    user_section_found = False
     try:
         globals_c = open(output_globals_c_file)
-        user_section_found = False
         for line in globals_c:
             if (user_section_found):
                 globals_c_user_string += line
