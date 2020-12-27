@@ -19,7 +19,7 @@
  * Last edited November 6, 2020
  */
 
-#include "W25N01GV.h"
+#include "../inc/W25N01GV.h"
 #ifdef HAL_SPI_MODULE_ENABLED  // Begin SPI include protection
 
 // Device ID information, used to check if flash is working
