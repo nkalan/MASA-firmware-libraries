@@ -1,12 +1,18 @@
 packet_type,function_name,nums args,arg0,arg_type0,xmit_scale,arg1,arg_type1,xmit_scale,arg2,arg_type2,xmit_scale,supported_target_addr,description
-8,set_vlv,2,vlv_num,uint32_t,1,state,uint8_t,1,,,,0 1,write high/low to specific valve
+8,set_vlv,2,vlv_num,uint32_t,1,state,uint8_t,,,,,0 1,write high/low to specific valve
 9,send_telem_short,1,board_num,uint8_t,1,,,,,,,0 1,send short version of telem data
-10,send_telem_all,1,board_num,uint8_t,1,,,,,,,0 1,send full telem data
-11,set_stepper_period,2,stepper_num,uint8_t,1,period,uint16_t,1,,,,0,set speed of stepper motor x the period refers to the time between each step
-12,set_stepper_direction,2,stepper_num,uint8_t,1,direction,int8_t,1,,,,0,set direction of stepper motor x
+10,send_telem_all,0,board_num,uint8_t,1,,,,,,,0 1,send full telem data
+11,set_stepper_period,1,stepper_num,uint8_t,1,period,uint16_t,,,,,0,set speed of stepper motor x the period refers to the time between each step
+12,set_stepper_direction,1,stepper_num,uint8_t,1,direction,int8_t,,,,,0,set direction of stepper motor x
 13,set_kp,2,motor_num,uint8_t,1,gain,double,100,,,,0,set kp value
 14,set_ki,2,motor_num,uint8_t,1,gain,double,100,,,,0,set ki value
 15,set_kd,2,motor_num,uint8_t,1,gain,double,100,,,,0,set kd value
 16,set_control_calc_period,1,period,uint16_t,1,,,,,,,0,rate of pid control loop time in hz
 17,set_state,1,state,uint8_t,1,,,,,,,0,"set state number of control loop, ref firmware code for state definitions (rate defined in ms)"
-18,move_stepper_degrees,2,motor_num,uint8_t,1,deg,uint16_t,1,,,,,moves the stepper motor degrees from current pos
+18,move_stepper_degrees,2,motor_num,uint8_t,1,deg,uint16_t,,,,,0,moves the stepper motor degrees from current pos
+,,,,,,,,,,,,,
+,,,,,,,,,,,,,
+,,,,,,,,,,,,,
+,,,,,,,,,,,,,
+Note: supported target addresses will be defined in a separate file in the future,,,,,,,,,,,,,
+Note: the values will be little endian ordered,,,,,,,,,,,,,
