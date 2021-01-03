@@ -286,7 +286,7 @@ def main():
                                 str(packet_byte_length + packet_header_byte_size - byte_length) + ":" + \
                                 str(packet_byte_length + packet_header_byte_size) + "])[0]))/" + xmit_scale + ")\n"
             
-            parser_units_dict_str += "self.units[self.items[" + str(num_items) + "]] = " + unit + "\n"
+            parser_units_dict_str += "\t\tself.units[self.items[" + str(num_items) + "]] = \"" + unit + "\"\n"
 
             parser_csv_header += python_variable + ' (' + unit + '),'
             parser_log_string += " + str(self.dict[self.items[" + str(num_items) + "]])" + " + ','" 
@@ -321,6 +321,7 @@ def main():
                             "\t\tself.num_items = " + str(num_items) + "\n" + \
                             "\t\t\n" + \
                             "\t\tself.dict = {}\n" + \
+                            "\t\tself.units = {}\n" + \
                             "\t\t\n" + \
                             "\t\tself.items = [''] * self.num_items\n" \
                             "\t\tself.items[0] = 'packet_type'\n" \
@@ -337,6 +338,8 @@ def main():
     for index, var in enumerate(parser_items_list):
         parser_self_init_str += "\t\tself.items[" + str(index + 6) + "] = \'" + var + "\' \n"
 
+    # Append the units dictionary to the self init str
+    parser_self_init_str += parser_units_dict_str
 
     """ Writing to files """
 
