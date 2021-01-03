@@ -69,7 +69,7 @@ uint8_t send_data(UART_HandleTypeDef* uartx) {
 		    }
 		}
 
-		transmit_packet(uartx, stuffed_packet_sz);
+		transmit_packet(uartx, PONG_MAX_PACKET_SIZE);
 
 		if (ping_pos >= ping_sz) {
 			ping_pos = 0;
@@ -93,7 +93,6 @@ uint8_t receive_data(UART_HandleTypeDef* uartx, uint8_t* buffer, uint16_t buffer
 	 * 	       	any custom packet types that require more than 254 bytes will
 	 * 			have to be spread out over multiple packet type ids
 	 */
-	//receive_packet(uartx, PONG_MAX_PACKET_SIZE);
 	for(uint16_t i = 0; i < buffer_sz; ++i) {
 		CLB_pong_packet[i] = buffer[i]; // copy items over for uart reception
 	}
@@ -109,11 +108,14 @@ uint8_t receive_data(UART_HandleTypeDef* uartx, uint8_t* buffer, uint16_t buffer
 	}
 
 	uint8_t cmd_status = 0;
-	/*
+
 	if (CLB_board_addr == header.target_addr) {
 	    // TODO: handle receiving different packet types besides cmd
 		(*cmds_ptr[header.packet_type-8])(CLB_ping_packet, &cmd_status);
-	}*/
+	} else {
+	    // Pass on telem over uart channel
+	    transmit_packet(uartx, PONG_MAX_PACKET_SIZE);
+	}
 
 	// TODO: more error handling depending on cmd status
 	return cmd_status;

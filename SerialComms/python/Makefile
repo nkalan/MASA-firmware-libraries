@@ -3,6 +3,9 @@ GLOBALS_H_FILE = ../../../Inc/globals.h
 GLOBALS_C_FILE = ../../../Src/globals.c
 TELEM_PARSE_FILE = ${GUI_PATH}/telemParse.py
 TELEM_CSV_FILE = ./telem_data_template.csv
+PT_CAL_CSV_FILE	= ./pt_calibration.csv 
+PT_CAL_H_FILE	= ../../../Inc/pt_calibrations.h 
+PT_CAL_C_FILE	= ../../../Src/pt_calibrations.c
 
 # Note: You need to configure the GUI_PATH variable
 # 		in your shell's ~/.bash_profile or ~/.bashrc
@@ -14,3 +17,8 @@ build:
 	${PYTHON} ./telem_file_generator.py \
 		${TELEM_CSV_FILE} ${TELEM_PARSE_FILE} \
 		${GLOBALS_H_FILE} ${GLOBALS_C_FILE}
+
+cal:
+	${PYTHON} ./pt_calibration_generator.py \
+		${PT_CAL_CSV_FILE}	\
+		${PT_CAL_H_FILE} ${PT_CAL_C_FILE}
