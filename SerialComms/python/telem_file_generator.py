@@ -133,7 +133,12 @@ def main():
     # For telem_parser.py
     # Starts off the parser data with the hard coded packet header
     parser_data_dict_str = parser_dict_header_str
-    parser_units_dict_str = ""
+    parser_units_dict_str =  "\n\t\tself.units[self.items[0]] = \"ul\"\n" \
+                             "\t\tself.units[self.items[1]] = \"ul\"\n" \
+                             "\t\tself.units[self.items[2]] = \"ul\"\n" \
+                             "\t\tself.units[self.items[3]] = \"ul\"\n" \
+                             "\t\tself.units[self.items[4]] = \"ul\"\n" \
+                             "\t\tself.units[self.items[5]] = \"ul\"\n" 
     parser_csv_header = "Time (s),"
     parser_self_init_str = ""
     parser_log_string = "\t\tself.log_string = str(time.clock()) + ','"
