@@ -98,8 +98,7 @@ def main():
     pack_telem_defines_h_string = "/// " + begin_autogen_tag + "\n/// pack_telem_defines.h\n" + \
                                 "/// " + autogen_label + "\n\n" + \
                                 "#include \"globals.h\"\n" + \
-                                "#include <stdint.h>\n" + \
-                                "\n"
+                                "#include <stdint.h>\n\n"
 
     # For pack_telem_defines.c
     pack_telem_defines_c_string = "/// " + begin_autogen_tag + "\n/// pack_telem_defines.c\n" + \
@@ -111,8 +110,11 @@ def main():
                         autogen_label + "\n\n" + \
                         "#ifndef INC_GLOBALS_H_\n" + \
                         "#define INC_GLOBALS_H_\n" + \
-                        "#include <stdint.h>" + "\n\n"
-    globals_c_string = "/// " + begin_autogen_tag + "\n/// globals.c\n" + "/// " + autogen_label + "\n\n" + "#include \"globals.h\"" + "\n\n"
+                        "#include <stdint.h>" + \
+                        "\n\n"
+    globals_c_string = "/// " + begin_autogen_tag + "\n/// globals.c\n" + \
+                        "/// " + autogen_label + "\n" + "#include \"globals.h\"" + \
+                        "\n\n"
     global_arrays_generated = dict()  # Maps firmware_variable to list of [firmware_type, highest_index]
 
     # For byte_packet_template.txt_sprintf-call.c

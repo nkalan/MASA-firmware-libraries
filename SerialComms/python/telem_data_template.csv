@@ -1,5 +1,5 @@
 name,firmware_variable,min_val,max_val,unit,firmware_type,printf_format,type_cast,xmit_scale,python_variable_override,python_type,python_globals,python_init,should_generate
-Valve State Feedback,valve_states,,,,uint32_t,%u,uint32_t,1,valves_states_9,int,valve_states,0,y
+Valve State Feedback,valve_states,,,,uint32_t,%u,uint32_t,1,,int,valve_states,0,y
 Pressure 0,pressure[0],-100,3000,counts,float,%.1f,int16_t,1,,float,pressure,[0]*22,y
 Pressure 1,pressure[1],-100,3000,counts,float,%.1f,int16_t,1,,float,samplerate,0,y
 Pressure 2,pressure[2],-100,3000,counts,float,%.1f,int16_t,1,,float,motor_setpoint,[0]*4,y
