@@ -263,9 +263,12 @@ def main():
             
             # If it's not supposed to be an array (normal variable)
             else:
-                #Add it to the file string
+                #Add it to the file string, special condition for rendering board address
                 globals_h_string += "extern " + firmware_type + " " + firmware_variable + ";\n"
-                globals_c_string += firmware_type + " " + firmware_variable + " = 0;\n"
+                if firmware_variable == "own_board_addr":
+                    globals_c_string += firmware_type + " " + firmware_variable + " = " + min_val + ";\n"
+                else:
+                    globals_c_string += firmware_type + " " + firmware_variable + " = 0;\n"
 
             # Update the byte_packet_template.txt_sprintf-call.c strings
             #format_string = format_string + printf_format.rstrip('\n') +','

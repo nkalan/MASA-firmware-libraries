@@ -154,4 +154,4 @@ pot 7,epot[7],,,Volts,float,%d,uint16_t,1000,,float,,,n
 Micros,micros,,,us,uint64_t,%i,uint64_t,1,,int,micros,,y
 Telem Rate,telem_rate,,,ms,uint32_t,%i,uint32_t,1,,int,,,y
 ADC Rate,adc_rate,,,ms,uint32_t,%i,uint32_t,1,,int,,,y
-Own Board Addr,own_board_addr,1,1,ul,uint8_t,%i,uint8_t,1,,int,,,y
+Own Board Addr,own_board_addr,3,3,ul,uint8_t,%i,uint8_t,1,,int,,,y
