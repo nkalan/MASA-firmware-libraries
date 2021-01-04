@@ -7,7 +7,7 @@ import struct
 
 print("Ylol")
 
-ser = serial.Serial(port='/dev/cu.usbmodem143103', baudrate=int(115200), timeout=1.5)
+ser = serial.Serial(port='COM3', baudrate=int(115200), timeout=1.5)
 
 
 for p in serial.tools.list_ports.comports():
