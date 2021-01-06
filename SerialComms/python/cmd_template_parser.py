@@ -185,6 +185,14 @@ with open("../src/pack_cmd_defines.c", 'w') as header_c_test:
 
 
 
+
+###divide by double for bit shifting
+###specify filenames in args
+
+
+
+
+
 #looks for keyword user and reads to end of file (FOR C FILE MAIN)
 user_generated_code = ""  
 line_num = 0 
