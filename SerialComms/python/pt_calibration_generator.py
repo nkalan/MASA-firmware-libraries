@@ -59,7 +59,6 @@ def main():
     # Strings to hold header of output files
     pt_calibration_c_header = begin_autogen_tag + "\n/// pt_calibrations.c\n" + autogen_label + "\n\n"
     pt_calibration_h_header = begin_autogen_tag + "\n/// pt_calibrations.h\n" + autogen_label + "\n\n"
-
     channel_num = -1
     # Holds values for slope and offset
     calibration_c_slope = ""
@@ -122,8 +121,16 @@ def main():
     offset_declaration = "double pt_offset[" + str(channel_num) + "]"
 
     # Print file strings to files
-    pt_calibration_h = open(h_file_path, "w+")
-    pt_calibration_c = open(c_file_path, "w+")
+    try:
+        pt_calibration_h = open(h_file_path, "w+")
+    except:
+        print("pt_calibrations.h not found. Generating new file...")
+    
+    try:
+        pt_calibration_c = open(c_file_path, "w+")
+    except:
+        print("pt_calibrations.c not found. Generating new file...")
+
     if more_than_zero_lines:
         pt_calibration_h.write(pt_calibration_h_header + slope_declaration + ";\n\n" + offset_declaration + ";")
         pt_calibration_c.write(pt_calibration_c_header + slope_declaration + " = {" + calibration_c_slope
