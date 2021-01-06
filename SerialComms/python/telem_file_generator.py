@@ -78,7 +78,7 @@ def main():
 
     # For globals.h and globals.c
     globals_h_string = "/// " + begin_autogen_tag + "\n/// globals.h\n" + "/// " + autogen_label + "\n\n" + "#include <stdint.h>" + "\n\n"
-    globals_c_string = "/// " + begin_autogen_tag + "\n/// globals.c\n" + "/// " + autogen_label + "\n\n" + "#include \"globals.h\"" + "\n\n"
+    globals_c_string = "/// " + begin_autogen_tag + "\n/// globals.c\n" + "/// " + autogen_label + "\n\n" + "#include \"../inc/globals.h\"" + "\n\n"
 
     global_arrays_generated = dict()  # Maps firmware_variable to list of [firmware_type, highest_index]
 

@@ -80,7 +80,7 @@ def main():
                         xmit_scale = int(line[col["nums args"] + 3*n + 3])
                     except:
                         xmit_scale = 1
-                        print("csv line " + str(csv_row_num) + "] Warning: no xmit_scale specified. Defaulting to 1")
+                        print("[row" + str(csv_row_num) + "] Warning: no xmit_scale specified. Defaulting to 1")
                     # Error check function parameters
                     try:
                         assert(arg_name != "" and arg_type != "")
@@ -95,7 +95,7 @@ def main():
             # for line
         # with open
     except:
-        print("Error: could not open template file. Exiting program...")
+        print("Error: could not read template file. Exiting program...")
         return
 
     """
@@ -130,7 +130,7 @@ def main():
         
     #TODO: how to determine priority and checksum
 
-    s2_command_str += "\t\t# Stuff packet with the function arguments according to the packet_type ID\n"
+    s2_command_str += "\t\t# Stuff packet with the function arguments according to the packet_type ID\n\t\tcommand_id = self.cmd_names_dict[cmd_info[\"function_name\"]]\n"
 
     # Create an if block for each command
     first_if_block = True
@@ -150,11 +150,11 @@ def main():
 
             s2_command_str += "\t\t\t# " + arg_name + "\n"
             for b in range(byte_length):
-                s2_command_str += "\t\t\tpacket[" + str(packet_index) + "] = ((cmd_info[\"args\"][" + str(arg_num) + "]*" \
+                s2_command_str += "\t\t\tpacket[" + str(packet_index) + "] = (int(cmd_info[\"args\"][" + str(arg_num) + "]*" \
                     + str(xmit_scale) + ") >> " + str(8*b) + ") & 0xFF\n"
                 packet_index += 1
 
-    s2_command_str += "\n\t\t# Encode the packet with COBS\n\t\tstuff_array(packet)\n"
+    s2_command_str += "\n\t\t# Encode the packet with COBS\n\t\tself.stuff_array(packet)\n"
     s2_command_str += "\n\t\t# Write the bytes to serial\n\t\tser.write(bytes(packet))\n"
 
     """
@@ -166,19 +166,19 @@ def main():
         + "\t\tarr (integer array)  - Byte packet to be COBS encoded\n" \
         + "\t\tseparator (integer)  - Packet delimiter. Should be using 0, but has the option to use any number\n" \
         + "\t\"\"\"\n"
-    stuff_array_str += "\tdef stuff_array(arr, separator=0):\n" \
+    stuff_array_str += "\tdef stuff_array(self, arr, separator=0):\n" \
         + "\t\tarr.append(0)\n" \
         + "\t\tarr.insert(0, 0)\n" \
         + "\t\tfirst_sep = 1\n" \
         + "\t\tfor x in arr[1:]:\n" \
-        + "\t\t\tif x == seperator:\n" \
+        + "\t\t\tif x == separator:\n" \
         + "\t\t\t\tbreak\n" \
         + "\t\t\tfirst_sep += 1\n" \
         + "\t\tindex = 1\n" \
         + "\t\twhile(index < len(arr)-1):\n" \
-        + "\t\t\tif(arr[index] == seperator):\n" \
+        + "\t\t\tif(arr[index] == separator):\n" \
         + "\t\t\t\toffset = 1\n" \
-        + "\t\t\t\twhile(arr[index+offset] != seperator):\n" \
+        + "\t\t\t\twhile(arr[index+offset] != separator):\n" \
         + "\t\t\t\t\toffset += 1\n" \
         + "\t\t\t\tarr[index] = offset\n" \
         + "\t\t\t\tindex += offset\n" \
@@ -209,7 +209,7 @@ def main():
         + "\t\tself.cmd_names_dict = {\n"
     
     for packet_type, function_name in cmd_id_to_name.items():
-        cmd_names_dict_str += "\t\t\t" + function_name + "\t:\t" + str(packet_type) + ",\n"
+        cmd_names_dict_str += "\t\t\t\"" + function_name + "\"\t:\t" + str(packet_type) + ",\n"
     cmd_names_dict_str = cmd_names_dict_str[0:len(cmd_names_dict_str)-2] + "\n" # Cut off the last comma
     cmd_names_dict_str += "\t\t}\n"
 
