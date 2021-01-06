@@ -1,73 +1,19 @@
+"""
+Author: Marshall Stone (syzdup)
+
+Description: 
+
+Autogenerates 3 files (pack_cmd_defines.h, pack_cmd_defines.c, telem.c),
+cmd_template_parser.py takes in two arguments: --f "filename" --n "board number"
+
+Usage: 
+
+python3 cmd_template_parser.py -f telem_cmd_template.csv -n 0
+"""
 import pandas as pd
 import numpy as np
+import argparse
 import sys
-
-print("CSV Filename (include .csv): ", end='')
-file_name = input()
-try:
-    functions = pd.read_csv(file_name)
-except FileNotFoundError:
-    print("File not found. Exiting now.")
-    sys.exit()
-print("Board number: ", end='')
-board_num = input()
-
-#looks for keyword user and reads to end of file
-user_generated_code_h = ""  
-line_num_h = 0 
-try:
-    with open("headerTest.h", 'r') as h_file:
-        file_read = h_file.readlines()
-        for line in file_read:
-            line_num_h += 1
-            if "user" in line:
-                user_generated_code_h = file_read[line_num_h-1:]
-except FileNotFoundError:
-    pass
-
-with open("headerTest.h", 'w') as header_file:
-
-    #grab list of function names from csv
-    function_names = functions['function_name']
-    function_num = str(function_names.count())
-    
-
-    #defines and includes and stuff for beginning of h file go here
-    header_file.write("#ifndef PACK_CMD_DEFINES_H\n#define PACK_CMD_DEFINES_H\n#define NUM_CMD_ITEMS " + function_num + "\n#include <stdint.h>\n\n")
-
-
-    #for each function name in file, write out a function definition
-    for name in function_names:
-        try:
-            header_file.write("void " + name + "(uint8_t* data, uint8_t* status);\n\n")
-        except TypeError:
-            #skips over nan values 
-            pass
-
-    header_file.write("typedef void (*Cmd_Pointer)(uint8_t* x, uint8_t* y);\n\n")
-    header_file.write("static Cmd_Pointer cmds_ptr[NUM_CMD_ITEMS] = {\n")
-    
-    function_name_index = 0
-    for  name in function_names:
-        try:
-            if int(function_names.count()-1) != int(function_name_index):
-                header_file.write(name + ",\n")
-                function_name_index = function_name_index + 1
-            else:
-                header_file.write(name + "\n")
-
-        except TypeError:
-            #skips over nan values
-            pass
-
-    #write closing bracket and endif to file
-    header_file.write("};\n\n\n#endif\n")
-
-    #write user generated code to h file
-    line_index_h = 0
-    for line in user_generated_code_h:
-        header_file.write(user_generated_code_h[line_index_h])
-        line_index_h += 1
 
 #writes a function to the c file
 def function_writer(row_number):
@@ -81,41 +27,169 @@ def function_writer(row_number):
         c_file.write(function_name[col_num] + " " + function_name[col_num - 1] + " = ")
         if function_name[col_num] == "uint8_t":
             try:
-                c_file.write("(data[" + str(data_num) + "])/" + str(int(function_name[col_num + 1])) + "\n\t")
+                c_file.write("(data[" + str(data_num) + "])/" + str(int(function_name[col_num + 1])) + ";\n\t")
                 data_num += 1
             except ValueError:
-                c_file.write("(data[" + str(data_num) + "])/" + "1\n\t")
+                c_file.write("(data[" + str(data_num) + "])/" + "1;\n\t")
                 data_num += 1
         elif function_name[col_num] == "uint16_t":
             try:
-                c_file.write("(data[" + str(data_num) + "]<<data[" + str(data_num + 1) + "])/" + str(int(function_name[col_num + 1])) + "\n\t")
+                c_file.write("(data[" + str(data_num) + "]<<data[" + str(data_num + 1) + "])/" + str(int(function_name[col_num + 1])) + ";\n\t")
                 data_num += 2
             except ValueError:
-                c_file.write("(data[" + str(data_num) + "]<<data[" + str(data_num + 1) + "])/" + "1\n\t")
+                c_file.write("(data[" + str(data_num) + "]<<data[" + str(data_num + 1) + "])/" + "1;\n\t")
                 data_num += 2
         elif function_name[col_num] == "uint32_t":
             try:
-                c_file.write("(data[" + str(data_num) + "]<<data[" + str(data_num + 1) + "]<<data[" + str(data_num + 2) + "])/" + str(int(function_name[col_num + 1])) + "\n\t")
+                c_file.write("(data[" + str(data_num) + "]<<data[" + str(data_num + 1) + "]<<data[" + str(data_num + 2) + "])/" + str(int(function_name[col_num + 1])) + ";\n\t")
                 data_num += 3
             except ValueError:
-                c_file.write("(data[" + str(data_num) + "]<<data[" + str(data_num + 1) + "]<<data[" + str(data_num + 2) + "])/" + "1\n\t")
+                c_file.write("(data[" + str(data_num) + "]<<data[" + str(data_num + 1) + "]<<data[" + str(data_num + 2) + "])/" + "1;\n\t")
                 data_num += 3
         else:
             try:
-                c_file.write("(data[" + str(data_num) + "])/" + str(int(function_name[col_num + 1])) + "\n\t")
+                c_file.write("(data[" + str(data_num) + "])/" + str(int(function_name[col_num + 1])) + ";\n\t")
                 data_num += 1
             except ValueError:
-                c_file.write("(data[" + str(data_num) + "])/" + "1\n\t")
+                c_file.write("(data[" + str(data_num) + "])/" + "1;\n\t")
                 data_num += 1
 
         col_num += 3
     c_file.write("\n}\n")
 
-#looks for keyword user and reads to end of file
+
+
+
+
+#argument parsing
+parser = argparse.ArgumentParser(
+    description="Command Template Parser Script"
+)
+
+parser.add_argument('-f', '--file_name', help="CSV Filename", type=str)
+parser.add_argument('-n', '--board_num', help="Board number", type=str)
+
+args = parser.parse_args()
+file_name = args.file_name
+board_num = args.board_num
+
+try:
+    functions = pd.read_csv(file_name)
+except FileNotFoundError:
+    print("Input file not found. Exiting now.")
+    sys.exit()
+
+
+
+
+#looks for keyword user and reads to end of file (FOR H FILE MAIN)
+user_generated_code_h = ""  
+line_num_h = 0 
+try:
+    with open("../inc/pack_cmd_defines.h", 'r') as h_file:
+        file_read = h_file.readlines()
+        for line in file_read:
+            line_num_h += 1
+            if "user" in line:
+                user_generated_code_h = file_read[line_num_h-1:]
+except FileNotFoundError:
+    pass
+
+#write to header file
+with open("../inc/pack_cmd_defines.h", 'w') as header_file:
+
+    #grab list of function names from csv
+    function_names = functions['function_name']
+    function_num = str(function_names.count())
+    
+
+    #defines and includes and stuff for beginning of h file go here
+    header_file.write("#ifndef PACK_CMD_DEFINES_H\n#define PACK_CMD_DEFINES_H\n#define NUM_CMD_ITEMS " + 
+                      function_num + "\n#include <stdint.h>\n\n")
+
+
+    #for each function name in file, write out a function definition
+    board_supported = functions['supported_target_addr']
+    function_point = 0
+    for name in function_names:
+        if board_num in str(board_supported[function_point]):
+            try:
+                header_file.write("void " + name + "(uint8_t* data, uint8_t* status);\n\n")
+                function_point += 1
+            except TypeError:
+                #skips over nan values 
+                pass
+
+    header_file.write("typedef void (*Cmd_Pointer)(uint8_t* x, uint8_t* y);\n\n")
+    header_file.write("static Cmd_Pointer cmds_ptr[NUM_CMD_ITEMS];\n\n")
+    header_file.write("// Note: to call a function do\n/**\n* (*cmds_ptr[0])(array ptr here)\n"
+                      "*\n* The actual cmd functions will be defined in a separate c file by the firwmare\n"
+                      "* developer for each board. They simply need to include this header file\n* in the c" 
+                      "file in which they define the function. This allows the developer\n* to import/use any"
+                      " variables or typedefs from the hal library. This file is\n* simply the jumptable that"
+                      " gives the comms library an easy way to call\n*" 
+                      " custom functions without additional knowledge of where this file is defined\n*\n*/")
+
+    #write closing bracket and endif to file
+    header_file.write("\n\n\n#endif\n")
+
+    #write user generated code to h file
+    line_index_h = 0
+    for line in user_generated_code_h:
+        header_file.write(user_generated_code_h[line_index_h])
+        line_index_h += 1
+
+
+
+
+#check for user code in pointer file
+user_generated_code_pointer = ""  
+line_num_pointer = 0 
+try:
+    with open("../src/pack_cmd_defines.c", 'r') as pointer_file:
+        file_read_pointer = pointer_file.readlines()
+        for line in file_read_pointer:
+            line_num_pointer += 1
+            if "user" in line:
+                user_generated_code_pointer = file_read_pointer[line_num_pointer-1:]
+except FileNotFoundError:
+    pass
+
+#write to pointer file
+with open("../src/pack_cmd_defines.c", 'w') as header_c_test:
+    header_c_test.write("#include \"pack_cmd_defines.h\"\n")
+    header_c_test.write("static Cmd_Pointer cmds_ptr[NUM_CMD_ITEMS] = {\n\n")
+    function_name_index = 0
+    board_supported = functions['supported_target_addr']
+    for  name in function_names:
+        #fix check for board support 
+        if board_num in str(board_supported[function_name_index]):
+            try:
+                if int(function_names.count()-1) != int(function_name_index):
+                    header_c_test.write(name + ",\n")
+                    function_name_index += 1
+                else:
+                    header_c_test.write(name + "\n")
+
+            except TypeError:
+                #skips over nan values
+                pass
+    header_c_test.write("};\n\n")
+
+    #write user gen code to pointer file
+    line_index_pointer = 0
+    for line in user_generated_code_pointer:
+        header_c_test.write(user_generated_code_pointer[line_index_pointer])
+        line_index_pointer += 1
+
+
+
+
+#looks for keyword user and reads to end of file (FOR C FILE MAIN)
 user_generated_code = ""  
 line_num = 0 
 try:
-    with open("cfileTest.c", 'r') as c_file:
+    with open("../src/telem.c", 'r') as c_file:
         file_read = c_file.readlines()
         for line in file_read:
             line_num += 1
@@ -124,12 +198,12 @@ try:
 except FileNotFoundError:
     pass         
 
-    
-
-with open("cfileTest.c", 'w') as c_file:
+#write out c file template
+with open("../src/telem.c", 'w') as c_file:
     board_supported = functions['supported_target_addr']
     
     #write functions from csv file to c_file
+    c_file.write("#include <stdint.h>\n\n")
     for x in range(int(function_num)):
         if board_num in str(board_supported[x]):
             function_writer(x)
@@ -139,7 +213,3 @@ with open("cfileTest.c", 'w') as c_file:
     for line in user_generated_code:
         c_file.write(user_generated_code[line_index])
         line_index += 1
-            
-    
-
-
