@@ -70,7 +70,7 @@ uint8_t send_data(UART_HandleTypeDef* uartx) {
 		    }
 		}
 
-		transmit_packet(uartx, PONG_MAX_PACKET_SIZE);
+		transmit_packet(uartx, stuffed_packet_sz);
 
 		if (ping_pos >= ping_sz) {
 			ping_pos = 0;
@@ -141,23 +141,25 @@ void unpack_header(CLB_Packet_Header* header, uint8_t* header_buffer) {
 	header->packet_type = header_buffer[0];
 	header->target_addr = header_buffer[1];
 	header->priority	= header_buffer[2];
-	header->do_cobbs    = header_buffer[3];
-	header->checksum	= (header_buffer[4]<<8)|header_buffer[3];
-	header->timestamp   = header_buffer[8]<<24|header_buffer[7]<<16|
-	                        header_buffer[6]<<8|header_buffer[5];
+	header->num_packets = header_buffer[3];
+	header->do_cobbs    = header_buffer[4];
+	header->checksum	= (header_buffer[5]<<8)|header_buffer[6];
+	header->timestamp   = header_buffer[7]<<24|header_buffer[8]<<16|
+	                        header_buffer[9]<<8|header_buffer[10];
 }
 
 void pack_header(CLB_Packet_Header* header, uint8_t*header_buffer) {
 	header_buffer[0] = header->packet_type;
 	header_buffer[1] = header->target_addr;
 	header_buffer[2] = header->priority;
-	header_buffer[3] = header->do_cobbs;
-	header_buffer[4] = 0xff&(header->checksum);
-	header_buffer[5] = 0xff&((header->checksum)>>8);
-	header_buffer[6] = 0xff&(header->timestamp);
-	header_buffer[7] = 0xff&((header->timestamp)>>8);
-	header_buffer[8] = 0xff&((header->timestamp)>>16);     // little endian
-	header_buffer[9] = 0xff&((header->timestamp)>>24);
+	header_buffer[3] = header->num_packets;
+	header_buffer[4] = header->do_cobbs;
+	header_buffer[5] = 0xff&(header->checksum);
+	header_buffer[6] = 0xff&((header->checksum)>>8);
+	header_buffer[7] = 0xff&(header->timestamp);
+	header_buffer[8] = 0xff&((header->timestamp)>>8);
+	header_buffer[9] = 0xff&((header->timestamp)>>16);     // little endian
+	header_buffer[10] = 0xff&((header->timestamp)>>24);
 }
 
 void pack_packet(uint8_t *src, uint8_t *dst, uint16_t sz) {

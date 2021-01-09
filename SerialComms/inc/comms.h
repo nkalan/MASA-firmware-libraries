@@ -15,7 +15,7 @@
 
 /* Included */
 #include "stdint.h"
-
+#include "math.h"
 //#include "stm32l4xx_hal.h" // TODO change back to f4 after testing
 #include "stm32f4xx_hal.h"
 
@@ -25,7 +25,7 @@
 /* Global Defines */
 #define PING_MAX_PACKET_SIZE        253
 #define PONG_MAX_PACKET_SIZE        255
-#define CLB_HEADER_SZ               10       // packet header struct size (bytes)
+#define CLB_HEADER_SZ               11       // packet header struct size (bytes)
 
 /* Public Function Prototypes */
 
