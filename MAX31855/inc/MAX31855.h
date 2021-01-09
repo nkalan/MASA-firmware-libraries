@@ -23,7 +23,8 @@
 // for type T thermocouple (units in uV/C)
 #define COLD_JUNC_SENSITIVITY_COEFF_T   52.18
 
-const int16_t MAX31855_TempToMicroVolts_LUT[551];
+#define MAX31855_TTMV_LUT_SZ            551
+const int16_t MAX31855_TTMV_LUT[MAX31855_TTMV_LUT_SZ]; // TTMV - Temp To uV
 
 typedef struct MAX31855_Pinfo {
     GPIO_TypeDef* MAX31855_CS_PORT;     // PORT belonging to CS pin
