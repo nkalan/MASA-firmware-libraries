@@ -10,7 +10,6 @@
 #include <stdint.h>
 #include "stm32f4xx_hal.h"
 
-#define MAX31855_lutIndexOffset         200
 #define MAX31855_minVoltage             -5603
 #define MAX31855_maxVoltage             17819
 // Fault code to be returned if no thermocouple is attached
@@ -24,6 +23,7 @@
 #define COLD_JUNC_SENSITIVITY_COEFF_T   52.18
 
 #define MAX31855_TTMV_LUT_SZ            551
+#define MAX31855_LUT_OFFSET             200     // 0 index in LUT
 const int16_t MAX31855_TTMV_LUT[MAX31855_TTMV_LUT_SZ]; // TTMV - Temp To uV
 
 typedef struct MAX31855_Pinfo {
@@ -33,14 +33,6 @@ typedef struct MAX31855_Pinfo {
 
 /* Public Function Prototypes */
 #ifdef HAL_SPI_MODULE_ENABLED
-/**
- *  Initialize thermocouple hardware component
- *
- *  @param pins         <MAX31855_Pinfo*> contains tc pin defs,
- *                                              refer to def above
- *
- */
-void init_tc(MAX31855_Pinfo* pinfo);
 
 /**
  *  Convenience function for reading from a tc

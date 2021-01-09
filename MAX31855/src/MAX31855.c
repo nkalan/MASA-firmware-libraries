@@ -6,8 +6,20 @@
  */
 #include "MAX31855.h"
 
-void init_tc(MAX31855_Pinfo *pinfo) {
-
+uint16_t findClosestTTMV(float target) {
+    uint16_t right = MAX31855_TTMV_LUT_SZ - 1;
+    uint16_t left = 0;
+    uint16_t mid = 0;
+    // Find the two closest microvolt points
+    while (left < right) {
+        mid = ((right-left)>>1)+left;
+        if (MAX31855_TTMV_LUT[mid] < target) {
+            left = mid+1;
+        } else {
+            right = mid;
+        }
+    } // TODO: write bs alg to find correct microvolt conversions
+    return left;
 }
 
 float read_tc(SPI_HandleTypeDef *SPI_BUS, MAX31855_Pinfo *pinfo) {
@@ -20,10 +32,9 @@ float read_tc(SPI_HandleTypeDef *SPI_BUS, MAX31855_Pinfo *pinfo) {
             GPIO_PIN_SET);
 
     int32_t spiData = rx[0] << 24 | rx[1] << 16 | rx[2] << 8 | rx[3];
-    int chipSelectPin;
-    uint32_t thermocoupleData;
-    long refJuncData;
-    uint32_t faultFlag;
+    int32_t thermocoupleData;
+    int32_t refJuncData;
+    int32_t faultFlag;
     float uncorrectedThermocoupleTemp;
     float refJuncTemp;
     float totalOutputMicroVolts;
@@ -62,9 +73,9 @@ float read_tc(SPI_HandleTypeDef *SPI_BUS, MAX31855_Pinfo *pinfo) {
     int refJuncMicrovoltsLow;
     int refJuncMicrovoltsSlope;
     refJuncMicrovoltsHigh = (int) (MAX31855_TTMV_LUT[((int) ceil(
-            refJuncTemp) + lutIndexOffset)]);
+            refJuncTemp) + MAX31855_LUT_OFFSET)]);
     refJuncMicrovoltsLow = (int) (MAX31855_TTMV_LUT[((int) floor(
-            refJuncTemp) + lutIndexOffset)]);
+            refJuncTemp) + MAX31855_LUT_OFFSET)]);
     refJuncMicrovoltsSlope = (refJuncMicrovoltsHigh - refJuncMicrovoltsLow);
     refJuncMicroVolts = refJuncMicrovoltsSlope
             * (refJuncTemp - floor(refJuncTemp)) + refJuncMicrovoltsLow;
@@ -72,8 +83,8 @@ float read_tc(SPI_HandleTypeDef *SPI_BUS, MAX31855_Pinfo *pinfo) {
     // with a type T thermocouple --> V_out = V_tc - V_ref)
     thermocoupleMicroVolts = totalOutputMicroVolts + refJuncMicroVolts;
     // Check to make sure this voltage is within our range of -200 to 350C then proceed to lookup table processing, or else return an out or range error
-    if (thermocoupleMicroVolts < minVoltage
-            || thermocoupleMicroVolts > maxVoltage) {
+    if (thermocoupleMicroVolts < MAX31855_minVoltage
+            || thermocoupleMicroVolts > MAX31855_maxVoltage) {
     } else {
         // Perform a reverse lookup table sorting to find the temperature from
         // microvolts (this code implements a binary search algorithm...
@@ -82,16 +93,15 @@ float read_tc(SPI_HandleTypeDef *SPI_BUS, MAX31855_Pinfo *pinfo) {
         int32_t correctedMicrovoltsHigh;
         int32_t correctedMicrovoltsLow;
         int32_t correctedMicrovoltsSlope;
+        uint16_t closestIdx;
         // Set the starting points
         if (thermocoupleMicroVolts < 0) {
-            searchIndex = 0;
+            closestIdx = 1;
         } else {
-            searchIndex = lutIndexOffset;
-        }
-        // Find the two closest microvolt points
-        uint16_t closest_idx = findClosestTTMV(thermocoupleMicroVolts);
-        correctedMicrovoltsHigh = (int32_t) MAX31855_TTMV_LUT[closest_idx];
-        correctedMicrovoltsLow  = (int32_t) MAX31855_TTMV_LUT[closest_idx-1];
+            closestIdx = findClosestTTMV(thermocoupleMicroVolts);
+        } // Find the two closest microvolt points
+        correctedMicrovoltsHigh = (int32_t) MAX31855_TTMV_LUT[closestIdx];
+        correctedMicrovoltsLow  = (int32_t) MAX31855_TTMV_LUT[closestIdx-1];
 
         // Find the final corrected temperature from microvolts using
         // linear interpolation - x2 = (y2-y1)/m + x1
@@ -99,26 +109,10 @@ float read_tc(SPI_HandleTypeDef *SPI_BUS, MAX31855_Pinfo *pinfo) {
                 - correctedMicrovoltsLow;
         correctedThermocoupleTemp = ((thermocoupleMicroVolts
                 - correctedMicrovoltsLow) / correctedMicrovoltsSlope)
-                + ((searchIndex - 1) - lutIndexOffset);
+                + ((closestIdx - 1) - MAX31855_LUT_OFFSET);
     }
 
     return correctedThermocoupleTemp + 273.15; // replace with return value
-}
-
-uint16_t findClosestTTMV(float target) {
-    uint16_t right = MAX31855_TTMV_LUT_SZ - 1;
-    uint16_t left = 0;
-    uint16_t mid = 0;
-    // Find the two closest microvolt points
-    while (left < right) {
-        mid = ((right-left)>>1)+left;
-        if (MAX31855_TTMV_LUT[mid] < target) {
-            left = mid+1;
-        } else {
-            right = mid;
-        }
-    } // TODO: write bs alg to find correct microvolt conversions
-    return left;
 }
 
 const int16_t MAX31855_TTMV_LUT[MAX31855_TTMV_LUT_SZ] = {
