@@ -8,6 +8,7 @@
 #include "../../SerialComms/inc/comms.h"
 
 void init_board(uint8_t board_addr) {
+    CLB_receive_header.num_packets = 0;
 	CLB_board_addr = board_addr;
 }
 
@@ -100,23 +101,26 @@ uint8_t receive_data(UART_HandleTypeDef* uartx, uint8_t* buffer, uint16_t buffer
 
 	unstuff_packet(CLB_pong_packet, CLB_ping_packet, PONG_MAX_PACKET_SIZE);
 
-	CLB_Packet_Header header;
-	unpack_header(&header, CLB_ping_packet);
-
-	uint8_t checksum_status = verify_checksum(header.checksum);
-	if (checksum_status!=0) {
-		return 1; // drop transmission if checksum is bad
+	if (CLB_receive_header.num_packets == 0) {
+	    unpack_header(&CLB_receive_header, CLB_ping_packet);
+	    uint8_t checksum_status = verify_checksum(CLB_receive_header.checksum);
+        if (checksum_status!=0) {
+            return 1; // drop transmission if checksum is bad
+        }
 	}
 
 	uint8_t cmd_status = 0;
 
-	if (CLB_board_addr == header.target_addr) {
+	if (CLB_board_addr == CLB_receive_header.target_addr) {
 	    // TODO: handle receiving different packet types besides cmd
-		(*cmds_ptr[header.packet_type-8])(CLB_ping_packet, &cmd_status);
+		(*cmds_ptr[CLB_receive_header.packet_type-8])
+		                        (CLB_ping_packet, &cmd_status);
 	} else {
 	    // Pass on telem over uart channel
 	    transmit_packet(uartx, PONG_MAX_PACKET_SIZE);
 	}
+	// Decrement number packets left to handle
+	CLB_receive_header.num_packets--;
 
 	// TODO: more error handling depending on cmd status
 	return cmd_status;
@@ -187,37 +191,35 @@ uint8_t compute_packet_sz() {
 }
 
 //This code was shamelessly stolen from wikipedia, docs by me tho
-uint16_t stuff_packet(uint8_t *unstuffed, uint8_t *stuffed, uint16_t length) {
+uint16_t stuff_packet(const uint8_t *unstuffed, uint8_t *stuffed, uint16_t length) {
 
 	//Start just keeps track of the start point
 	uint8_t *start = stuffed;
 	if (CLB_header->do_cobbs) {
 		//Code represents the number of positions till the next 0 and code_ptr
-			//holds the position of the last zero to be updated when the next 0 is found
-			uint8_t code = 1;
-			uint8_t *code_ptr = stuffed++; //Note: this sets code_ptr to stuffed, then ++ stuffed
+        //holds the position of the last zero to be updated when the next 0 is found
+        uint8_t *code_ptr = stuffed++; //Note: this sets code_ptr to stuffed, then ++ stuffed
+        *code_ptr = 1;
+        while (length--)
+        {
+            if (*unstuffed) {
+                *stuffed++ = *unstuffed++;
+                *code_ptr += 1;
+            } else {
+                code_ptr = stuffed++;
+                *code_ptr = 1;
+                unstuffed++;
+            }
 
-			while (length--)
-			{
-				//If the current byte is not zero, add that byte to stuffed data and increment
-				//the position of the last zero (code)
-				if (*unstuffed){
-					*stuffed++ = *unstuffed;
-					++code;
-
-				}
-				//IF the current byte is not zero, OR if the current code is maxed out
-				//Update the last zero position with code, reset code, and set the code_ptr
-				//To the new stuffed position
-				if (!*unstuffed++ || code == 0xFF){ /* Input is zero or complete block */
-					*code_ptr = code;
-					code = 1;
-					code_ptr = stuffed++;
-				}
-			}
-			//Set the final code
-			*code_ptr = code;
-			//Returns length of encoded data
+            if (*code_ptr == 0xFF && length > 0)
+            {
+                code_ptr = stuffed++;
+                *code_ptr = 1;
+            }
+        }
+        //Set the final code
+        //*code_ptr = code;
+        //Returns length of encoded data
 	} else {
 		for (uint16_t i = 0; i < length; ++i) {
 			*stuffed++ = *unstuffed++;
@@ -238,10 +240,10 @@ uint16_t stuff_packet(uint8_t *unstuffed, uint8_t *stuffed, uint16_t length) {
  */
 uint16_t unstuff_packet(uint8_t *stuffed, uint8_t *unstuffed, uint16_t length)
 {
-	uint8_t *start = unstuffed, *end = stuffed + length;
+    uint8_t *start = unstuffed, *end = stuffed + length;
 	uint8_t code = 0xFF, copy = 0;
-	// TODO: implement usage of not using cobbs
 	for (; stuffed < end; copy--) {
+	    if (!*stuffed) break; // early return if zero is encountered
 		if (copy != 0) {
 			*unstuffed++ = *stuffed++;
 		} else {
