@@ -25,7 +25,7 @@
 /* Global Defines */
 #define PING_MAX_PACKET_SIZE        253
 #define PONG_MAX_PACKET_SIZE        255
-#define CLB_HEADER_SZ               9       // packet header struct size (bytes)
+#define CLB_HEADER_SZ               10       // packet header struct size (bytes)
 
 /* Public Function Prototypes */
 
@@ -34,6 +34,7 @@ typedef struct CLB_Packet_Header {
     uint8_t packet_type;        // CMD/DATA packet ID
     uint8_t target_addr;        // target board address
     uint8_t priority;           // priority of packet
+    uint8_t num_packets;        // number of packets in current transmission
     uint8_t do_cobbs;           // 1 to enable cobbs encoding
     uint16_t checksum;          // checksum to ensure robustness (generated)
     uint32_t timestamp;         // timestamp for data
@@ -77,6 +78,8 @@ uint8_t receive_data(UART_HandleTypeDef* uartx, uint8_t* buffer, uint16_t buffer
 void init_board(uint8_t board_addr);
 
 /* Private Function Prototypes */
+
+uint8_t compute_packet_sz();
 
 // TODO: do definition
 void pack_telem_data(uint8_t* dst);

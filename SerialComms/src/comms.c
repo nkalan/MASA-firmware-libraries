@@ -40,6 +40,7 @@ uint8_t send_data(UART_HandleTypeDef* uartx) {
 	// Note: assumes that header sz is less than 255 bytes
 	uint8_t header_buffer[CLB_HEADER_SZ] = {0};
 	CLB_header->checksum = compute_checksum();
+	CLB_header->num_packets = compute_packet_sz();
 	pack_header(CLB_header, header_buffer);
 	pack_packet(header_buffer, CLB_ping_packet+ping_pos, CLB_HEADER_SZ);
 	ping_pos += CLB_HEADER_SZ;
@@ -175,6 +176,12 @@ uint8_t verify_checksum(uint16_t checksum) {
 uint16_t compute_checksum() {
 	// TODO: Implement checksum procedure, use 0 dummy value temporarily
 	return 0; 
+}
+
+uint8_t compute_packet_sz() {
+    uint16_t bytes = CLB_buffer_sz + CLB_HEADER_SZ + 1; // 1 for termination bit
+    uint8_t num_packets = ceil((bytes*1.0)/PONG_MAX_PACKET_SIZE);
+    return num_packets;
 }
 
 //This code was shamelessly stolen from wikipedia, docs by me tho
