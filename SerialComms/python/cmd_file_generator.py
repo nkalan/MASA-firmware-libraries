@@ -115,17 +115,18 @@ def main():
 
     s2_command_str += "\tdef s2_command(self, ser, cmd_info):\n"
     s2_command_str += "\t\t#Initialize empty packet\n\t\tpacket = [0]*253  # Will add packet delimiters later to make it 255 bytes\n" \
-        + "\n\t\t#Fill first 10 bytes of packet with CLB packet header information\n" \
+        + "\n\t\t#Fill first 11 bytes of packet with CLB packet header information\n" \
         + "\t\tpacket[0] = self.cmd_names_dict[cmd_info[\"function_name\"]]\t# packet_type\n" \
         + "\t\tpacket[1] = cmd_info[\"target_board_addr\"]\t# target_addr\n" \
         + "\t\tpacket[2] = 1\t# priority\n" \
-        + "\t\tpacket[3] = 1\t# do_cobbs\n" \
-        + "\t\tpacket[4] = 0\t# checksum\n" \
+        + "\t\tpacket[3] = 1\t# num_packets\n" \
+        + "\t\tpacket[4] = 1\t# do_cobbs\n" \
         + "\t\tpacket[5] = 0\t# checksum\n" \
-        + "\t\tpacket[6] = (cmd_info[\"timestamp\"] >> 0) & 0xFF\t# timestamp\n" \
-        + "\t\tpacket[7] = (cmd_info[\"timestamp\"] >> 8) & 0xFF\t# timestamp\n" \
-        + "\t\tpacket[8] = (cmd_info[\"timestamp\"] >> 16) & 0xFF\t# timestamp\n" \
-        + "\t\tpacket[9] = (cmd_info[\"timestamp\"] >> 24) & 0xFF\t# timestamp\n" \
+        + "\t\tpacket[6] = 0\t# checksum\n" \
+        + "\t\tpacket[7] = (cmd_info[\"timestamp\"] >> 0) & 0xFF\t# timestamp\n" \
+        + "\t\tpacket[8] = (cmd_info[\"timestamp\"] >> 8) & 0xFF\t# timestamp\n" \
+        + "\t\tpacket[9] = (cmd_info[\"timestamp\"] >> 16) & 0xFF\t# timestamp\n" \
+        + "\t\tpacket[10] = (cmd_info[\"timestamp\"] >> 24) & 0xFF\t# timestamp\n" \
         + "\n"
         
     #TODO: how to determine priority and checksum
@@ -144,7 +145,7 @@ def main():
         s2_command_str += "(command_id == " + str(packet_type) + "):\n"
         
         # Iterate through the command's arguments and generate python code to pack them
-        packet_index = 10  # Start right after the CLB header
+        packet_index = 11  # Start right after the CLB header
         for arg_num, (arg_name, arg_type, xmit_scale) in enumerate(cmd_args[packet_type]):
             byte_length = byte_info.type_byte_lengths[arg_type]
 
