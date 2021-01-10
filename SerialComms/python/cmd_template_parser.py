@@ -4,12 +4,14 @@ Author: Marshall Stone (syzdup)
 Description: 
 
 Autogenerates 3 files (pack_cmd_defines.h, pack_cmd_defines.c, telem.c),
-cmd_template_parser.py takes in two arguments: --f "filename" --n "board number"
-
+cmd_template_parser.py takes in three arguments:    --f "filename" 
+                                                    --n "board number"
+                                                    --o "output file directory"
 Usage: 
 
-python3 cmd_template_parser.py -f telem_cmd_template.csv -n 0
+python3 cmd_template_parser.py -f telem_cmd_template.csv -n 0 -o "../../../Src
 """
+from os import path
 import pandas as pd
 import numpy as np
 import argparse
@@ -48,7 +50,7 @@ def function_writer(row_number):
                 data_num += 3
         else:
             try:
-                c_file.write("(data[" + str(data_num) + "])/" + str(int(function_name[col_num + 1])) + ";\n\t")
+                c_file.write("(data[" + str(data_num) + "])/" + str(int(function_name[col_num + 1])) + ".0;\n\t")
                 data_num += 1
             except ValueError:
                 c_file.write("(data[" + str(data_num) + "])/" + "1;\n\t")
@@ -68,19 +70,18 @@ parser = argparse.ArgumentParser(
 
 parser.add_argument('-f', '--file_name', help="CSV Filename", type=str)
 parser.add_argument('-n', '--board_num', help="Board number", type=str)
+parser.add_argument('-o', '--output_dir', help="Output Directory", type=str)
 
 args = parser.parse_args()
 file_name = args.file_name
 board_num = args.board_num
+output_dir= args.output_dir
 
 try:
     functions = pd.read_csv(file_name)
 except FileNotFoundError:
     print("Input file not found. Exiting now.")
     sys.exit()
-
-
-
 
 #looks for keyword user and reads to end of file (FOR H FILE MAIN)
 user_generated_code_h = ""  
@@ -138,6 +139,7 @@ with open("../inc/pack_cmd_defines.h", 'w') as header_file:
     for line in user_generated_code_h:
         header_file.write(user_generated_code_h[line_index_h])
         line_index_h += 1
+    print("Finished generating pack_cmd_defines.h...")
 
 
 
@@ -181,33 +183,24 @@ with open("../src/pack_cmd_defines.c", 'w') as header_c_test:
     for line in user_generated_code_pointer:
         header_c_test.write(user_generated_code_pointer[line_index_pointer])
         line_index_pointer += 1
-
-
-
-
-
-###divide by double for bit shifting
-###specify filenames in args
-
-
-
-
+    print("Finished generating pack_cmd_defines.c...")
 
 #looks for keyword user and reads to end of file (FOR C FILE MAIN)
 user_generated_code = ""  
 line_num = 0 
 try:
-    with open("../src/telem.c", 'r') as c_file:
+    with open(path.join(output_dir, 'telem.c'), 'r') as c_file:
         file_read = c_file.readlines()
         for line in file_read:
             line_num += 1
             if "user" in line:
                 user_generated_code = file_read[line_num-1:]
 except FileNotFoundError:
+    print("Creating new telem.c file in output directory...")
     pass         
 
 #write out c file template
-with open("../src/telem.c", 'w') as c_file:
+with open(output_dir+"/telem.c", 'w') as c_file:
     board_supported = functions['supported_target_addr']
     
     #write functions from csv file to c_file
@@ -221,3 +214,4 @@ with open("../src/telem.c", 'w') as c_file:
     for line in user_generated_code:
         c_file.write(user_generated_code[line_index])
         line_index += 1
+    print("Finished generating telem.c...\n")
