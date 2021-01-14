@@ -1,6 +1,6 @@
 #include "pack_cmd_defines.h"
+static Cmd_Pointer cmds_ptr[NUM_CMD_ITEMS] = {
 
-Cmd_Pointer cmds_ptr[NUM_CMD_ITEMS] = {
 set_vlv,
 send_telem_short,
 send_telem_all,
@@ -13,3 +13,4 @@ set_control_calc_period,
 set_state,
 move_stepper_degrees
 };
+

@@ -103,11 +103,11 @@ E 28V,e28v,0,30,Volts,float,%.3f,int16_t,100,,float,,,n
 I 5V,i5v,0,2,Amps,float,%.1f,uint8_t,100,,float,,,y
 I 3V,i3v,0,2,Amps,float,%.1f,uint8_t,100,,float,,,y
 Last Command ID,last_command_id,,,ul,uint8_t,%d,uint16_t,100,,float,,,y
-tc 0,tc[0],,,K,float,%d,uint16_t,100,,float,,,n
-tc 1,tc[1],,,K,float,%d,uint16_t,100,,float,,,n
-tc 2,tc[2],,,K,float,%d,uint16_t,100,,float,,,n
-tc 3,tc[3],,,K,float,%d,uint16_t,100,,float,,,n
-tc 4,tc[4],,,K,float,%d,uint16_t,100,,float,,,n
+tc 0,tc[0],,,K,float,%d,uint16_t,100,,float,,,y
+tc 1,tc[1],,,K,float,%d,uint16_t,100,,float,,,y
+tc 2,tc[2],,,K,float,%d,uint16_t,100,,float,,,y
+tc 3,tc[3],,,K,float,%d,uint16_t,100,,float,,,y
+tc 4,tc[4],,,K,float,%d,uint16_t,100,,float,,,y
 tc 5,tc[5],,,K,float,%d,uint16_t,100,,float,,,n
 tc 6,tc[6],,,K,float,%d,uint16_t,100,,float,,,n
 tc 7,tc[7],,,K,float,%d,uint16_t,100,,float,,,n
