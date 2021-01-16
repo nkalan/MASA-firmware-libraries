@@ -143,17 +143,20 @@ def main():
         else:
             s2_command_str += "\t\telif "
         s2_command_str += "(command_id == " + str(packet_type) + "):\n"
-        
-        # Iterate through the command's arguments and generate python code to pack them
-        packet_index = 11  # Start right after the CLB header
-        for arg_num, (arg_name, arg_type, xmit_scale) in enumerate(cmd_args[packet_type]):
-            byte_length = byte_info.type_byte_lengths[arg_type]
 
-            s2_command_str += "\t\t\t# " + arg_name + "\n"
-            for b in range(byte_length):
-                s2_command_str += "\t\t\tpacket[" + str(packet_index) + "] = (int(cmd_info[\"args\"][" + str(arg_num) + "]*" \
-                    + str(xmit_scale) + ") >> " + str(8*b) + ") & 0xFF\n"
-                packet_index += 1
+        if len(arg_list) == 0:
+            s2_command_str += "\t\t\tpass  # No function arguments\n"
+        else:
+            # Iterate through the command's arguments and generate python code to pack them
+            packet_index = 11  # Start right after the CLB header
+            for arg_num, (arg_name, arg_type, xmit_scale) in enumerate(cmd_args[packet_type]):
+                byte_length = byte_info.type_byte_lengths[arg_type]
+
+                s2_command_str += "\t\t\t# " + arg_name + "\n"
+                for b in range(byte_length):
+                    s2_command_str += "\t\t\tpacket[" + str(packet_index) + "] = (int(cmd_info[\"args\"][" + str(arg_num) + "]*" \
+                        + str(xmit_scale) + ") >> " + str(8*b) + ") & 0xFF\n"
+                    packet_index += 1
 
     s2_command_str += "\n\t\t# Encode the packet with COBS\n\t\tself.stuff_array(packet)\n"
     s2_command_str += "\n\t\t# Write the bytes to serial\n\t\tser.write(bytes(packet))\n"
