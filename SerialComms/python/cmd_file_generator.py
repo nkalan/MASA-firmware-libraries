@@ -116,7 +116,7 @@ def main():
     s2_command_str += "\tdef s2_command(self, ser, cmd_info):\n"
     s2_command_str += "\t\t# Check that it's a valid function\n" \
         + "\t\tif (cmd_info[\"function_name\"] not in self.cmd_names_dict.keys()):" \
-        + "\n\t\t\tprint(cmd_info[\"function_name\"] + \" is not a valid function name. No command was sent.\")\n\n"
+        + "\n\t\t\tprint(cmd_info[\"function_name\"] + \" is not a valid function name. No command was sent.\")\n\t\t\treturn\n\n"
     s2_command_str += "\t\t# Initialize empty packet\n\t\tpacket = [0]*253  # Will add packet delimiters later to make it 255 bytes\n" \
         + "\n\t\t# Fill first 11 bytes of packet with CLB packet header information\n" \
         + "\t\tpacket[0] = self.cmd_names_dict[cmd_info[\"function_name\"]]\t# packet_type\n" \
