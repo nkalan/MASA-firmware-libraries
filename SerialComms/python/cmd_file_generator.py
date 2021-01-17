@@ -110,15 +110,15 @@ def main():
         + "\t\t\t\"function_name\" : function name (string)\n" \
         + "\t\t\t\"target_board_addr\" : address of board to send command to (integer)\n" \
         + "\t\t\t\"timestamp\" : time the command was sent (integer)\n" \
-        + "\t\t\t\"args\" : list of arguments to send to the function (list)\n" \
+        + "\t\t\t\"args\" : list of arguments to send to the function (list). Size of all arguments combined cannot exceed 242 bytes.\n" \
         + "\t\"\"\"\n"
 
     s2_command_str += "\tdef s2_command(self, ser, cmd_info):\n"
-    s2_command_str += "\t\t#Check that it's a valid function\n" \
-        + "\t\tif (cmd_info[\"function_name\" not in self.cmd_names_dict.keys()):" \
-        + "\n\t\t\tprint(cmd_info[\"function_name\"] + \" is not a valid function name. No command was sent.\")\n"
-    s2_command_str += "\t\t#Initialize empty packet\n\t\tpacket = [0]*253  # Will add packet delimiters later to make it 255 bytes\n" \
-        + "\n\t\t#Fill first 11 bytes of packet with CLB packet header information\n" \
+    s2_command_str += "\t\t# Check that it's a valid function\n" \
+        + "\t\tif (cmd_info[\"function_name\"] not in self.cmd_names_dict.keys()):" \
+        + "\n\t\t\tprint(cmd_info[\"function_name\"] + \" is not a valid function name. No command was sent.\")\n\n"
+    s2_command_str += "\t\t# Initialize empty packet\n\t\tpacket = [0]*253  # Will add packet delimiters later to make it 255 bytes\n" \
+        + "\n\t\t# Fill first 11 bytes of packet with CLB packet header information\n" \
         + "\t\tpacket[0] = self.cmd_names_dict[cmd_info[\"function_name\"]]\t# packet_type\n" \
         + "\t\tpacket[1] = cmd_info[\"target_board_addr\"]\t# target_addr\n" \
         + "\t\tpacket[2] = 1\t# priority\n" \
@@ -161,38 +161,38 @@ def main():
                         + str(xmit_scale) + ") >> " + str(8*b) + ") & 0xFF\n"
                     packet_index += 1
 
-    s2_command_str += "\n\t\t# Encode the packet with COBS\n\t\tself.stuff_array(packet)\n"
+    s2_command_str += "\n\t\t# Encode the packet with COBS\n\t\tstuff_array(packet)\n"
     s2_command_str += "\n\t\t# Write the bytes to serial\n\t\tser.write(bytes(packet))\n"
 
     """
     Generate the function used to encode the packet with COBS
     (copied from EC3 gui)
     """
-    stuff_array_str = "\t\"\"\"\n\tTakes in a byte packet and return a COBS encoded version\n\tNote: this was copied directly from the EC3 gui code\n" \
-        + "\t@params\n" \
-        + "\t\tarr (integer array)  - Byte packet to be COBS encoded\n" \
-        + "\t\tseparator (integer)  - Packet delimiter. Should be using 0, but has the option to use any number\n" \
-        + "\t\"\"\"\n"
-    stuff_array_str += "\tdef stuff_array(self, arr, separator=0):\n" \
-        + "\t\tarr.append(0)\n" \
-        + "\t\tarr.insert(0, 0)\n" \
-        + "\t\tfirst_sep = 1\n" \
-        + "\t\tfor x in arr[1:]:\n" \
-        + "\t\t\tif x == separator:\n" \
-        + "\t\t\t\tbreak\n" \
-        + "\t\t\tfirst_sep += 1\n" \
-        + "\t\tindex = 1\n" \
-        + "\t\twhile(index < len(arr)-1):\n" \
-        + "\t\t\tif(arr[index] == separator):\n" \
-        + "\t\t\t\toffset = 1\n" \
-        + "\t\t\t\twhile(arr[index+offset] != separator):\n" \
-        + "\t\t\t\t\toffset += 1\n" \
-        + "\t\t\t\tarr[index] = offset\n" \
-        + "\t\t\t\tindex += offset\n" \
-        + "\t\t\telse:\n" \
-        + "\t\t\t\tindex += 1\n" \
-        + "\t\tarr[0] = first_sep\n" \
-        + "\t\treturn arr\n"
+    stuff_array_str = "\"\"\"\nTakes in a byte packet and return a COBS encoded version\nNote: this was copied directly from the EC3 gui code\n" \
+        + "@params\n" \
+        + "\tarr (integer array)  - Byte packet to be COBS encoded\n" \
+        + "\tseparator (integer)  - Packet delimiter. Should be using 0, but has the option to use any number\n" \
+        + "\"\"\"\n"
+    stuff_array_str += "def stuff_array(arr, separator=0):\n" \
+        + "\tarr.append(0)\n" \
+        + "\tarr.insert(0, 0)\n" \
+        + "\tfirst_sep = 1\n" \
+        + "\tfor x in arr[1:]:\n" \
+        + "\t\tif x == separator:\n" \
+        + "\t\t\tbreak\n" \
+        + "\t\tfirst_sep += 1\n" \
+        + "\tindex = 1\n" \
+        + "\twhile(index < len(arr)-1):\n" \
+        + "\t\tif(arr[index] == separator):\n" \
+        + "\t\t\toffset = 1\n" \
+        + "\t\t\twhile(arr[index+offset] != separator):\n" \
+        + "\t\t\t\toffset += 1\n" \
+        + "\t\t\tarr[index] = offset\n" \
+        + "\t\t\tindex += offset\n" \
+        + "\t\telse:\n" \
+        + "\t\t\tindex += 1\n" \
+        + "\tarr[0] = first_sep\n" \
+        + "\treturn arr\n"
 
     """
     Generate the dict mapping command id/packet_type to that function's parameters
