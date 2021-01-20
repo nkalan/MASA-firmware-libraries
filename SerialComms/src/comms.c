@@ -114,7 +114,7 @@ uint8_t receive_data(UART_HandleTypeDef* uartx, uint8_t* buffer, uint16_t buffer
 	if (CLB_board_addr == CLB_receive_header.target_addr) {
 	    // TODO: handle receiving different packet types besides cmd
 		(*cmds_ptr[CLB_receive_header.packet_type-8])
-		                        (CLB_ping_packet, &cmd_status);
+		                        (CLB_ping_packet+CLB_HEADER_SZ, &cmd_status);
 	} else {
 	    // Pass on telem over uart channel
 	    transmit_packet(uartx, PONG_MAX_PACKET_SIZE);

@@ -27,7 +27,7 @@ void move_stepper_degrees(uint8_t* data, uint8_t* status);
 
 typedef void (*Cmd_Pointer)(uint8_t* x, uint8_t* y);
 
-static Cmd_Pointer cmds_ptr[NUM_CMD_ITEMS];
+Cmd_Pointer cmds_ptr[NUM_CMD_ITEMS];
 
 // Note: to call a function do
 /**
