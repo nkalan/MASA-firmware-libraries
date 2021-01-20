@@ -103,7 +103,7 @@ def main():
     # For pack_telem_defines.c
     pack_telem_defines_c_string = "/// " + begin_autogen_tag + "\n/// pack_telem_defines.c\n" + \
                                 "/// " + autogen_label + "\n\n" + \
-                                "#include \"../inc/pack_telem_defines.h\"\n\nvoid pack_telem_data(uint8_t* dst){\n"
+                                "#include \"pack_telem_defines.h\"\n\nvoid pack_telem_data(uint8_t* dst){\n"
 
     # For globals.h and globals.c
     globals_h_string = "/// " + begin_autogen_tag + "\n/// globals.h\n" + "/// " + \
@@ -353,8 +353,11 @@ def main():
 
     #parsed_printf_file = open((filename + "_sprintf-call_.c"), "w+")
     telem_parser = open(output_file, "w+")
-    pack_telem_defines_h = open("../inc/pack_telem_defines.h", "w+")  # Generates file in current folder
-    pack_telem_defines_c = open("../src/pack_telem_defines.c", "w+")
+    try:
+        pack_telem_defines_h = open("../../../Inc/pack_telem_defines.h", "w+")  # Generates file in project folder
+        pack_telem_defines_c = open("../../../Src/pack_telem_defines.c", "w+")
+    except:
+        print("Creating new pack files...\n")
     globals_h = open(output_globals_h_file, "w+")
     globals_c = open(output_globals_c_file, "w+")
 

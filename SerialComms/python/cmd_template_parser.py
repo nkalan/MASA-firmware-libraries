@@ -87,7 +87,7 @@ except FileNotFoundError:
 user_generated_code_h = ""  
 line_num_h = 0 
 try:
-    with open("../inc/pack_cmd_defines.h", 'r') as h_file:
+    with open("../../../Inc/pack_cmd_defines.h", 'r') as h_file:
         file_read = h_file.readlines()
         for line in file_read:
             line_num_h += 1
@@ -97,7 +97,7 @@ except FileNotFoundError:
     pass
 
 #write to header file
-with open("../inc/pack_cmd_defines.h", 'w') as header_file:
+with open("../../../Inc/pack_cmd_defines.h", 'w') as header_file:
 
     #grab list of function names from csv
     function_names = functions['function_name']
@@ -148,7 +148,7 @@ with open("../inc/pack_cmd_defines.h", 'w') as header_file:
 user_generated_code_pointer = ""  
 line_num_pointer = 0 
 try:
-    with open("../src/pack_cmd_defines.c", 'r') as pointer_file:
+    with open("../../../Src/pack_cmd_defines.c", 'r') as pointer_file:
         file_read_pointer = pointer_file.readlines()
         for line in file_read_pointer:
             line_num_pointer += 1
@@ -158,7 +158,7 @@ except FileNotFoundError:
     pass
 
 #write to pointer file
-with open("../src/pack_cmd_defines.c", 'w') as header_c_test:
+with open("../../../Src/pack_cmd_defines.c", 'w+') as header_c_test:
     header_c_test.write("#include \"pack_cmd_defines.h\"\n")
     header_c_test.write("Cmd_Pointer cmds_ptr[NUM_CMD_ITEMS] = {\n\n")
     function_name_index = 0
