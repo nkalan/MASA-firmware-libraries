@@ -122,7 +122,7 @@ with open("../inc/pack_cmd_defines.h", 'w') as header_file:
                 pass
 
     header_file.write("typedef void (*Cmd_Pointer)(uint8_t* x, uint8_t* y);\n\n")
-    header_file.write("static Cmd_Pointer cmds_ptr[NUM_CMD_ITEMS];\n\n")
+    header_file.write("Cmd_Pointer cmds_ptr[NUM_CMD_ITEMS];\n\n")
     header_file.write("// Note: to call a function do\n/**\n* (*cmds_ptr[0])(array ptr here)\n"
                       "*\n* The actual cmd functions will be defined in a separate c file by the firwmare\n"
                       "* developer for each board. They simply need to include this header file\n* in the c" 
@@ -160,7 +160,7 @@ except FileNotFoundError:
 #write to pointer file
 with open("../src/pack_cmd_defines.c", 'w') as header_c_test:
     header_c_test.write("#include \"pack_cmd_defines.h\"\n")
-    header_c_test.write("static Cmd_Pointer cmds_ptr[NUM_CMD_ITEMS] = {\n\n")
+    header_c_test.write("Cmd_Pointer cmds_ptr[NUM_CMD_ITEMS] = {\n\n")
     function_name_index = 0
     board_supported = functions['supported_target_addr']
     for  name in function_names:

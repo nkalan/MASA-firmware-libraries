@@ -10,3 +10,7 @@ packet_type,function_name,nums args,arg0,arg_type0,xmit_scale,arg1,arg_type1,xmi
 16,set_control_calc_period,1,period,uint16_t,1,,,,,,,0,rate of pid control loop time in hz
 17,set_state,1,state,uint8_t,1,,,,,,,0,"set state number of control loop, ref firmware code for state definitions (rate defined in ms)"
 18,move_stepper_degrees,2,motor_num,uint8_t,1,deg,uint16_t,1,,,,0,moves the stepper motor degrees from current pos
+19,download_flash,0,,,,,,,,,,0,download flash memory contents to a txt file
+20,wipe_flash,0,,,,,,,,,,0,erase all contents on flash
+21,start_logging,0,,,,,,,,,,0,start logging data to flash
+22,stop_logging,0,,,,,,,,,,0,stop logging data to flash

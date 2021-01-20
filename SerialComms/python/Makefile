@@ -8,7 +8,7 @@ PT_CAL_H_FILE	= ../../../Inc/pt_calibrations.h
 PT_CAL_C_FILE	= ../../../Src/pt_calibrations.c
 TELEM_CMD_FILE	= ./telem_cmd_template.csv
 TELEM_CMD_FILE_DIRECTORY = ${GUI_PATH}
-TELEM_C_FILE_DIRECTORY = ../../../Src
+TELEM_C_FILE_DIRECTORY = ./
 BOARD_NUM		= 0
 
 # Note: You need to configure the GUI_PATH variable
