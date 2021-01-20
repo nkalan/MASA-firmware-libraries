@@ -91,15 +91,15 @@ uint8_t receive_data(UART_HandleTypeDef* uartx, uint8_t* buffer, uint16_t buffer
 	 * 	2. Specific behavior depending on packet_type and target_addr
 	 *  3. Verify checksum after decoding all data
 	 * 
-	 * 	Note: 	The boards only expect to receive data/cmds within 254 bytes
-	 * 	       	any custom packet types that require more than 254 bytes will
+	 * 	Note: 	The boards only expect to receive data/cmds within 255 bytes
+	 * 	       	any custom packet types that require more than 255 bytes will
 	 * 			have to be spread out over multiple packet type ids
 	 */
 	for(uint16_t i = 0; i < buffer_sz; ++i) {
 		CLB_pong_packet[i] = buffer[i]; // copy items over for uart reception
 	}
 
-	unstuff_packet(CLB_pong_packet, CLB_ping_packet, PONG_MAX_PACKET_SIZE);
+	unstuff_packet(CLB_pong_packet, CLB_ping_packet, buffer_sz);
 
 	if (CLB_receive_header.num_packets == 0) {
 	    unpack_header(&CLB_receive_header, CLB_ping_packet);
@@ -116,8 +116,8 @@ uint8_t receive_data(UART_HandleTypeDef* uartx, uint8_t* buffer, uint16_t buffer
 		(*cmds_ptr[CLB_receive_header.packet_type-8])
 		                        (CLB_ping_packet, &cmd_status);
 	} else {
-	    // Pass on telem over uart channel
-	    transmit_packet(uartx, PONG_MAX_PACKET_SIZE);
+	    // Pass on daisy chained telem over uart channel
+	    transmit_packet(uartx, buffer_sz);
 	}
 	// Decrement number packets left to handle
 	CLB_receive_header.num_packets--;

@@ -19,8 +19,8 @@
 //#include "stm32l4xx_hal.h" // TODO change back to f4 after testing
 #include "stm32f4xx_hal.h"
 
-#include "../../SerialComms/inc/pack_cmd_defines.h"
-#include "../../SerialComms/inc/pack_telem_defines.h"
+#include "pack_cmd_defines.h"
+#include "pack_telem_defines.h"
 
 /* Global Defines */
 #define PING_MAX_PACKET_SIZE        253
