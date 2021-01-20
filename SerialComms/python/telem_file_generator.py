@@ -139,7 +139,8 @@ def main():
                              "\t\tself.units[self.items[2]] = \"ul\"\n" \
                              "\t\tself.units[self.items[3]] = \"ul\"\n" \
                              "\t\tself.units[self.items[4]] = \"ul\"\n" \
-                             "\t\tself.units[self.items[5]] = \"ul\"\n" 
+                             "\t\tself.units[self.items[5]] = \"ul\"\n" \
+                             "\t\tself.units[self.items[6]] = \"ul\"\n"
     parser_csv_header = "Time (s),"
     parser_self_init_str = ""
     parser_log_string = "\t\tself.log_string = str(time.clock()) + ','"
