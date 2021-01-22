@@ -832,12 +832,6 @@ void init_flash(W25N01GV_Flash *flash, SPI_HandleTypeDef *SPI_bus_in,
 
 	enable_ECC(flash);  // Should be enabled by default, but enable ECC just in case
 	enable_buffer_mode(flash);  // -IG models start with buffer mode by default, -IT models don't
-
-	// DEBUG CODE
-	//TODO remove this in final version
-	for (uint16_t i = 0; i < W25N01GV_MIN_WRITE_NUM_BYTES; ++i)
-		flash->write_buffer[i] = 0xFF;
-	// END DEBUG CODE
 }
 
 uint8_t is_flash_ID_correct(W25N01GV_Flash *flash) {
@@ -982,12 +976,6 @@ uint16_t write_to_flash(W25N01GV_Flash *flash, uint8_t *data, uint32_t num_bytes
 	if (buffer_full) {
 		write_failures += write_to_flash_contiguous(flash, flash->write_buffer, W25N01GV_MIN_WRITE_NUM_BYTES);
 		flash->write_buffer_size = 0;
-
-		// DEBUG CODE
-		//TODO remove this in final version
-		for (uint16_t i = 0; i < W25N01GV_MIN_WRITE_NUM_BYTES; ++i)
-			flash->write_buffer[i] = 0xFF;
-		// END DEBUG CODE
 	}
 
 	// Write the processed array into flash using write_to_flash_contiguous()
@@ -1009,6 +997,10 @@ uint16_t write_to_flash(W25N01GV_Flash *flash, uint8_t *data, uint32_t num_bytes
 }
 
 uint16_t finish_flash_write(W25N01GV_Flash *flash) {
+	// This function does nothing if there's nothing left in write_buffer
+	if (flash->write_buffer_size == 0)
+		return 0;
+
 	// Fill the rest of write_buffer with 0x00 to prevent
 	// any future accidental calls to write_to_flash() don't
 	// mess up the 512-byte framing

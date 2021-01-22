@@ -25,7 +25,7 @@ void init_data(uint8_t *buffer, int16_t buffer_sz, CLB_Packet_Header* header) {
 	CLB_header = header;
 }
 
-uint8_t send_data(UART_HandleTypeDef* uartx) {
+uint8_t send_data(CLB_send_data_info* info, uint8_t type) {
 	/* Procedure for sending data:
 		1. Compute checksum for given data, updating packet header
 		2. Stuff packet from buffer
@@ -33,7 +33,9 @@ uint8_t send_data(UART_HandleTypeDef* uartx) {
 		4. Repeats steps 2-3 until buffer is fully transmitted
 		5. Return status/errors in transmission if they exist
 	*/
-	uint16_t clb_pos = 0;						// position in clb buffer
+	uint8_t status		= CLB_nominal;			// to be used for error codes
+	uint32_t flash_pos 	= 0;
+	uint16_t clb_pos 	= 0;					// position in clb buffer
 	uint16_t clb_sz = CLB_buffer_sz;			// clb buffer sz
 	uint16_t ping_pos = 0;						// position in ping buffer
 	uint16_t ping_sz = PING_MAX_PACKET_SIZE;	// packet size
@@ -59,19 +61,30 @@ uint8_t send_data(UART_HandleTypeDef* uartx) {
 		clb_pos += transfer_sz_left;
 		ping_pos += transfer_sz_left;
 
-		uint16_t stuffed_packet_sz = stuff_packet(CLB_ping_packet, 
-											CLB_pong_packet, ping_pos);
-
-		// add termination character to transmission if possible
-		if (clb_pos == clb_sz) {
-		    if (stuffed_packet_sz < 255) {
-		        CLB_pong_packet[stuffed_packet_sz++] = 0;
-		    } else {
-		        send_termination_bit = 1;
-		    }
+		// cobbs encodes packet if sending over telem
+		uint16_t stuffed_packet_sz = 0;
+		if (type == CLB_Telem) {
+			stuffed_packet_sz = stuff_packet(CLB_ping_packet,
+												CLB_pong_packet, ping_pos);
+			// add termination character to transmission if possible
+			if (clb_pos == clb_sz) {
+				if (stuffed_packet_sz < 255) {
+					CLB_pong_packet[stuffed_packet_sz++] = 0;
+				} else {
+					send_termination_bit = 1;
+				}
+			}
+			transmit_packet(info->uartx, stuffed_packet_sz);
+		} else if (type == CLB_Flash) {
+			stuffed_packet_sz = stuff_packet(CLB_ping_packet,
+												info->flash_arr, ping_pos);
+			flash_pos += stuffed_packet_sz;
+			info->flash_arr_rem -= stuffed_packet_sz;
+			if (info->flash_arr_rem < 0) {
+				status = CLB_flash_buffer_overflow;
+				break;
+			}
 		}
-
-		transmit_packet(uartx, stuffed_packet_sz);
 
 		if (ping_pos >= ping_sz) {
 			ping_pos = 0;
@@ -80,9 +93,10 @@ uint8_t send_data(UART_HandleTypeDef* uartx) {
 
 	if (send_termination_bit) {
 	    CLB_pong_packet[0] = 0;
-	    transmit_packet(uartx, 1);
+	    transmit_packet(info->uartx, 1);
 	}
-	return 0; // TODO: return better error handling
+
+	return status; // TODO: return better error handling
 }
 
 uint8_t receive_data(UART_HandleTypeDef* uartx, uint8_t* buffer, uint16_t buffer_sz) {

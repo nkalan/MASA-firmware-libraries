@@ -40,6 +40,22 @@ typedef struct CLB_Packet_Header {
     uint32_t timestamp;         // timestamp for data
 } CLB_Packet_Header;
 
+typedef struct CLB_send_data_info {
+	UART_HandleTypeDef* uartx;
+	int16_t flash_arr_rem;
+	uint8_t *flash_arr;
+} CLB_send_data_info;
+
+enum CLB_send_data_errors {
+	CLB_nominal					= 0,
+	CLB_flash_buffer_overflow 	= 1
+};
+
+enum CLB_send_data_type {
+	CLB_Telem = 0,
+	CLB_Flash = 1
+};
+
 /* Telemetry Data */
 uint8_t CLB_ping_packet[PING_MAX_PACKET_SIZE];   // unencoded packet (ping)
 uint8_t CLB_pong_packet[PONG_MAX_PACKET_SIZE];   // encoded packet (pong)
@@ -71,7 +87,7 @@ uint8_t* return_telem_buffer(uint8_t*buffer_sz);
                         data
     @returns            <uint8_t> status of data transmission 0 - no error
 */
-uint8_t send_data(UART_HandleTypeDef* uartx);
+uint8_t send_data(CLB_send_data_info* info, uint8_t type);
 
 // TODO:
 uint8_t receive_data(UART_HandleTypeDef* uartx, uint8_t* buffer, uint16_t buffer_sz);
