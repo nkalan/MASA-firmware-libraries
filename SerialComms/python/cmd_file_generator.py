@@ -16,6 +16,9 @@ import time
 """
 Main program
 Reads in the .csv template and generates files from it
+
+Takes the following command line arguments:
+    python(3) cmd_file_generator.py <cmd template csv> <gui/Python/ directory>
 """
 def main():
     
@@ -35,7 +38,7 @@ def main():
     # Open the telem template file
     filename = sys.argv[1]
 
-    # Determine the directory to generate the file into
+    # Determine the directory to generate the file into (should be the gui/Python directory)
     try:
         filepath = sys.argv[2]
         assert(filepath != "")
@@ -117,7 +120,7 @@ def main():
     s2_command_str += "\t\t# Check that it's a valid function\n" \
         + "\t\tif (cmd_info[\"function_name\"] not in self.cmd_names_dict.keys()):" \
         + "\n\t\t\tprint(cmd_info[\"function_name\"] + \" is not a valid function name. No command was sent.\")\n\t\t\treturn\n\n"
-    s2_command_str += "\t\t# Initialize empty packet\n\t\tpacket = [0]*253  # Will add packet delimiters later to make it 255 bytes\n" \
+    s2_command_str += "\t\t# Initialize empty packet\n\t\tpacket = [0]*11  # Header is 11 bytes, will add bytes to fit function arguments\n" \
         + "\n\t\t# Fill first 11 bytes of packet with CLB packet header information\n" \
         + "\t\tpacket[0] = self.cmd_names_dict[cmd_info[\"function_name\"]]\t# packet_type\n" \
         + "\t\tpacket[1] = cmd_info[\"target_board_addr\"]\t# target_addr\n" \
@@ -151,15 +154,15 @@ def main():
             s2_command_str += "\t\t\tpass  # No function arguments\n"
         else:
             # Iterate through the command's arguments and generate python code to pack them
-            packet_index = 11  # Start right after the CLB header
+            #packet_index = 11  # Start right after the CLB header  # removed because command packets are variable length now
             for arg_num, (arg_name, arg_type, xmit_scale) in enumerate(cmd_args[packet_type]):
                 byte_length = byte_info.type_byte_lengths[arg_type]
 
                 s2_command_str += "\t\t\t# " + arg_name + "\n"
                 for b in range(byte_length):
-                    s2_command_str += "\t\t\tpacket[" + str(packet_index) + "] = (int(cmd_info[\"args\"][" + str(arg_num) + "]*" \
-                        + str(xmit_scale) + ") >> " + str(8*b) + ") & 0xFF\n"
-                    packet_index += 1
+                    s2_command_str += "\t\t\tpacket.append((int(cmd_info[\"args\"][" + str(arg_num) + "]*" \
+                        + str(xmit_scale) + ") >> " + str(8*b) + ") & 0xFF)\n"
+                    #packet_index += 1  # removed because command packets are variable length now
 
     s2_command_str += "\n\t\t# Encode the packet with COBS\n\t\tstuff_array(packet)\n"
     s2_command_str += "\n\t\t# Write the bytes to serial\n\t\tser.write(bytes(packet))\n"
