@@ -19,7 +19,7 @@
  * Last edited November 6, 2020
  */
 
-#include "W25N01GV.h"
+#include "../inc/W25N01GV.h"
 #ifdef HAL_SPI_MODULE_ENABLED  // Begin SPI include protection
 
 // Device ID information, used to check if flash is working
@@ -36,6 +36,9 @@
 // 1024 blocks with 64 pages each = 65536 pages
 #define W25N01GV_PAGES_PER_BLOCK                  (uint16_t) 64
 #define W25N01GV_NUM_BLOCKS                       (uint16_t) 1024
+
+// Used for find_file_ptr()
+#define W25N01GV_ERASED_BYTE                               (uint8_t) 0xFF
 
 /* Commands */
 // Summary of commands and usage on datasheet pg 23-25
@@ -720,6 +723,7 @@ static void disable_ECC(W25N01GV_Flash *flash) {
  * Sets the device to buffer read mode, which limits the user to reading
  * up to one page at a time before loading a new page. It sets the BUF bit
  * in the configuration register to 1 if BUF=0, and does nothing if BUF=1.
+ * This is the mode that MASA firmware will be using for TSM.
  *
  * datasheet pg 18
  *
@@ -731,6 +735,83 @@ static void enable_buffer_mode(W25N01GV_Flash *flash) {
 	if (buffer_enabled_register != config_reg_read)
 		write_status_register(flash, W25N01GV_SR2_CONFIG_REG_ADR, buffer_enabled_register);
 }
+
+/**
+ * Returns true if every byte in the given array up to the given length is 0xFF.
+ * Used by find_file_ptr() to check for contiguous blocks of 0xFFFFFFFF.
+ *
+ * @param arr        <uint8_t*>          uint8_t array
+ * @param sz         <uint16_t>          expected length of arr
+ * @retval 1 if every byte in arr is 0xFF, 0 otherwise
+ */
+/*
+static uint8_t is_EOF(uint8_t *arr, uint16_t sz) {
+	uint8_t is_EOF = 1;
+
+	for (uint8_t *b = arr; b < arr + sz; b++)
+		if (*b != W25N01GV_ERASED_BYTE)
+			is_EOF = 0;
+
+	return is_EOF;
+}
+*/
+
+/**
+ * Performs a binary search on the flash memory array to find the first available
+ * address to write to. It searches for the first byte string 0xFFFFFFFFFFFFFFFF (8 bytes)
+ * and sets the current_page and next_free_column counters in the W25N01GV_Flash struct to
+ * the byte right before 0xFFFFFFFFFFFFFFFF.
+ *
+ * This library always starts writing from page 0, column 0, and writes in contiguous
+ * chunks, so there will always be an address where memory after it will be erased (0xFF)
+ * and memory before it will not be erased (not 0xFF).
+ *
+ * Note: this doesn't work if some of the data written by the user includes 0xFFFFFFFFFFFFFFFF,
+ * and it was picked because the user will probably never write that
+ */
+/*
+static void find_file_ptr(W25N01GV_Flash *flash) {
+	uint8_t read_buffer[W25N01GV_BYTES_PER_PAGE];
+
+	// First check page 0. If flash has already been erased, do nothing.
+	// Checking this case first because it's probably pretty common
+	read_bytes_from_page(flash, read_buffer, 8, 0, 0);
+	if (is_EOF(read_buffer, 4)) {
+		flash->current_page = 0;
+		flash->next_free_column = 0;
+		return;
+	}
+
+	//
+	// Edge cases:
+	// EOF goes between 2 pages
+	// < 8 bytes left in flash
+	//
+
+	// Binary search
+	uint16_t min_page = 0;
+	uint16_t max_page = W25N01GV_NUM_PAGES;
+
+	uint16_t cur_search_page = W25N01GV_NUM_PAGES / 2;
+
+	uint8_t search_done = 0;
+
+	while (!search_done) {
+		read_bytes_from_page(flash, read_buffer, W25N01GV_BYTES_PER_PAGE, cur_search_page, 0);
+
+
+		// Check if this page contains the EOF
+		// Start at the end of read_buffer and work back
+		uint8_t erased_found = 0;
+		uint16_t num_erased = 0;
+		for (int16_t b = 2047; b >= 0; b--) {
+			if (!erased_found && read_buffer[b] == 0xFF) {
+				erased_found = 1;
+			}
+
+	}
+}
+*/
 
 
 /* Public function definitions */
@@ -792,7 +873,10 @@ uint8_t reset_flash(W25N01GV_Flash *flash) {
 
 /**
  * Old write function that writes everything immediately.
- * it breaks flash when you give it lots of small arrays.
+ * The reason why this is separate from write_flash() is because I wrote
+ * this function before I learned about the 512-byte framing requirement,
+ * so write_to_flash handles the framing and uses this function to do
+ * the actual writing.
  *
  * ASSUMPTIONS:
  * flash->next_free_column is a multiple of W25N01GV_MIN_WRITE_NUM_BYTES between [0, 2047].
@@ -925,6 +1009,11 @@ uint16_t write_to_flash(W25N01GV_Flash *flash, uint8_t *data, uint32_t num_bytes
 }
 
 uint16_t finish_flash_write(W25N01GV_Flash *flash) {
+	// Fill the rest of write_buffer with 0x00 to prevent
+	// any future accidental calls to write_to_flash() don't
+	// mess up the 512-byte framing
+	while (flash->write_buffer_size < W25N01GV_MIN_WRITE_NUM_BYTES)
+		flash->write_buffer[flash->write_buffer_size++] = 0x00;
 
 	// If there's not enough space, truncate the data.
 	// This should never happen, but just in case.
@@ -932,16 +1021,12 @@ uint16_t finish_flash_write(W25N01GV_Flash *flash) {
 	if (flash->write_buffer_size > bytes_remaining)
 		flash->write_buffer_size = bytes_remaining;
 
-	// Disable write protection
 	unlock_flash(flash);
-	enable_write(flash);
 
 	uint16_t write_failures = write_to_flash_contiguous(flash, flash->write_buffer,
 			flash->write_buffer_size);
 	flash->write_buffer_size = 0;
 
-	// Re enable write protection
-	disable_write(flash);
 	lock_flash(flash);
 
 	return write_failures;
