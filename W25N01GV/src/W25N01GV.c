@@ -822,6 +822,8 @@ void find_write_ptr(W25N01GV_Flash *flash) {
 			flash->current_page++;
 			flash->next_free_column = 0;
 		}
+
+		return;
 	}
 	else {  // normal linear search
 		// Start at the end and search backwards for the first non-empty byte
@@ -839,7 +841,20 @@ void find_write_ptr(W25N01GV_Flash *flash) {
 		}
 	}
 
-	// TODO: increment to 512, 1024, 1536, 0/2048
+	// flash->next_free_column should only ever be at the beginning of one of the sectors on a page.
+	// If the user's last byte(s) written are 0xFF, then the previous loop will treat it as empty memory.
+	// This if block maintains the 512 byte framing.
+	// At this point in the code, flash->current_page is not empty and flash is not completely full.
+	if (flash->next_free_column <= 512)
+		flash->next_free_column = 512;
+	else if (flash->next_free_column <= 1024)
+		flash->next_free_column = 1024;
+	else if (flash->next_free_column <= 1536)
+		flash->next_free_column = 1536;
+	else if (flash->next_free_column < 2048) {  // Increment to next page
+		flash->next_free_column = 0;
+		flash->current_page++;
+	}
 }
 
 
