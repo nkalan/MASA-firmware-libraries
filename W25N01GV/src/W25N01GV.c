@@ -680,7 +680,7 @@ static void write_bytes_to_page(W25N01GV_Flash *flash, uint8_t *data, uint16_t n
 	write_page_to_buffer(flash, data, num_bytes, column_adr);
 	program_buffer_to_memory(flash, page_adr);
 
-	// This will happen automatically if program_buffer_to_memory() succeeds, but just in case
+	// This will happen automatically if program_buffer_to_memory() succeeds, but just in case it fails ;)
 	disable_write(flash);
 
 	get_write_failure_status(flash);
@@ -737,81 +737,109 @@ static void enable_buffer_mode(W25N01GV_Flash *flash) {
 }
 
 /**
- * Returns true if every byte in the given array up to the given length is 0xFF.
- * Used by find_file_ptr() to check for contiguous blocks of 0xFFFFFFFF.
+ * Performs a binary search on flash memory to find the first available
+ * address to write to. Modifies flash->current_page and flash->next_free_column.
  *
- * @param arr        <uint8_t*>          uint8_t array
- * @param sz         <uint16_t>          expected length of arr
- * @retval 1 if every byte in arr is 0xFF, 0 otherwise
+ * This function is critical to prevent data corruption, which occurs when this firmware
+ * tries to write over previously-written addresses.
+ *
+ * Key assumptions made by this function that are maintained by write_to_flash():
+ * All non-empty pages come before all empty pages in memory. This in turn assumes
+ * that the user is not constantly writing '0xFF', which is the empty/erased byte.
+ * If there is entire page consisting of '0xFF', and there are later pages that
+ * contain user-written data, then this function might fail.
+ * TODO: write a note in write_to_flash() not to do this
+ *
+ * Another way to think of this function is that there should always be a contiguous chunk
+ * of 0xFF bytes at the end of flash, and this function finds the first byte in that chunk.
+ *
+ * Expected results:
+ * flash->current_page will be any uint16_t,and flash->next_free_column will be
+ * 0, 512, 1024, or 1536 (except when flash->current_page == 65536, in which case
+ * flash->next_free_column can also be 2048).
+ * See notes about flash->write_buffer for explanation.
  */
-/*
-static uint8_t is_EOF(uint8_t *arr, uint16_t sz) {
-	uint8_t is_EOF = 1;
+static void find_write_ptr(W25N01GV_Flash *flash) {
+	uint8_t read_buffer[2048];
 
-	for (uint8_t *b = arr; b < arr + sz; b++)
-		if (*b != W25N01GV_ERASED_BYTE)
-			is_EOF = 0;
-
-	return is_EOF;
-}
-*/
-
-/**
- * Performs a binary search on the flash memory array to find the first available
- * address to write to. It searches for the first byte string 0xFFFFFFFFFFFFFFFF (8 bytes)
- * and sets the current_page and next_free_column counters in the W25N01GV_Flash struct to
- * the byte right before 0xFFFFFFFFFFFFFFFF.
- *
- * This library always starts writing from page 0, column 0, and writes in contiguous
- * chunks, so there will always be an address where memory after it will be erased (0xFF)
- * and memory before it will not be erased (not 0xFF).
- *
- * Note: this doesn't work if some of the data written by the user includes 0xFFFFFFFFFFFFFFFF,
- * and it was picked because the user will probably never write that
- */
-/*
-static void find_file_ptr(W25N01GV_Flash *flash) {
-	uint8_t read_buffer[W25N01GV_BYTES_PER_PAGE];
-
-	// First check page 0. If flash has already been erased, do nothing.
-	// Checking this case first because it's probably pretty common
-	read_bytes_from_page(flash, read_buffer, 8, 0, 0);
-	if (is_EOF(read_buffer, 4)) {
+	// First check page 0 for if flash has already been erased.
+	// Checking this case first because it's probably pretty common.
+	read_bytes_from_page(flash, read_buffer, 2048, 0, 0);
+	uint8_t first_page_empty = 1;
+	for (uint16_t b = 0; b < 2048; b++) {
+		if (read_buffer[b] != 0xFF) {
+			first_page_empty = 0;
+		}
+	}
+	if (first_page_empty) {
 		flash->current_page = 0;
 		flash->next_free_column = 0;
 		return;
 	}
 
-	//
-	// Edge cases:
-	// EOF goes between 2 pages
-	// < 8 bytes left in flash
-	//
+	// Binary search on all of flash to find the last page written to.
 
-	// Binary search
-	uint16_t min_page = 0;
-	uint16_t max_page = W25N01GV_NUM_PAGES;
+	// min and max declared as 32bit because W25N01GV_NUM_PAGES > largest uint16_t
+	uint32_t min = 0;  // inclusive
+	uint32_t max = W25N01GV_NUM_PAGES;  // exclusive
+	uint16_t cur_search_page;
 
-	uint16_t cur_search_page = W25N01GV_NUM_PAGES / 2;
+	while (max - min > 1) {  // Keep looping until you narrow range down a single page
+		cur_search_page = (max-min) / 2;
 
-	uint8_t search_done = 0;
-
-	while (!search_done) {
-		read_bytes_from_page(flash, read_buffer, W25N01GV_BYTES_PER_PAGE, cur_search_page, 0);
-
-
-		// Check if this page contains the EOF
-		// Start at the end of read_buffer and work back
-		uint8_t erased_found = 0;
-		uint16_t num_erased = 0;
-		for (int16_t b = 2047; b >= 0; b--) {
-			if (!erased_found && read_buffer[b] == 0xFF) {
-				erased_found = 1;
+		// Read cur_search_page and check if it's empty
+		read_bytes_from_page(flash, read_buffer, 2048, cur_search_page, 0);
+		uint8_t cur_page_empty = 1;
+		for (uint16_t b = 0; b < 2048; b++) {
+			if (read_buffer[b] != 0xFF) {
+				cur_page_empty = 0;
+				break;
 			}
+		}
 
+		if (cur_page_empty)  // Found an empty page - move to the left sector
+			max = cur_search_page;
+		else  // Found a non-empty page - move to the right sector
+			min = cur_search_page + 1;
+	}
+	// Breaks out of the loop when range is narrowed down to [min, min+1),
+	flash->current_page = min;
+
+	// After finding flash->current_page, do a linear search on that page
+	// to find flash->next_free_address
+	read_bytes_from_page(flash, read_buffer, 2048, flash->current_page, 0);
+
+	// Edge case: if the page found by the binary search is completely full
+	// (last byte is non-0xFF) then the write pointer should actually be the
+	// first byte of the next page (breaking out of the while loop guaranteed
+	// that page min+1 is empty).	If that is the last page in flash, handle
+	// accordingly to make get_bytes_remaining() return 0.
+
+	if (read_buffer[2047] != 0xFF) {  // aforementioned edge case
+		if (flash->current_page == W25N01GV_NUM_PAGES-1) {  // no room left in flash
+			flash->next_free_column = 2048;
+		}
+		else {  // go to start of next page
+			flash->current_page++;
+			flash->next_free_column = 0;
+		}
+	}
+	else {  // normal linear search
+		// Start at the end and search backwards for the first non-empty byte
+		uint8_t page_empty = 1;
+		for (int16_t b = 2047; b >= 0; b--) {
+			if (read_buffer[b] != 0xFF) {
+				flash->next_free_column = b+1;
+				page_empty = 0;
+				break;
+			}
+		}
+
+		if (page_empty) {
+			asm("nop");  // if you get here, I fucked up
+		}
 	}
 }
-*/
 
 
 /* Public function definitions */
@@ -992,7 +1020,6 @@ uint16_t write_to_flash(W25N01GV_Flash *flash, uint8_t *data, uint32_t num_bytes
 
 	// Write the processed array into flash using write_to_flash_contiguous()
 	if (new_data_size > 0) {
-		enable_write(flash);
 		write_failures += write_to_flash_contiguous(flash, data, new_data_size);
 	}
 
