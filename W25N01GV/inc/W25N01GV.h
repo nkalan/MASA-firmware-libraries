@@ -106,12 +106,11 @@
 // Each page has a 2048-byte main data array to read/write
 #define W25N01GV_BYTES_PER_PAGE (uint16_t) 2048
 
-// Writing small amounts of data causes flash malfunction,
+// Writing too-small amounts of data causes ECC corruption,
 // so data is stored into an array and is only written when
-// it can write many bytes all at once.
-// NOTE: this number can only be 512, 1024, or 2048
-// TODO: explain somewhere why this is the case
-#define W25N01GV_MIN_WRITE_NUM_BYTES (uint16_t) 512
+// it can write an array with a length that is a multiple of 512.
+// See application note linked in README for why.
+#define W25N01GV_SECTOR_SIZE (uint16_t) 512
 
 /**
  * Value representing the status of the last read command. Error correction
@@ -136,7 +135,7 @@ typedef enum {
  */
 typedef struct {
 	// Data buffer to store data before writing
-	uint8_t write_buffer[W25N01GV_MIN_WRITE_NUM_BYTES];
+	uint8_t write_buffer[W25N01GV_SECTOR_SIZE];
 
 	SPI_HandleTypeDef *SPI_bus;   // SPI struct, specified by user
 	GPIO_TypeDef *cs_base;        // Chip select GPIO base, specified by user
@@ -306,6 +305,8 @@ uint32_t get_bytes_remaining(W25N01GV_Flash *flash);
  * @retval The total number of bad blocks found
  */
 uint16_t scan_bad_blocks(W25N01GV_Flash *flash, uint16_t *bad_blocks);
+
+void find_write_ptr(W25N01GV_Flash *flash);
 
 #endif	// end SPI include protection
 #endif	// end header include protection
