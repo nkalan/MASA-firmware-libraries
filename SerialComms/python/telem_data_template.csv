@@ -149,6 +149,12 @@ mtr 2 pos,mtr_pos[2],,,deg,float,%d,uint16_t,100,,float,,,n
 mtr 3 pos,mtr_pos[3],,,deg,float,%d,uint16_t,100,,float,,,n
 mtr 0 setpoint,mtr_set[0],,,deg,float,%d,uint16_t,100,,float,,,y
 mtr 1 setpoint,mtr_set[1],,,deg,float,%d,uint16_t,100,,float,,,y
+mtr 0 Ki,mtr_ki[0],,,ul,float,%d,uint16_t,100,,float,,,y
+mtr 1 Ki,mtr_ki[1],,,ul,float,%d,uint16_t,100,,float,,,y
+mtr 0 Kd,mtr_kd[0],,,ul,float,%d,uint16_t,100,,float,,,y
+mtr 1 Kd,mtr_kd[1],,,ul,float,%d,uint16_t,100,,float,,,y
+mtr 0 Kp,mtr_kp[0],,,ul,float,%d,uint16_t,100,,float,,,y
+mtr 1 Kp,mtr_kp[1],,,ul,float,%d,uint16_t,100,,float,,,y
 pot 0,epot[0],,,Volts,float,%d,uint16_t,1000,,float,,,y
 pot 1,epot[1],,,Volts,float,%d,uint16_t,1000,,float,,,y
 pot 2,epot[2],,,Volts,float,%d,uint16_t,1000,,float,,,y
