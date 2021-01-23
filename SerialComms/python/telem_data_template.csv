@@ -102,7 +102,7 @@ E 5V,e5v,0,5,Volts,float,%.2f,int32_t,100,,float,,,y
 E 28V,e28v,0,30,Volts,float,%.3f,int16_t,100,,float,,,n
 I 5V,i5v,0,2,Amps,float,%.1f,uint8_t,100,,float,,,y
 I 3V,i3v,0,2,Amps,float,%.1f,uint8_t,100,,float,,,y
-Last Command ID,last_command_id,,,ul,uint8_t,%d,uint16_t,100,,float,,,y
+Last Command ID,last_command_id,,,ul,uint8_t,%d,uint16_t,1,,float,,,y
 tc 0,tc[0],,,K,float,%d,uint16_t,100,,float,,,y
 tc 1,tc[1],,,K,float,%d,uint16_t,100,,float,,,y
 tc 2,tc[2],,,K,float,%d,uint16_t,100,,float,,,y
@@ -147,6 +147,8 @@ mtr 0 pos,mtr_pos[0],,,deg,float,%d,uint16_t,100,,float,,,y
 mtr 1 pos,mtr_pos[1],,,deg,float,%d,uint16_t,100,,float,,,y
 mtr 2 pos,mtr_pos[2],,,deg,float,%d,uint16_t,100,,float,,,n
 mtr 3 pos,mtr_pos[3],,,deg,float,%d,uint16_t,100,,float,,,n
+mtr 0 setpoint,mtr_set[0],,,deg,float,%d,uint16_t,100,,float,,,y
+mtr 1 setpoint,mtr_set[1],,,deg,float,%d,uint16_t,100,,float,,,y
 pot 0,epot[0],,,Volts,float,%d,uint16_t,1000,,float,,,y
 pot 1,epot[1],,,Volts,float,%d,uint16_t,1000,,float,,,y
 pot 2,epot[2],,,Volts,float,%d,uint16_t,1000,,float,,,y
