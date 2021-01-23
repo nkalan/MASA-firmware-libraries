@@ -19,7 +19,7 @@
  * Last edited November 6, 2020
  */
 
-#include "W25N01GV.h"
+#include "../inc/W25N01GV.h"
 #ifdef HAL_SPI_MODULE_ENABLED  // Begin SPI include protection
 
 // Device ID information, used to check if flash is working
@@ -36,6 +36,9 @@
 // 1024 blocks with 64 pages each = 65536 pages
 #define W25N01GV_PAGES_PER_BLOCK                  (uint16_t) 64
 #define W25N01GV_NUM_BLOCKS                       (uint16_t) 1024
+
+// Used for find_file_ptr()
+#define W25N01GV_ERASED_BYTE                               (uint8_t) 0xFF
 
 /* Commands */
 // Summary of commands and usage on datasheet pg 23-25
@@ -677,7 +680,7 @@ static void write_bytes_to_page(W25N01GV_Flash *flash, uint8_t *data, uint16_t n
 	write_page_to_buffer(flash, data, num_bytes, column_adr);
 	program_buffer_to_memory(flash, page_adr);
 
-	// This will happen automatically if program_buffer_to_memory() succeeds, but just in case
+	// This will happen automatically if program_buffer_to_memory() succeeds, but just in case it fails ;)
 	disable_write(flash);
 
 	get_write_failure_status(flash);
@@ -720,6 +723,7 @@ static void disable_ECC(W25N01GV_Flash *flash) {
  * Sets the device to buffer read mode, which limits the user to reading
  * up to one page at a time before loading a new page. It sets the BUF bit
  * in the configuration register to 1 if BUF=0, and does nothing if BUF=1.
+ * This is the mode that MASA firmware will be using for TSM.
  *
  * datasheet pg 18
  *
@@ -730,6 +734,111 @@ static void enable_buffer_mode(W25N01GV_Flash *flash) {
 	uint8_t buffer_enabled_register = config_reg_read | W25N01GV_SR2_BUFFER_READ_MODE;	// OR: turn bit on
 	if (buffer_enabled_register != config_reg_read)
 		write_status_register(flash, W25N01GV_SR2_CONFIG_REG_ADR, buffer_enabled_register);
+}
+
+/**
+ * Performs a binary search on flash memory to find the first available
+ * address to write to. Modifies flash->current_page and flash->next_free_column.
+ *
+ * This function is critical to prevent data corruption, which occurs when this firmware
+ * tries to write over previously-written addresses.
+ *
+ * Key assumptions made by this function that are maintained by write_to_flash():
+ * All non-empty pages come before all empty pages in memory. This in turn assumes
+ * that the user is not constantly writing '0xFF', which is the empty/erased byte.
+ * If there is entire page consisting of '0xFF', and there are later pages that
+ * contain user-written data, then this function might fail.
+ * TODO: write a note in write_to_flash() not to do this
+ *
+ * Another way to think of this function is that there should always be a contiguous chunk
+ * of 0xFF bytes at the end of flash, and this function finds the first byte in that chunk.
+ *
+ * Expected results:
+ * flash->current_page will be any uint16_t,and flash->next_free_column will be
+ * 0, 512, 1024, or 1536 (except when flash->current_page == 65536, in which case
+ * flash->next_free_column can also be 2048).
+ * See notes about flash->write_buffer for explanation.
+ */
+static void find_write_ptr(W25N01GV_Flash *flash) {
+	uint8_t read_buffer[2048];
+
+	// First check page 0 for if flash has already been erased.
+	// Checking this case first because it's probably pretty common.
+	read_bytes_from_page(flash, read_buffer, 2048, 0, 0);
+	uint8_t first_page_empty = 1;
+	for (uint16_t b = 0; b < 2048; b++) {
+		if (read_buffer[b] != 0xFF) {
+			first_page_empty = 0;
+		}
+	}
+	if (first_page_empty) {
+		flash->current_page = 0;
+		flash->next_free_column = 0;
+		return;
+	}
+
+	// Binary search on all of flash to find the last page written to.
+
+	// min and max declared as 32bit because W25N01GV_NUM_PAGES > largest uint16_t
+	uint32_t min = 0;  // inclusive
+	uint32_t max = W25N01GV_NUM_PAGES;  // exclusive
+	uint16_t cur_search_page;
+
+	while (max - min > 1) {  // Keep looping until you narrow range down a single page
+		cur_search_page = (max-min) / 2;
+
+		// Read cur_search_page and check if it's empty
+		read_bytes_from_page(flash, read_buffer, 2048, cur_search_page, 0);
+		uint8_t cur_page_empty = 1;
+		for (uint16_t b = 0; b < 2048; b++) {
+			if (read_buffer[b] != 0xFF) {
+				cur_page_empty = 0;
+				break;
+			}
+		}
+
+		if (cur_page_empty)  // Found an empty page - move to the left sector
+			max = cur_search_page;
+		else  // Found a non-empty page - move to the right sector
+			min = cur_search_page + 1;
+	}
+	// Breaks out of the loop when range is narrowed down to [min, min+1),
+	flash->current_page = min;
+
+	// After finding flash->current_page, do a linear search on that page
+	// to find flash->next_free_address
+	read_bytes_from_page(flash, read_buffer, 2048, flash->current_page, 0);
+
+	// Edge case: if the page found by the binary search is completely full
+	// (last byte is non-0xFF) then the write pointer should actually be the
+	// first byte of the next page (breaking out of the while loop guaranteed
+	// that page min+1 is empty).	If that is the last page in flash, handle
+	// accordingly to make get_bytes_remaining() return 0.
+
+	if (read_buffer[2047] != 0xFF) {  // aforementioned edge case
+		if (flash->current_page == W25N01GV_NUM_PAGES-1) {  // no room left in flash
+			flash->next_free_column = 2048;
+		}
+		else {  // go to start of next page
+			flash->current_page++;
+			flash->next_free_column = 0;
+		}
+	}
+	else {  // normal linear search
+		// Start at the end and search backwards for the first non-empty byte
+		uint8_t page_empty = 1;
+		for (int16_t b = 2047; b >= 0; b--) {
+			if (read_buffer[b] != 0xFF) {
+				flash->next_free_column = b+1;
+				page_empty = 0;
+				break;
+			}
+		}
+
+		if (page_empty) {
+			asm("nop");  // if you get here, I fucked up
+		}
+	}
 }
 
 
@@ -792,7 +901,10 @@ uint8_t reset_flash(W25N01GV_Flash *flash) {
 
 /**
  * Old write function that writes everything immediately.
- * it breaks flash when you give it lots of small arrays.
+ * The reason why this is separate from write_flash() is because I wrote
+ * this function before I learned about the 512-byte framing requirement,
+ * so write_to_flash handles the framing and uses this function to do
+ * the actual writing.
  *
  * ASSUMPTIONS:
  * flash->next_free_column is a multiple of W25N01GV_MIN_WRITE_NUM_BYTES between [0, 2047].
@@ -908,7 +1020,6 @@ uint16_t write_to_flash(W25N01GV_Flash *flash, uint8_t *data, uint32_t num_bytes
 
 	// Write the processed array into flash using write_to_flash_contiguous()
 	if (new_data_size > 0) {
-		enable_write(flash);
 		write_failures += write_to_flash_contiguous(flash, data, new_data_size);
 	}
 
@@ -925,6 +1036,11 @@ uint16_t write_to_flash(W25N01GV_Flash *flash, uint8_t *data, uint32_t num_bytes
 }
 
 uint16_t finish_flash_write(W25N01GV_Flash *flash) {
+	// Fill the rest of write_buffer with 0x00 to prevent
+	// any future accidental calls to write_to_flash() don't
+	// mess up the 512-byte framing
+	while (flash->write_buffer_size < W25N01GV_MIN_WRITE_NUM_BYTES)
+		flash->write_buffer[flash->write_buffer_size++] = 0x00;
 
 	// If there's not enough space, truncate the data.
 	// This should never happen, but just in case.
@@ -932,16 +1048,12 @@ uint16_t finish_flash_write(W25N01GV_Flash *flash) {
 	if (flash->write_buffer_size > bytes_remaining)
 		flash->write_buffer_size = bytes_remaining;
 
-	// Disable write protection
 	unlock_flash(flash);
-	enable_write(flash);
 
 	uint16_t write_failures = write_to_flash_contiguous(flash, flash->write_buffer,
 			flash->write_buffer_size);
 	flash->write_buffer_size = 0;
 
-	// Re enable write protection
-	disable_write(flash);
 	lock_flash(flash);
 
 	return write_failures;

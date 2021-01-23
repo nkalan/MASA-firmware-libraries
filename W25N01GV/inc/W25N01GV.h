@@ -298,6 +298,8 @@ uint32_t get_bytes_remaining(W25N01GV_Flash *flash);
  * of any bad blocks found into the bad_blocks array, and returns the number of
  * bad blocks it found.
  *
+ * TODO: add datasheet pages
+ *
  * @param flash      <W25N01GV_Flash*>    Struct used to store flash pins and addresses
  * @param bad_blocks <uint16_t*>          An array of size 1024 containing the address of each bad block.
  * 	The return value tells how many of the first N indices of this array are used.
