@@ -14,5 +14,5 @@ packet_type,function_name,nums args,arg0,arg_type0,xmit_scale,arg1,arg_type1,xmi
 20,wipe_flash,0,,,,,,,,,,0 3,erase all contents on flash
 21,start_logging,0,,,,,,,,,,0 3,start logging data to flash
 22,stop_logging,0,,,,,,,,,,0 3,stop logging data to flash
-23,set_stepper_pos,2,motor_num,uint8_t,1,position,float,10,,,,0 3,"sets stepper motor to move to certain position, max value is 2,999.9"
+23,set_stepper_pos,2,motor_num,uint8_t,1,position,float,100,,,,0 3,"sets stepper motor to move to certain position, max value is 2,999.9"
 24,set_stepper_zero,1,motor_num,uint8_t,1,,,,,,,0 3,zeros out current stepper motor pos 
