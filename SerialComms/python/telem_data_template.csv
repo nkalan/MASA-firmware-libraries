@@ -130,7 +130,7 @@ rtd 7,rtd[7],,,K,float,%d,uint16_t,100,,float,,,n
 I Mtr 0A,i_mtr_ab[0],,,Amps,float,%d,uint16_t,100,mtr0.ia,float,,,y
 I Mtr 0B,i_mtr_ab[1],,,Amps,float,%d,uint16_t,100,mtr0.ib,float,,,y
 I Mtr 1A,i_mtr_ab[2],,,Amps,float,%d,uint16_t,100,mtr1.ia,float,,,y
-I Mtr 1B,i_mtr_ab[3],,,Amps,float,%d,uint16_t,100,mtr2.ib,float,,,y
+I Mtr 1B,i_mtr_ab[3],,,Amps,float,%d,uint16_t,100,mtr1.ib,float,,,y
 I Mtr 2A,i_mtr_ab[4],,,Amps,float,%d,uint16_t,100,,float,,,n
 I Mtr 2B,i_mtr_ab[5],,,Amps,float,%d,uint16_t,100,,float,,,n
 I Mtr 3A,i_mtr_ab[6],,,Amps,float,%d,uint16_t,100,,float,,,n
