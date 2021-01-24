@@ -127,10 +127,10 @@ rtd 4,rtd[4],,,K,float,%d,uint16_t,100,,float,,,n
 rtd 5,rtd[5],,,K,float,%d,uint16_t,100,,float,,,n
 rtd 6,rtd[6],,,K,float,%d,uint16_t,100,,float,,,n
 rtd 7,rtd[7],,,K,float,%d,uint16_t,100,,float,,,n
-I Mtr 0A,i_mtr_ab[0],,,Amps,float,%d,uint16_t,100,,float,,,y
-I Mtr 0B,i_mtr_ab[1],,,Amps,float,%d,uint16_t,100,,float,,,y
-I Mtr 1A,i_mtr_ab[2],,,Amps,float,%d,uint16_t,100,,float,,,y
-I Mtr 1B,i_mtr_ab[3],,,Amps,float,%d,uint16_t,100,,float,,,y
+I Mtr 0A,i_mtr_ab[0],,,Amps,float,%d,uint16_t,100,mtr0.ia,float,,,y
+I Mtr 0B,i_mtr_ab[1],,,Amps,float,%d,uint16_t,100,mtr0.ib,float,,,y
+I Mtr 1A,i_mtr_ab[2],,,Amps,float,%d,uint16_t,100,mtr1.ia,float,,,y
+I Mtr 1B,i_mtr_ab[3],,,Amps,float,%d,uint16_t,100,mtr2.ib,float,,,y
 I Mtr 2A,i_mtr_ab[4],,,Amps,float,%d,uint16_t,100,,float,,,n
 I Mtr 2B,i_mtr_ab[5],,,Amps,float,%d,uint16_t,100,,float,,,n
 I Mtr 3A,i_mtr_ab[6],,,Amps,float,%d,uint16_t,100,,float,,,n
@@ -143,18 +143,18 @@ I Mtr 4,i_mtr[4],,,Amps,float,%d,uint16_t,100,,float,,,n
 I Mtr 5,i_mtr[5],,,Amps,float,%d,uint16_t,100,,float,,,n
 I Mtr 6,i_mtr[6],,,Amps,float,%d,uint16_t,100,,float,,,n
 I Mtr 7,i_mtr[7],,,Amps,float,%d,uint16_t,100,,float,,,n
-mtr 0 pos,mtr_pos[0],,,deg,float,%d,uint16_t,100,,float,,,y
-mtr 1 pos,mtr_pos[1],,,deg,float,%d,uint16_t,100,,float,,,y
-mtr 2 pos,mtr_pos[2],,,deg,float,%d,uint16_t,100,,float,,,n
-mtr 3 pos,mtr_pos[3],,,deg,float,%d,uint16_t,100,,float,,,n
-mtr 0 setpoint,mtr_set[0],,,deg,float,%d,uint16_t,100,,float,,,y
-mtr 1 setpoint,mtr_set[1],,,deg,float,%d,uint16_t,100,,float,,,y
-mtr 0 Ki,mtr_ki[0],,,ul,float,%d,uint16_t,100,,float,,,y
-mtr 1 Ki,mtr_ki[1],,,ul,float,%d,uint16_t,100,,float,,,y
-mtr 0 Kd,mtr_kd[0],,,ul,float,%d,uint16_t,100,,float,,,y
-mtr 1 Kd,mtr_kd[1],,,ul,float,%d,uint16_t,100,,float,,,y
-mtr 0 Kp,mtr_kp[0],,,ul,float,%d,uint16_t,100,,float,,,y
-mtr 1 Kp,mtr_kp[1],,,ul,float,%d,uint16_t,100,,float,,,y
+mtr 0 pos,mtr_pos[0],,,deg,float,%d,uint16_t,100,mtr0.pos,float,,,y
+mtr 1 pos,mtr_pos[1],,,deg,float,%d,uint16_t,100,mtr1.pos,float,,,y
+mtr 2 pos,mtr_pos[2],,,deg,float,%d,uint16_t,100,mtr2.pos,float,,,n
+mtr 3 pos,mtr_pos[3],,,deg,float,%d,uint16_t,100,mtr3.pos,float,,,n
+mtr 0 setpoint,mtr_set[0],,,deg,float,%d,uint16_t,100,mtr0.set,float,,,y
+mtr 1 setpoint,mtr_set[1],,,deg,float,%d,uint16_t,100,mtr1.set,float,,,y
+mtr 0 Ki,mtr_ki[0],,,ul,float,%d,uint16_t,100,mtr0.i,float,,,y
+mtr 1 Ki,mtr_ki[1],,,ul,float,%d,uint16_t,100,mtr1.i,float,,,y
+mtr 0 Kd,mtr_kd[0],,,ul,float,%d,uint16_t,100,mtr0.d,float,,,y
+mtr 1 Kd,mtr_kd[1],,,ul,float,%d,uint16_t,100,mtr1.d,float,,,y
+mtr 0 Kp,mtr_kp[0],,,ul,float,%d,uint16_t,100,mtr0.k,float,,,y
+mtr 1 Kp,mtr_kp[1],,,ul,float,%d,uint16_t,100,mtr1.k,float,,,y
 pot 0,epot[0],,,Volts,float,%d,uint16_t,1000,,float,,,y
 pot 1,epot[1],,,Volts,float,%d,uint16_t,1000,,float,,,y
 pot 2,epot[2],,,Volts,float,%d,uint16_t,1000,,float,,,y
