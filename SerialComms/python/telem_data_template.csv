@@ -155,6 +155,12 @@ mtr 0 Kd,mtr_kd[0],,,ul,float,%d,uint16_t,100,mtr0.d,float,,,y
 mtr 1 Kd,mtr_kd[1],,,ul,float,%d,uint16_t,100,mtr1.d,float,,,y
 mtr 0 Kp,mtr_kp[0],,,ul,float,%d,uint16_t,100,mtr0.p,float,,,y
 mtr 1 Kp,mtr_kp[1],,,ul,float,%d,uint16_t,100,mtr1.p,float,,,y
+mtr 0 Kp error,mtr_kp_err[0],,,ul,float,%d,int16_t,100,mtr0.kp_err,float,,,y
+mtr 1 Kp error,mtr_kp_err[1],,,ul,float,%d,int16_t,100,mtr1.kp_err,float,,,y
+mtr 0 Ki error,mtr_ki_err[0],,,ul,float,%d,int16_t,100,mtr0.ki_err,float,,,y
+mtr 1 Ki error,mtr_ki_err[1],,,ul,float,%d,int16_t,100,mtr1.ki_err,float,,,y
+mtr 0 Kd error,mtr_kd_err[0],,,ul,float,%d,int16_t,100,mtr0.kd_err,float,,,y
+mtr 1 Kd error,mtr_kd_err[1],,,ul,float,%d,int16_t,100,mtr1.kd_err,float,,,y
 pot 0,epot[0],,,Volts,float,%d,uint16_t,1000,,float,,,y
 pot 1,epot[1],,,Volts,float,%d,uint16_t,1000,,float,,,y
 pot 2,epot[2],,,Volts,float,%d,uint16_t,1000,,float,,,y
