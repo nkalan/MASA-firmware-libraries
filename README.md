@@ -6,6 +6,8 @@ Untested firmware changes should be pushed to their own branches. For instance, 
 Once the code on that branch is thoroughly tested on its feature branch, maintainer will merge into master.
 The master branch should remain stable for use at all times.
 
+In addition, the `dev` branch will be contain the latest stable versions of each of the firmware libraries. These libraries may potientially still contain edge case bugs. However, they have all been verified to be bug free in the normal use case. When you are done working on a new firmware library for a specific chip, you will need to create a merge request on Gitlab for merge you branch into dev (not master). When a version of the firmware libraries on dev has been thoroughly vetted through field testing for any unforeseen issues, the entire dev branch will be merged in master by a maintainer to ensure that master remains bug free for flight.
+
 ## Structuring your new firmware library
 
 It is extremely important to structure your firmware project using the steps below. Failure to do so will result in unique complications for others who want to use your firmware library, and no one likes that. 
