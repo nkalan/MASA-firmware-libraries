@@ -365,7 +365,10 @@ def main():
 
     telem_parser.write(	"### " + begin_autogen_tag + "\n### telemParse.py\n" + "### " + autogen_label + "\n\nimport time\nimport struct\n\nclass TelemParse:\n\n" + \
                                 "\tdef __init__(self):\n\t\tself.csv_header = \"" + \
-                                parser_csv_header + parser_self_init_str + "\n"
+                                parser_csv_header + \
+                                "\t\tself.packet_byte_size = " + \
+                                str(packet_byte_length + packet_header_byte_size) + "\n" + \
+                                 parser_self_init_str + "\n"
                                 "\tdef parse_packet(self, packet):\n" + \
                                 parser_data_dict_str + \
                                 parser_log_string)

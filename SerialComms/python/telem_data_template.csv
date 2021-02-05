@@ -145,12 +145,12 @@ I Mtr 6,i_mtr[6],,,Amps,float,%d,uint16_t,100,,float,,,n
 I Mtr 7,i_mtr[7],,,Amps,float,%d,uint16_t,100,,float,,,n
 mtr 0 pos,mtr_pos[0],,,deg,float,%d,int16_t,10,mtr0.pos,float,,,y
 mtr 1 pos,mtr_pos[1],,,deg,float,%d,int16_t,10,mtr1.pos,float,,,y
-mtr 2 pos,mtr_pos[2],,,deg,float,%d,int16_t,10,,float,,,n
-mtr 3 pos,mtr_pos[3],,,deg,float,%d,int16_t,10,,float,,,n
-mtr 0 vel,mtr_vel[0],,,deg/s,float,%d,int16_t,10,,float,,,y
-mtr 1 vel,mtr_vel[1],,,deg/s,float,%d,int16_t,10,,float,,,y
-mtr 2 vel,mtr_vel[2],,,deg/s,float,%d,int16_t,10,,float,,,n
-mtr 3 vel,mtr_vel[3],,,deg/s,float,%d,int16_t,10,,float,,,n
+mtr 2 pos,mtr_pos[2],,,deg,float,%d,int16_t,10,mtr2.pos,float,,,n
+mtr 3 pos,mtr_pos[3],,,deg,float,%d,int16_t,10,mtr3.pos,float,,,n
+mtr 0 vel,mtr_vel[0],,,deg/s,float,%d,int16_t,10,mtr0.vel,float,,,y
+mtr 1 vel,mtr_vel[1],,,deg/s,float,%d,int16_t,10,mtr1.vel,float,,,y
+mtr 2 vel,mtr_vel[2],,,deg/s,float,%d,int16_t,10,mtr2.vel,float,,,n
+mtr 3 vel,mtr_vel[3],,,deg/s,float,%d,int16_t,10,mtr3.vel,float,,,n
 mtr 0 setpoint,mtr_set[0],,,deg,float,%d,int16_t,10,mtr0.set,float,,,y
 mtr 1 setpoint,mtr_set[1],,,deg,float,%d,int16_t,10,mtr1.set,float,,,y
 mtr 0 Ki,mtr_ki[0],,,ul,float,%d,uint16_t,100,mtr0.i,float,,,y
@@ -165,8 +165,8 @@ mtr 0 Ki error,mtr_ki_err[0],,,ul,float,%d,int16_t,100,mtr0.ki_err,float,,,y
 mtr 1 Ki error,mtr_ki_err[1],,,ul,float,%d,int16_t,100,mtr1.ki_err,float,,,y
 mtr 0 Kd error,mtr_kd_err[0],,,ul,float,%d,int16_t,100,mtr0.kd_err,float,,,y
 mtr 1 Kd error,mtr_kd_err[1],,,ul,float,%d,int16_t,100,mtr1.kd_err,float,,,y
-tank 0 target pressure,tank_tar_press[0],-100,3000,psi,float,%.1f,int16_t,10,,float,,,y
-tank 1 target pressure,tank_tar_press[1],-100,3000,psi,float,%.1f,int16_t,10,,float,,,y
+tank 0 target pressure,tank_tar_pres[0],-100,3000,psi,float,%.1f,int16_t,10,,float,,,y
+tank 1 target pressure,tank_tar_pres[1],-100,3000,psi,float,%.1f,int16_t,10,,float,,,y
 tank 0 high pressure,tank_high_pres[0],-100,3000,psi,float,%.1f,int16_t,10,,float,,,y
 tank 1 high pressure,tank_high_pres[1],-100,3000,psi,float,%.1f,int16_t,10,,float,,,y
 tank 0 lower pressure,tank_low_pres[0],-100,3000,psi,float,%.1f,int16_t,10,,float,,,y
