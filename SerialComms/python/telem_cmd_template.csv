@@ -16,3 +16,10 @@ packet_type,function_name,nums args,arg0,arg_type0,xmit_scale,arg1,arg_type1,xmi
 22,stop_logging,0,,,,,,,,,,0 3,stop logging data to flash
 23,set_stepper_pos,2,motor_num,uint8_t,1,position,float,100,,,,0 3,"sets stepper motor to move to certain position, max value is 2,999.9"
 24,set_stepper_zero,1,motor_num,uint8_t,1,,,,,,,0 3,zeros out current stepper motor pos 
+25,set_control_target_pressure,2,tank_num,uint8_t,1,target_pressure,float,10,,,,0 3,set control loop target pressure for tanks on press board
+26,ambientize_pressure_transducers,1,pt_num,uint8_t,1,,,,,,,0 3,ambientizes selected pressure transducers
+27,set_low_target_pressure,2,tank_num,uint8_t,1,target_pressure,float,10,,,,0 3,set low bang bang target pressure for tank
+28,set_high_target_pressure,2,tank_num,uint8_t,1,target_pressure,float,10,,,,0 3,set high bang bang target pressure for tank
+29,set_control_loop_duration,1,duration,float,1,,,,,,,0 3,sets control loop duration for press board (in ms)
+30,set_stepper_speed,2,motor_num,uint8_t,1,target_speed,uint16_t,1,,,,0 3,sets stepper motor n speed (in deg/sec)
+31,set_telem,1,state,uint8_t,1,,,,,,,0 3,enables/disables telem
