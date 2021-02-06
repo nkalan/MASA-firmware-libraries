@@ -12,7 +12,7 @@ uint16_t findClosestTTMV(float target) {
     uint16_t mid = 0;
     // Find the two closest microvolt points
     while (left < right) {
-        mid = ((right-left)>>1)+left;
+        mid = ((right-left)/2)+left;
         if (MAX31855_TTMV_LUT[mid] < target) {
             left = mid+1;
         } else {
@@ -23,13 +23,16 @@ uint16_t findClosestTTMV(float target) {
 }
 
 float read_tc(SPI_HandleTypeDef *SPI_BUS, MAX31855_Pinfo *pinfo) {
+	uint8_t tx[4] = { 0 };
     uint8_t rx[4] = { 0 };
     // Read thermocouples raw temperature
+    __disable_irq();
     HAL_GPIO_WritePin(pinfo->MAX31855_CS_PORT, pinfo->MAX31855_CS_ADDR,
             GPIO_PIN_RESET);
-    HAL_SPI_Receive(SPI_BUS, rx, 4, 1);
+    HAL_SPI_TransmitReceive(SPI_BUS, tx, rx, 4, 1);
     HAL_GPIO_WritePin(pinfo->MAX31855_CS_PORT, pinfo->MAX31855_CS_ADDR,
             GPIO_PIN_SET);
+    __enable_irq();
 
     int32_t spiData = rx[0] << 24 | rx[1] << 16 | rx[2] << 8 | rx[3];
     int32_t thermocoupleData;
@@ -41,6 +44,7 @@ float read_tc(SPI_HandleTypeDef *SPI_BUS, MAX31855_Pinfo *pinfo) {
     float refJuncMicroVolts;
     float thermocoupleMicroVolts;
     float correctedThermocoupleTemp;
+    uint8_t ocFaultFlag = rx[3]&0b1;
 
     faultFlag = (spiData & 0x00010000) >> 16;
     if ((spiData & 0x80000000) == 0x80000000) {
