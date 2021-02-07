@@ -22,8 +22,8 @@ Pressure 18,pressure[18],-100,3000,psi,float,%.1f,int16_t,1,,float,,0,n
 Pressure 19,pressure[19],-100,3000,psi,float,%.1f,int16_t,1,,float,,[0]*4,n
 Pressure 20,pressure[20],-100,3000,psi,float,%.1f,int16_t,1,,float,,[0]*32,n
 Pressure 21,pressure[21],-100,3000,psi,float,%.1f,int16_t,1,,float,,[0]*32,n
-ebatt,e_batt,-20,20,Volts,float,%.2f,int16_t,1000,,float,,0,y
-ibatt,i_batt,-10,150,Amps,float,%.2f,int16_t,100,,int,,0,y
+ebatt,e_batt,-20,20,Volts,float,%.2f,int16_t,100,,float,,0,y
+ibatt,i_batt,-10,150,Amps,float,%.2f,int16_t,100,,float,,0,y
 STATE,STATE,0,127,ul,enum States,%u,uint8_t,1,,int,,[0]*8,y
 Load 0,load[0],,,kg,float,%.1f,uint16_t,1,,int,,0,n
 Load 1,load[1],,,kg,float,%.1f,uint16_t,1,,float,,0,n
@@ -147,10 +147,10 @@ mtr 0 pos,mtr_pos[0],,,deg,float,%d,int16_t,10,mtr0.pos,float,,,y
 mtr 1 pos,mtr_pos[1],,,deg,float,%d,int16_t,10,mtr1.pos,float,,,y
 mtr 2 pos,mtr_pos[2],,,deg,float,%d,int16_t,10,mtr2.pos,float,,,n
 mtr 3 pos,mtr_pos[3],,,deg,float,%d,int16_t,10,mtr3.pos,float,,,n
-mtr 0 vel,mtr_vel[0],,,deg/s,float,%d,int16_t,10,mtr0.vel,float,,,y
-mtr 1 vel,mtr_vel[1],,,deg/s,float,%d,int16_t,10,mtr1.vel,float,,,y
-mtr 2 vel,mtr_vel[2],,,deg/s,float,%d,int16_t,10,mtr2.vel,float,,,n
-mtr 3 vel,mtr_vel[3],,,deg/s,float,%d,int16_t,10,mtr3.vel,float,,,n
+mtr 0 vel,mtr_vel[0],,,step/s,int16_t,%d,int16_t,1,mtr0.vel,int,,,y
+mtr 1 vel,mtr_vel[1],,,step/s,int16_t,%d,int16_t,1,mtr1.vel,int,,,y
+mtr 2 vel,mtr_vel[2],,,step/s,int16_t,%d,int16_t,1,mtr2.vel,int,,,n
+mtr 3 vel,mtr_vel[3],,,step/s,int16_t,%d,int16_t,1,mtr3.vel,int,,,n
 mtr 0 setpoint,mtr_set[0],,,deg,float,%d,int16_t,10,mtr0.set,float,,,y
 mtr 1 setpoint,mtr_set[1],,,deg,float,%d,int16_t,10,mtr1.set,float,,,y
 mtr 0 Ki,mtr_ki[0],,,ul,float,%d,uint16_t,100,mtr0.i,float,,,y

@@ -42,7 +42,8 @@ typedef struct CLB_Packet_Header {
 
 typedef struct CLB_send_data_info {
 	UART_HandleTypeDef* uartx;
-	int16_t flash_arr_rem;
+	int16_t flash_arr_sz;
+	int16_t flash_arr_used;
 	uint8_t *flash_arr;
 } CLB_send_data_info;
 

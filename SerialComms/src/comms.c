@@ -79,8 +79,16 @@ uint8_t send_data(CLB_send_data_info* info, uint8_t type) {
 			stuffed_packet_sz = stuff_packet(CLB_ping_packet,
 										info->flash_arr+flash_pos, ping_pos);
 			flash_pos += stuffed_packet_sz;
-			info->flash_arr_rem -= stuffed_packet_sz;
-			if (info->flash_arr_rem < 0) {
+			info->flash_arr_used += stuffed_packet_sz;
+			// handle termination bit for flash
+			if (clb_pos == clb_sz) {
+				if (stuffed_packet_sz < 255) {
+					info->flash_arr[info->flash_arr_used++] = 0;
+				} else {
+					send_termination_bit = 1;
+				}
+			}
+			if (info->flash_arr_sz < 0) {
 				status = CLB_flash_buffer_overflow;
 				break;
 			}
