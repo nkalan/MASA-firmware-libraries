@@ -77,7 +77,7 @@ uint8_t send_data(CLB_send_data_info* info, uint8_t type) {
 			transmit_packet(info->uartx, stuffed_packet_sz);
 		} else if (type == CLB_Flash) {
 			stuffed_packet_sz = stuff_packet(CLB_ping_packet,
-												info->flash_arr, ping_pos);
+										info->flash_arr+flash_pos, ping_pos);
 			flash_pos += stuffed_packet_sz;
 			info->flash_arr_rem -= stuffed_packet_sz;
 			if (info->flash_arr_rem < 0) {
