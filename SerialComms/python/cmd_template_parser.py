@@ -39,42 +39,42 @@ def function_writer(row_number):
         elif function_name[col_num] == "uint16_t":
             try:
                 c_file.write("(data[" + str(data_num + 1) 
-                                + "]<<data[" + str(data_num) 
+                                + "]<<8|data[" + str(data_num) 
                                 + "])/" + str(int(function_name[col_num + 1])) 
                                 + ";\n\t")
                 data_num += 2
             except ValueError:
                 c_file.write("(data[" + str(data_num + 1) 
-                            + "]<<data[" + str(data_num) + "])/" + "1;\n\t")
+                            + "]<<8|data[" + str(data_num) + "])/" + "1;\n\t")
                 data_num += 2
         elif function_name[col_num] == "uint32_t":
             try:
                 c_file.write("(data[" + str(data_num + 3) 
-                                + "]<<data[" + str(data_num + 2) 
-                                + "]<<data[" + str(data_num + 1) 
-                                + "]<<data[" + str(data_num + 0) + "])/" 
+                                + "]<<24|data[" + str(data_num + 2) 
+                                + "]<<16|data[" + str(data_num + 1) 
+                                + "]<<8|data[" + str(data_num + 0) + "])/" 
                                 + str(int(function_name[col_num + 1])) + ";\n\t")
                 data_num += 4
             except ValueError:
                 c_file.write("(data[" + str(data_num + 3) 
-                                + "]<<data[" + str(data_num + 2) 
-                                + "]<<data[" + str(data_num + 1) 
-                                + "]<<data[" + str(data_num + 0) 
+                                + "]<<24|data[" + str(data_num + 2) 
+                                + "]<<16|data[" + str(data_num + 1) 
+                                + "]<<8|data[" + str(data_num + 0) 
                                 + "])/" + "1;\n\t")
                 data_num += 4
         elif function_name[col_num] == "float":
             try:
                 c_file.write("(data[" + str(data_num + 3) 
-                                + "]<<data[" + str(data_num + 2) 
-                                + "]<<data[" + str(data_num + 1) 
-                                + "]<<data[" + str(data_num + 0) + "])/" 
+                                + "]<<24|data[" + str(data_num + 2) 
+                                + "]<<16|data[" + str(data_num + 1) 
+                                + "]<<8|data[" + str(data_num + 0) + "])/" 
                                 + str(float(function_name[col_num + 1])) + ";\n\t")
                 data_num += 4
             except ValueError:
                 c_file.write("(data[" + str(data_num + 3) 
-                                + "]<<data[" + str(data_num + 2) 
-                                + "]<<data[" + str(data_num + 1) 
-                                + "]<<data[" + str(data_num + 0) 
+                                + "]<<24|data[" + str(data_num + 2) 
+                                + "]<<16|data[" + str(data_num + 1) 
+                                + "]<<8|data[" + str(data_num + 0) 
                                 + "])/" + "1.0;\n\t")
                 data_num += 4
         else:

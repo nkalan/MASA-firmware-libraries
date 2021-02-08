@@ -17,9 +17,9 @@ packet_type,function_name,nums args,arg0,arg_type0,xmit_scale,arg1,arg_type1,xmi
 23,set_stepper_pos,2,motor_num,uint8_t,1,position,float,100,,,,0 3,"sets stepper motor to move to certain position, max value is 2,999.9"
 24,set_stepper_zero,1,motor_num,uint8_t,1,,,,,,,0 3,zeros out current stepper motor pos 
 25,set_control_target_pressure,2,tank_num,uint8_t,1,target_pressure,float,10,,,,0 3,set control loop target pressure for tanks on press board
-26,ambientize_pressure_transducers,1,pt_num,uint8_t,1,,,,,,,0 3,ambientizes selected pressure transducers
-27,set_low_target_pressure,2,tank_num,uint8_t,1,target_pressure,float,10,,,,0 3,set low bang bang target pressure for tank
-28,set_high_target_pressure,2,tank_num,uint8_t,1,target_pressure,float,10,,,,0 3,set high bang bang target pressure for tank
+26,ambientize_pressure_transducers,0,,,,,,,,,,0 3,ambientizes selected pressure transducers
+27,set_low_toggle_percent,2,tank_num,uint8_t,1,lower_threshold_pct,float,10,,,,0 3,set lower bang bang toggle pressure threshold percentage for tank
+28,set_high_toggle_percent,2,tank_num,uint8_t,1,upper_threshold_pct,float,10,,,,0 3,set higher bang bang toggle pressure threshold percentage for tank
 29,set_control_loop_duration,1,duration,uint32_t,1,,,,,,,0 3,sets control loop duration for press board (in ms)
 30,set_stepper_speed,2,motor_num,uint8_t,1,target_speed,uint16_t,1,,,,0 3,sets stepper motor n speed (in steps/sec)
 31,set_telem,1,state,uint8_t,1,,,,,,,0 3,enables/disables telem
