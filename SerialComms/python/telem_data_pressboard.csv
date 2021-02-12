@@ -179,7 +179,7 @@ pot 4,epot[4],,,deg,float,%d,int16_t,1000,,float,,,n
 pot 5,epot[5],,,deg,float,%d,int16_t,1000,,float,,,n
 pot 6,epot[6],,,deg,float,%d,int16_t,1000,,float,,,n
 pot 7,epot[7],,,deg,float,%d,int16_t,1000,,float,,,n
-Elapsed Test Duration,elapsed_test_duration,,,ms,uint32_t,%i,uint32_t,1,,int,,,y
+Test Duration,test_duration,,,ms,uint32_t,%i,uint32_t,1,,int,,,y
 Micros,micros,,,us,uint64_t,%i,uint64_t,1,,int,micros,,y
 Telem Rate,telem_rate,,,Hz,uint32_t,%i,uint32_t,1,,int,,,y
 ADC Rate,adc_rate,,,Hz,uint32_t,%i,uint32_t,1,,int,,,y
