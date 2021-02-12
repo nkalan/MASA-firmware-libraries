@@ -181,7 +181,6 @@ with open("../../../Inc/pack_cmd_defines.h", 'w') as header_file:
 
 
 
-
 #check for user code in pointer file
 user_generated_code_pointer = ""  
 line_num_pointer = 0 
