@@ -17,8 +17,11 @@ import numpy as np
 import argparse
 import sys
 
+telem_c_user_begin_tag = "// USER CODE BEGIN - MODIFICATIONS OUTSIDE THIS SECTION WILL BE DELETED"
+telem_c_user_end_tag = "// USER CODE END - MODIFICATIONS OUTSIDE THIS SECTION WILL BE DELETED"
+
 #writes a function to the c file
-def function_writer(row_number):
+def function_writer(row_number, function_contents):
     #selects entire row (function along with all args and argtypes)
     function_name = functions.iloc[row_number]
     num_args = int(function_name[2])
@@ -86,9 +89,15 @@ def function_writer(row_number):
                 data_num += 1
 
         col_num += 3
-    c_file.write("\n}\n")
+        
+    # Add usergen tags and user definitions
+    c_file.write("\n\t" + telem_c_user_begin_tag + "\n")
 
-
+    if function_name[1] in function_contents.keys():
+        c_file.write(function_contents[function_name[1]])
+    else:
+        c_file.write("\n")
+    c_file.write("\t" + telem_c_user_end_tag + "\n\n}\n\n")
 
 
 
@@ -214,19 +223,58 @@ with open("../../../Src/pack_cmd_defines.c", 'w+') as header_c_test:
         line_index_pointer += 1
     print("Finished generating pack_cmd_defines.c...")
 
-#looks for keyword user and reads to end of file (FOR C FILE MAIN)
-user_generated_code = ""  
-line_num = 0 
+# Store all user-written function definition sections of telem.c
+# Note: you can't just grab them from the csv, because these are the "outdated" functions,
+# and the new csv might not have all of them
+user_generated_code = ""
+function_names = list()  # Not sure if I'll need this
+function_contents = dict()  # Maps function names to their user definitions
 try:
     with open(path.join(output_dir, 'telem.c'), 'r') as c_file:
         file_read = c_file.readlines()
-        for line in file_read:
+
+        # Using a while loop here since I want to move line_num ahead inside the loop
+        line_num = 0
+        while line_num < len(file_read):
+            try:
+                # Always will be in format "void function_name(args here)"
+                # Slice from start of second word to right before first parentheses
+                if len(file_read[line_num]) >= 4 and file_read[line_num][0:4] == "void":
+                    start_index = 5
+                    paren_index = file_read[line_num].find("(")
+                    cur_function = file_read[line_num][start_index:paren_index]  # Extract function name
+                    function_names.append(cur_function)
+
+                    no_begin_tag = False  # For compatibility with telem.c's that don't have tags
+                    while file_read[line_num].strip() != telem_c_user_begin_tag:
+                        if file_read[line_num] == "}\n":  # If there's no user begin code tag
+                            function_contents[cur_function] = "\n"
+                            no_begin_tag = True
+                            print(str(cur_function) + " does not have a properly defined user section. Creating empty one...")
+                            break
+                        line_num += 1
+                    line_num  += 1  # Start reading 1 line after tag
+
+                    if (not no_begin_tag):
+                        # Read in the user definition
+                        function_contents[cur_function] = ""
+                        while file_read[line_num].strip() != telem_c_user_end_tag:
+                            if file_read[line_num] == "}\n":  # Check if the end tag got deleted
+                                break
+
+                            function_contents[cur_function] += file_read[line_num]
+                            line_num += 1
+
+                        if function_contents[cur_function] == "":
+                            function_contents[cur_function] += "\n"
+            except Exception as e:
+                print("Error when trying to read function name on line number " + str(line_num) + " of telem.c")
+                print(e)
             line_num += 1
-            if "user" in line:
-                user_generated_code = file_read[line_num-1:]
+
 except FileNotFoundError:
     print("Creating new telem.c file in output directory...")
-    pass         
+    pass
 
 #write out c file template
 with open(output_dir+"/telem.c", 'w') as c_file:
@@ -236,11 +284,6 @@ with open(output_dir+"/telem.c", 'w') as c_file:
     c_file.write("#include <stdint.h>\n\n")
     for x in range(int(function_num)):
         if board_num in str(board_supported[x]):
-            function_writer(x)
+            function_writer(x, function_contents)
 
-    #write user generated code to c_file
-    line_index = 0
-    for line in user_generated_code:
-        c_file.write(user_generated_code[line_index])
-        line_index += 1
     print("Finished generating telem.c...\n")
