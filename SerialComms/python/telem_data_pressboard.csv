@@ -165,12 +165,12 @@ mtr 0 Ki error,mtr_ki_err[0],,,ul,float,%d,int16_t,100,mtr0.ki_err,float,,,y
 mtr 1 Ki error,mtr_ki_err[1],,,ul,float,%d,int16_t,100,mtr1.ki_err,float,,,y
 mtr 0 Kd error,mtr_kd_err[0],,,ul,float,%d,int16_t,100,mtr0.kd_err,float,,,y
 mtr 1 Kd error,mtr_kd_err[1],,,ul,float,%d,int16_t,100,mtr1.kd_err,float,,,y
-tank 0 target pressure,tank_tar_pres[0],-100,3000,psi,float,%.1f,int16_t,10,,float,,,y
-tank 1 target pressure,tank_tar_pres[1],-100,3000,psi,float,%.1f,int16_t,10,,float,,,y
-tank 0 high pressure,tank_high_pres[0],-100,3000,psi,float,%.1f,int16_t,10,,float,,,y
-tank 1 high pressure,tank_high_pres[1],-100,3000,psi,float,%.1f,int16_t,10,,float,,,y
-tank 0 lower pressure,tank_low_pres[0],-100,3000,psi,float,%.1f,int16_t,10,,float,,,y
-tank 1 lower pressure,tank_low_pres[1],-100,3000,psi,float,%.1f,int16_t,10,,float,,,y
+tank 0 target pressure,tank_tar_pres[0],-100,3000,psi,float,%.1f,int16_t,10,tnk0.tp,float,,,y
+tank 1 target pressure,tank_tar_pres[1],-100,3000,psi,float,%.1f,int16_t,10,tnk1.tp,float,,,y
+tank 0 high pressure,tank_high_pres[0],-100,3000,psi,float,%.1f,int16_t,10,tnk0.hp,float,,,y
+tank 1 high pressure,tank_high_pres[1],-100,3000,psi,float,%.1f,int16_t,10,tnk1.hp,float,,,y
+tank 0 lower pressure,tank_low_pres[0],-100,3000,psi,float,%.1f,int16_t,10,tnk0.lp,float,,,y
+tank 1 lower pressure,tank_low_pres[1],-100,3000,psi,float,%.1f,int16_t,10,tnk1.lp,float,,,y
 pot 0,epot[0],,,deg,float,%d,int16_t,1000,,float,,,y
 pot 1,epot[1],,,deg,float,%d,int16_t,1000,,float,,,y
 pot 2,epot[2],,,deg,float,%d,int16_t,1000,,float,,,y
