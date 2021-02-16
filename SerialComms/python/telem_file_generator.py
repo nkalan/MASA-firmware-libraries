@@ -143,7 +143,7 @@ def main():
                              "\t\tself.units[self.items[6]] = \"ul\"\n"
     parser_csv_header = "Time (s),"
     parser_self_init_str = ""
-    parser_log_string = "\t\tself.log_string = str(time.clock()) + ','"
+    parser_log_string = "\t\tself.log_string = str(datetime.now().timestamp()) + ','"
     parser_items_list = list()
 
     col = dict()  # Dictionary mapping column names to indices
@@ -363,7 +363,7 @@ def main():
 
     #parsed_printf_file.write("snprintf(line, sizeof(line), \"" + format_string + "\\r\\n\"" + argument_string + ");")
 
-    telem_parser.write(	"### " + begin_autogen_tag + "\n### telemParse.py\n" + "### " + autogen_label + "\n\nimport time\nimport struct\n\nclass TelemParse:\n\n" + \
+    telem_parser.write(	"### " + begin_autogen_tag + "\n### telemParse.py\n" + "### " + autogen_label + "\n\nfrom datetime import datetime\nimport struct\n\nclass TelemParse:\n\n" + \
                                 "\tdef __init__(self):\n\t\tself.csv_header = \"" + \
                                 parser_csv_header + \
                                 "\t\tself.packet_byte_size = " + \
