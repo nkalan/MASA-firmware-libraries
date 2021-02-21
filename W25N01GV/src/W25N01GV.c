@@ -5,7 +5,7 @@
  * Nathaniel Kalantar (nkalan@umich.edu)
  * Michigan Aeronautical Science Association
  * Created July 20, 2020
- * Last edited January 23, 2021
+ * Last edited January 21, 2021
  *
  * This code assumes the WP and HLD pins are always set high.
  *
@@ -27,7 +27,7 @@
 #define W25N01GV_DEVICE_ID                        (uint16_t) 0xAA21
 
 // Chip is active low
-#define W25N01GV_CS_ACTIVE                        (uint8_t)  GPIO_PIN_RESET  // Chip is active low
+#define W25N01GV_CS_ACTIVE                        (uint8_t)  GPIO_PIN_RESET
 #define W25N01GV_CS_INACTIVE                      (uint8_t)  GPIO_PIN_SET
 
 // Arbitrary timeout value
@@ -134,7 +134,7 @@ static void spi_transmit(W25N01GV_Flash *flash, uint8_t *tx, uint16_t size) {
 	__disable_irq();
 	HAL_GPIO_WritePin(flash->cs_base, flash->cs_pin, W25N01GV_CS_ACTIVE);  // Select chip
 	// Transmit data and store the status code
-	flash->last_HAL_status =  HAL_SPI_Transmit(flash->SPI_bus, tx, size, W25N01GV_SPI_TIMEOUT);
+	flash->last_HAL_status = HAL_SPI_Transmit(flash->SPI_bus, tx, size, W25N01GV_SPI_TIMEOUT);
 	HAL_GPIO_WritePin(flash->cs_base, flash->cs_pin, W25N01GV_CS_INACTIVE);  // Release chip
 	__enable_irq();
 
@@ -479,7 +479,7 @@ static void program_buffer_to_memory(W25N01GV_Flash *flash, uint16_t page_adr) {
  */
 static uint8_t get_write_failure_status(W25N01GV_Flash *flash) {
 	// If it can't read from flash, it will automatically return a write failure
-	if (is_flash_ID_correct(flash)) {
+	if (ping_flash(flash)) {
 		uint8_t status_register = read_status_register(flash, W25N01GV_SR3_STATUS_REG_ADR);
 		flash->last_write_failure_status = status_register & W25N01GV_SR3_PROGRAM_FAILURE;
 	}
@@ -507,7 +507,7 @@ static uint8_t get_write_failure_status(W25N01GV_Flash *flash) {
  */
 static uint8_t get_erase_failure_status(W25N01GV_Flash *flash) {
 	// If it can't read from flash, it will automatically return an erase failure
-	if (is_flash_ID_correct(flash)) {
+	if (ping_flash(flash)) {
 		uint8_t status_register = read_status_register(flash, W25N01GV_SR3_STATUS_REG_ADR);
 		flash->last_erase_failure_status = status_register & W25N01GV_SR3_ERASE_FAILURE;
 	}
@@ -571,7 +571,7 @@ static void erase_block(W25N01GV_Flash *flash, uint16_t page_adr) {
 static void get_ECC_status(W25N01GV_Flash *flash) {
 
 	// If it can read from flash properly, check the ECC bits as normal
-	if (is_flash_ID_correct(flash)) {
+	if (ping_flash(flash)) {
 		uint8_t status_register, ECC1, ECC0;
 
 		status_register = read_status_register(flash, W25N01GV_SR3_STATUS_REG_ADR);
@@ -836,6 +836,8 @@ static void find_write_ptr(W25N01GV_Flash *flash) {
 			}
 		}
 
+		// Debug code
+		// TODO: delete in final release
 		if (page_empty) {
 			asm("nop");  // if you get here, I fucked up
 		}
@@ -881,7 +883,7 @@ void init_flash(W25N01GV_Flash *flash, SPI_HandleTypeDef *SPI_bus_in,
 	find_write_ptr(flash);
 }
 
-uint8_t is_flash_ID_correct(W25N01GV_Flash *flash) {
+uint8_t ping_flash(W25N01GV_Flash *flash) {
 
 	uint8_t tx[2] = {W25N01GV_READ_JEDEC_ID, 0};	// Second byte is unused
 	uint8_t rx[3];
@@ -931,13 +933,17 @@ uint8_t reset_flash(W25N01GV_Flash *flash) {
  */
 static uint16_t write_to_flash_contiguous(W25N01GV_Flash *flash, uint8_t *data, uint32_t num_bytes) {
 
+	// Debug code
+	// TODO: delete in final release
 	if (!(flash->next_free_column == 0 || flash->next_free_column == 512
 			|| flash->next_free_column == 1024 || flash->next_free_column == 1536
 			|| flash->next_free_column == 2048)) {
 		asm("nop");
 	}
 
-	if (!(num_bytes == 512 || num_bytes == 1024 ||num_bytes == 1536 || num_bytes == 2048)) {
+	// Debug code
+	// TODO: delete in final release
+	if (num_bytes % 512 != 0) {
 		asm("nop");
 	}
 
@@ -979,6 +985,8 @@ static uint16_t write_to_flash_contiguous(W25N01GV_Flash *flash, uint8_t *data, 
 		}
 	}
 
+	// Debug code
+	// TODO: delete in final release
 	if (!(flash->next_free_column == 0 || flash->next_free_column == 512
 			|| flash->next_free_column == 1024 || flash->next_free_column == 1536
 			|| flash->next_free_column == 2048)) {
@@ -1131,6 +1139,26 @@ uint32_t get_bytes_remaining(W25N01GV_Flash *flash) {
 
 	// write_buffer hasn't been written to flash yet, but its size needs to be counted
 	// to get an accurate count for the user.
+}
+
+uint8_t write_reserved_flash_page(W25N01GV_Flash *flash, uint8_t page_num, uint8_t* data, uint16_t data_sz) {
+	// Write to the nth page of the last block of flash
+	write_bytes_to_page(flash, data, data_sz,
+			(W25N01GV_NUM_BLOCKS-1) * W25N01GV_PAGES_PER_BLOCK + page_num, 0);
+
+	return flash->last_write_failure_status;
+}
+
+void read_reserved_flash_page(W25N01GV_Flash *flash, uint8_t page_num, uint8_t* buffer, uint16_t buffer_sz) {
+	// Grab the nth page of the last block of flash
+	read_bytes_from_page(flash, buffer, buffer_sz,
+			(W25N01GV_NUM_BLOCKS-1) * W25N01GV_PAGES_PER_BLOCK + page_num, 0);
+}
+
+uint8_t erase_reserved_flash_pages(W25N01GV_Flash *flash) {
+	// Erase the last block only
+	erase_block(flash, W25N01GV_NUM_BLOCKS-1);
+	return flash->last_erase_failure_status;
 }
 
 uint16_t scan_bad_blocks(W25N01GV_Flash *flash, uint16_t *bad_blocks) {
