@@ -31,12 +31,12 @@ def function_writer(row_number, function_contents):
     c_file.write("void " + function_name[1] + "(uint8_t* data, uint8_t* status){\n\n\t")
     col_num = 4
     data_num = 0
-    for x in range(num_args): 
+    for x in range(num_args):
         c_file.write(function_name[col_num] + " " + function_name[col_num - 1] + " = ")
         if function_name[col_num] == "uint8_t":
             try:
-                c_file.write("(data[" + str(data_num) 
-                                + "])/" + str(int(function_name[col_num + 1])) 
+                c_file.write("(data[" + str(data_num)
+                                + "])/" + str(int(function_name[col_num + 1]))
                                 + ";\n\t")
                 data_num += 1
             except ValueError:
@@ -44,44 +44,66 @@ def function_writer(row_number, function_contents):
                 data_num += 1
         elif function_name[col_num] == "uint16_t":
             try:
-                c_file.write("(data[" + str(data_num + 1) 
-                                + "]<<8|data[" + str(data_num) 
-                                + "])/" + str(int(function_name[col_num + 1])) 
+                c_file.write("(data[" + str(data_num + 1)
+                                + "]<<8|data[" + str(data_num)
+                                + "])/" + str(int(function_name[col_num + 1]))
                                 + ";\n\t")
                 data_num += 2
             except ValueError:
-                c_file.write("(data[" + str(data_num + 1) 
+                c_file.write("(data[" + str(data_num + 1)
                             + "]<<8|data[" + str(data_num) + "])/" + "1;\n\t")
                 data_num += 2
         elif function_name[col_num] == "uint32_t":
             try:
-                c_file.write("(data[" + str(data_num + 3) 
-                                + "]<<24|data[" + str(data_num + 2) 
-                                + "]<<16|data[" + str(data_num + 1) 
-                                + "]<<8|data[" + str(data_num + 0) + "])/" 
+                c_file.write("(data[" + str(data_num + 3)
+                                + "]<<24|data[" + str(data_num + 2)
+                                + "]<<16|data[" + str(data_num + 1)
+                                + "]<<8|data[" + str(data_num + 0) + "])/"
                                 + str(int(function_name[col_num + 1])) + ";\n\t")
                 data_num += 4
             except ValueError:
-                c_file.write("(data[" + str(data_num + 3) 
-                                + "]<<24|data[" + str(data_num + 2) 
-                                + "]<<16|data[" + str(data_num + 1) 
-                                + "]<<8|data[" + str(data_num + 0) 
+                c_file.write("(data[" + str(data_num + 3)
+                                + "]<<24|data[" + str(data_num + 2)
+                                + "]<<16|data[" + str(data_num + 1)
+                                + "]<<8|data[" + str(data_num + 0)
                                 + "])/" + "1;\n\t")
                 data_num += 4
         elif function_name[col_num] == "float":
             try:
-                c_file.write("(data[" + str(data_num + 3) 
-                                + "]<<24|data[" + str(data_num + 2) 
-                                + "]<<16|data[" + str(data_num + 1) 
-                                + "]<<8|data[" + str(data_num + 0) + "])/" 
+                c_file.write("(data[" + str(data_num + 3)
+                                + "]<<24|data[" + str(data_num + 2)
+                                + "]<<16|data[" + str(data_num + 1)
+                                + "]<<8|data[" + str(data_num + 0) + "])/"
                                 + str(float(function_name[col_num + 1])) + ";\n\t")
                 data_num += 4
             except ValueError:
-                c_file.write("(data[" + str(data_num + 3) 
-                                + "]<<24|data[" + str(data_num + 2) 
-                                + "]<<16|data[" + str(data_num + 1) 
-                                + "]<<8|data[" + str(data_num + 0) 
+                c_file.write("(data[" + str(data_num + 3)
+                                + "]<<24|data[" + str(data_num + 2)
+                                + "]<<16|data[" + str(data_num + 1)
+                                + "]<<8|data[" + str(data_num + 0)
                                 + "])/" + "1.0;\n\t")
+                data_num += 4
+        elif function_name[col_num] == "double":
+            try:
+                c_file.write("(data[" + str(data_num + 7)
+                                + "]<<56|data[" + str(data_num + 6)
+                                + "]<<48|data[" + str(data_num + 5)
+                                + "]<<40|data[" + str(data_num + 4)
+                                + "]<<32|data[" + str(data_num + 3)
+                                + "]<<24|data[" + str(data_num + 2)
+                                + "]<<16|data[" + str(data_num + 1)
+                                + "]<<8|data[" + str(data_num + 0) + "])/"
+                                + str(float(function_name[col_num + 1])) + ";\n\t")
+                data_num += 4
+            except ValueError:
+                c_file.write("(data[" + str(data_num + 7)
+                                + "]<<56|data[" + str(data_num + 6)
+                                + "]<<48|data[" + str(data_num + 5)
+                                + "]<<40|data[" + str(data_num + 4)
+                                + "]<<32|data[" + str(data_num + 3)
+                                + "]<<24|data[" + str(data_num + 2)
+                                + "]<<16|data[" + str(data_num + 1)
+                                + "]<<8|data[" + str(data_num + 0) + "])/1.0;\n\t")
                 data_num += 4
         else:
             try:
