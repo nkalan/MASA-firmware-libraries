@@ -931,6 +931,16 @@ uint8_t reset_flash(W25N01GV_Flash *flash) {
  */
 static uint16_t write_to_flash_contiguous(W25N01GV_Flash *flash, uint8_t *data, uint32_t num_bytes) {
 
+	if (!(flash->next_free_column == 0 || flash->next_free_column == 512
+			|| flash->next_free_column == 1024 || flash->next_free_column == 1536
+			|| flash->next_free_column == 2048)) {
+		asm("nop");
+	}
+
+	if (!(num_bytes == 512 || num_bytes == 1024 ||num_bytes == 1536 || num_bytes == 2048)) {
+		asm("nop");
+	}
+
 	uint32_t write_counter = 0;  // Track how many bytes have been written so far
 	uint16_t write_failures = 0;  // Track write errors
 
@@ -967,6 +977,12 @@ static uint16_t write_to_flash_contiguous(W25N01GV_Flash *flash, uint8_t *data, 
 			flash->next_free_column = 0;
 			flash->current_page++;  // This function can assume it won't run out of pages
 		}
+	}
+
+	if (!(flash->next_free_column == 0 || flash->next_free_column == 512
+			|| flash->next_free_column == 1024 || flash->next_free_column == 1536
+			|| flash->next_free_column == 2048)) {
+		asm("nop");
 	}
 
 	return write_failures;
