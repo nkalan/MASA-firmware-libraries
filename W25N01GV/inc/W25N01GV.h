@@ -205,6 +205,10 @@ uint8_t reset_flash(W25N01GV_Flash *flash);
  * Erase the entire flash memory chip. Erasing means setting every byte to 0xFF.
  * This function also resets the address counters in the W25N01GV_Flash struct.
  *
+ * This function will not erase the last 64 pages / last block, which is reserved
+ * for pseudo-eeprom functionality, and those pages must be erased separately
+ * by calling erase_reserved_pages().
+ *
  * WARNING: This function will erase all data, and causes a substantial delay
  * on the order of 2-10 seconds. Only use it if you're absolutely sure.
  *

@@ -5,6 +5,10 @@
  * NOTE: The W25M02GV is 2 W25N01GV's in a trenchcoat, so this "library"
  * is just a wrapper around the W25N01GV functions.
  *
+ * The references to "fc_flash" in this library are because this particular chip
+ * is used on the TSM flight computer, as opposed to regular "flash" being
+ * used on other TSM/MASA boards.
+ *
  * Nathaniel Kalantar (nkalan@umich.edu)
  * Michigan Aeronautical Science Association
  * Created February 21, 2021
@@ -154,7 +158,7 @@ void fc_read_next_2KB_from_flash(W25M02GV_Flash *fc_flash, uint8_t *buffer);
  * page of die0. If die0 is full, it returns the number of pages in die0 plus
  * the current page of die1.
  *
- * Use the output of this function as the upper limit for loop counters when reading from flash.
+ * Use the output of this function as the upper limit (inclusive) for loop counters when reading from flash.
  */
 uint32_t fc_flash_current_page(W25M02GV_Flash *fc_flash);
 

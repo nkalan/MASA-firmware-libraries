@@ -1115,7 +1115,8 @@ uint16_t erase_flash(W25N01GV_Flash *flash) {
 	unlock_flash(flash);
 
 	// Loop through every block to erase them one by one
-	for (uint16_t block_count = 0; block_count < W25N01GV_NUM_BLOCKS; block_count++) {
+	// Ignore the last block, which is reserved for pseudo-eeprom functionality
+	for (uint16_t block_count = 0; block_count < W25N01GV_NUM_BLOCKS-1; block_count++) {
 		erase_block(flash, block_count * W25N01GV_PAGES_PER_BLOCK);  // Address of first page in each block
 
 		// Check if the erase failed
