@@ -5,7 +5,7 @@
  * Nathaniel Kalantar (nkalan@umich.edu)
  * Michigan Aeronautical Science Association
  * Created July 20, 2020
- * Last edited January 21, 2021
+ * Last edited February 26, 2021
  *
  * This code assumes the WP and HLD pins are always set high.
  *
@@ -1144,8 +1144,10 @@ uint32_t get_bytes_remaining(W25N01GV_Flash *flash) {
 
 uint8_t write_reserved_flash_page(W25N01GV_Flash *flash, uint8_t page_num, uint8_t* data, uint16_t data_sz) {
 	// Write to the nth page of the last block of flash
+	unlock_flash(flash);
 	write_bytes_to_page(flash, data, data_sz,
 			(W25N01GV_NUM_BLOCKS-1) * W25N01GV_PAGES_PER_BLOCK + page_num, 0);
+	lock_flash(flash);
 
 	return flash->last_write_failure_status;
 }
@@ -1158,7 +1160,9 @@ void read_reserved_flash_page(W25N01GV_Flash *flash, uint8_t page_num, uint8_t* 
 
 uint8_t erase_reserved_flash_pages(W25N01GV_Flash *flash) {
 	// Erase the last block only
+	unlock_flash(flash);
 	erase_block(flash, W25N01GV_NUM_BLOCKS-1);
+	lock_flash(flash);
 	return flash->last_erase_failure_status;
 }
 

@@ -5,7 +5,7 @@
  * Nathaniel Kalantar (nkalan@umich.edu)
  * Michigan Aeronautical Science Association
  * Created July 20, 2020
- * Last edited February 21, 2021
+ * Last edited February 26, 2021
  *
  * This code assumes the WP and HLD pins are always set high.
  *
@@ -287,12 +287,14 @@ uint32_t get_bytes_remaining(W25N01GV_Flash *flash);
 
 /**
  * Allows the user to manually write data to specific pages in the last memory block.
+ * User specifies the page to write with a number from 0 to 63 inclusive.
  * Note: remember to call erase_reserved_flash_pages() before updating the values.
+ * Note: calling erase_reserved_flash_pages() will erase all 64 reserved pages.
  *
  * @param flash       <W25N01GV_Flash*>     Struct used to store flash pins and addresses
  * @param page_num    <uint8_t>             Address of page in block to write to (0-63 inclusive)
  * @param data        <uint8_t*>            Array of data to be written to flash. Up to 2048 bytes.
- * @param data_sz     <uint16_t>            Size of data array. Can be up to 2048.\
+ * @param data_sz     <uint16_t>            Size of data array. Can be up to 2048.
  * @retval 1 if it fails to write, 0 otherwise
  */
 uint8_t write_reserved_flash_page(W25N01GV_Flash *flash, uint8_t page_num, uint8_t* data, uint16_t data_sz);
