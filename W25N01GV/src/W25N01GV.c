@@ -1161,7 +1161,7 @@ void read_reserved_flash_page(W25N01GV_Flash *flash, uint8_t page_num, uint8_t* 
 uint8_t erase_reserved_flash_pages(W25N01GV_Flash *flash) {
 	// Erase the last block only
 	unlock_flash(flash);
-	erase_block(flash, W25N01GV_NUM_BLOCKS-1);
+	erase_block(flash, W25N01GV_PAGES_PER_BLOCK * (W25N01GV_NUM_BLOCKS - 1));
 	lock_flash(flash);
 	return flash->last_erase_failure_status;
 }
