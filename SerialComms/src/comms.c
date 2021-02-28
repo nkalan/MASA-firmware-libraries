@@ -121,15 +121,14 @@ uint8_t receive_data(UART_HandleTypeDef* uartx, uint8_t* buffer, uint16_t buffer
 		CLB_pong_packet[i] = buffer[i]; // copy items over for uart reception
 	}
 
-	unstuff_packet(CLB_pong_packet, CLB_ping_packet, buffer_sz);
-
 	if (CLB_receive_header.num_packets == 0) {
+	    unstuff_packet(CLB_pong_packet, CLB_ping_packet, buffer_sz);
 	    unpack_header(&CLB_receive_header, CLB_ping_packet);
 	    uint8_t checksum_status = verify_checksum(CLB_receive_header.checksum);
         if (checksum_status!=0) {
             return 1; // drop transmission if checksum is bad
         }
-	}
+	} // only unstuff packet if expecting data from new board
 
 	uint8_t cmd_status = 0;
 
@@ -165,27 +164,29 @@ void transmit_packet(UART_HandleTypeDef* uartx, uint16_t sz) {
 
 void unpack_header(CLB_Packet_Header* header, uint8_t* header_buffer) {
 	header->packet_type = header_buffer[0];
-	header->target_addr = header_buffer[1];
-	header->priority	= header_buffer[2];
-	header->num_packets = header_buffer[3];
-	header->do_cobbs    = header_buffer[4];
-	header->checksum	= (header_buffer[5]<<8)|header_buffer[6];
-	header->timestamp   = header_buffer[7]<<24|header_buffer[8]<<16|
-	                        header_buffer[9]<<8|header_buffer[10];
+	header->origin_addr = header_buffer[1];
+	header->target_addr = header_buffer[2];
+	header->priority	= header_buffer[3];
+	header->num_packets = header_buffer[4];
+	header->do_cobbs    = header_buffer[5];
+	header->checksum	= (header_buffer[6]<<8)|header_buffer[7];
+	header->timestamp   = header_buffer[8]<<24|header_buffer[9]<<16|
+	                        header_buffer[10]<<8|header_buffer[11];
 }
 
 void pack_header(CLB_Packet_Header* header, uint8_t*header_buffer) {
 	header_buffer[0] = header->packet_type;
-	header_buffer[1] = header->target_addr;
-	header_buffer[2] = header->priority;
-	header_buffer[3] = header->num_packets;
-	header_buffer[4] = header->do_cobbs;
-	header_buffer[5] = 0xff&(header->checksum);
-	header_buffer[6] = 0xff&((header->checksum)>>8);
-	header_buffer[7] = 0xff&(header->timestamp);
-	header_buffer[8] = 0xff&((header->timestamp)>>8);
-	header_buffer[9] = 0xff&((header->timestamp)>>16);     // little endian
-	header_buffer[10] = 0xff&((header->timestamp)>>24);
+	header_buffer[1] = header->origin_addr;
+	header_buffer[2] = header->target_addr;
+	header_buffer[3] = header->priority;
+	header_buffer[4] = header->num_packets;
+	header_buffer[5] = header->do_cobbs;
+	header_buffer[6] = 0xff&(header->checksum);
+	header_buffer[7] = 0xff&((header->checksum)>>8);
+	header_buffer[8] = 0xff&(header->timestamp);
+	header_buffer[9] = 0xff&((header->timestamp)>>8);
+	header_buffer[10] = 0xff&((header->timestamp)>>16);     // little endian
+	header_buffer[11] = 0xff&((header->timestamp)>>24);
 }
 
 void pack_packet(uint8_t *src, uint8_t *dst, uint16_t sz) {

@@ -129,14 +129,15 @@ def main():
     argument_string = ""
 
     # Hardcoded packet header for parse_packet function
-    packet_header_byte_size = 11
+    packet_header_byte_size = 12
     parser_dict_header_str = "\t\tself.dict[self.items[0]] = int((float(struct.unpack(\"<B\", packet[0:1])[0]))/1)\n" \
                              "\t\tself.dict[self.items[1]] = int((float(struct.unpack(\"<B\", packet[1:2])[0]))/1)\n" \
                              "\t\tself.dict[self.items[2]] = int((float(struct.unpack(\"<B\", packet[2:3])[0]))/1)\n" \
                              "\t\tself.dict[self.items[3]] = int((float(struct.unpack(\"<B\", packet[3:4])[0]))/1)\n" \
                              "\t\tself.dict[self.items[4]] = int((float(struct.unpack(\"<B\", packet[4:5])[0]))/1)\n" \
-                             "\t\tself.dict[self.items[5]] = int((float(struct.unpack(\"<H\", packet[5:7])[0]))/1)\n" \
-                             "\t\tself.dict[self.items[6]] = int((float(struct.unpack(\"<I\", packet[7:11])[0]))/1)\n"
+                             "\t\tself.dict[self.items[5]] = int((float(struct.unpack(\"<B\", packet[5:6])[0]))/1)\n" \
+                             "\t\tself.dict[self.items[6]] = int((float(struct.unpack(\"<H\", packet[6:8])[0]))/1)\n" \
+                             "\t\tself.dict[self.items[7]] = int((float(struct.unpack(\"<I\", packet[8:12])[0]))/1)\n"
 
     # For telem_parser.py
     # Starts off the parser data with the hard coded packet header
@@ -147,17 +148,16 @@ def main():
                              "\t\tself.units[self.items[3]] = \"ul\"\n" \
                              "\t\tself.units[self.items[4]] = \"ul\"\n" \
                              "\t\tself.units[self.items[5]] = \"ul\"\n" \
-                             "\t\tself.units[self.items[6]] = \"ul\"\n"
-    parser_csv_header = "Time (s),"
+                             "\t\tself.units[self.items[6]] = \"ul\"\n" \
+                             "\t\tself.units[self.items[7]] = \"ul\"\n"
     parser_self_init_str = ""
-    parser_log_string = "\t\tself.log_string = str(self.dict[self.items[6]]/1000000.0) + ','"
     parser_items_list = list()
 
     col = dict()  # Dictionary mapping column names to indices
     packet_byte_length = 0  # Total bytes in packet (running total)
 
-    # num_items begins at 7 to account for the hardcoded packet header
-    num_items = 7  # Doesn't use enumerate to get the number of items because not all lines get telem'd (should_generate column)
+    # num_items begins at 8 to account for the hardcoded packet header
+    num_items = 8  # Doesn't use enumerate to get the number of items because not all lines get telem'd (should_generate column)
     for csv_row_num, line in enumerate(template_file):
         split_string = line.strip().split(COLUMN_DELIMITER)  # strip() because last column sometimes has trailing '\n'
 
@@ -301,9 +301,6 @@ def main():
                                 str(packet_byte_length + packet_header_byte_size) + "])[0]))/" + xmit_scale + ")\n"
             
             parser_units_dict_str += "\t\tself.units[self.items[" + str(num_items) + "]] = \"" + unit + "\"\n"
-
-            parser_csv_header += python_variable + ' (' + unit + '),'
-            parser_log_string += " + str(self.dict[self.items[" + str(num_items) + "]])" + " + ','" 
             
             num_items += 1
         #end else
@@ -329,29 +326,28 @@ def main():
     pack_telem_defines_c_string += "}"
 
     # Updating telem_parser.py strings
-    parser_csv_header += "\\n\"\n"
 
-    parser_self_init_str += "\t\tself.log_string = \"\"\n" + \
-                            "\t\tself.num_items = " + str(num_items) + "\n" + \
+    parser_self_init_str += "\t\tself.num_items = " + str(num_items) + "\n" + \
                             "\t\t\n" + \
                             "\t\tself.dict = {}\n" + \
                             "\t\tself.units = {}\n" + \
                             "\t\t\n" + \
                             "\t\tself.items = [''] * self.num_items\n" \
                             "\t\tself.items[0] = 'packet_type'\n" \
-                            "\t\tself.items[1] = 'target_addr'\n" \
-                            "\t\tself.items[2] = 'priority'\n" \
-                            "\t\tself.items[3] = 'num_packets'\n" \
-                            "\t\tself.items[4] = 'do_cobbs'\n" \
-                            "\t\tself.items[5] = 'checksum'\n" \
-                            "\t\tself.items[6] = 'timestamp'\n" \
+                            "\t\tself.items[1] = 'origin_addr'\n" \
+                            "\t\tself.items[2] = 'target_addr'\n" \
+                            "\t\tself.items[3] = 'priority'\n" \
+                            "\t\tself.items[4] = 'num_packets'\n" \
+                            "\t\tself.items[5] = 'do_cobbs'\n" \
+                            "\t\tself.items[6] = 'checksum'\n" \
+                            "\t\tself.items[7] = 'timestamp'\n" \
                             # End Hardcoded packet header
 
     # Add the initialization for the items dict to the telem parser
-    # Index has a "+ 6" to account for the first 6 parts of items which is the
+    # Index has a "+ 8" to account for the first 8 parts of items which is the
     #   hardcoded packet header
     for index, var in enumerate(parser_items_list):
-        parser_self_init_str += "\t\tself.items[" + str(index + 7) + "] = \'" + var + "\' \n"
+        parser_self_init_str += "\t\tself.items[" + str(index + 8) + "] = \'" + var + "\' \n"
 
     # Append the units dictionary to the self init str
     parser_self_init_str += parser_units_dict_str
@@ -372,14 +368,12 @@ def main():
 
     telem_parser.write(	"### " + begin_autogen_tag + "\n### telemParse.py\n" + "### " + autogen_label + \
                     "\n\nimport time\nimport struct\n\nclass " + output_file_parser_name +":\n\n" + \
-                    "\tdef __init__(self):\n\t\tself.csv_header = \"" + \
-                    parser_csv_header + \
+                    "\tdef __init__(self):\n" + \
                     "\t\tself.packet_byte_size = " + \
                     str(packet_byte_length + packet_header_byte_size) + "\n" + \
                         parser_self_init_str + "\n"
                     "\tdef parse_packet(self, packet):\n" + \
-                    parser_data_dict_str + \
-                    parser_log_string)
+                    parser_data_dict_str)
 
     pack_telem_defines_h.write(pack_telem_defines_h_string)
     pack_telem_defines_c.write(pack_telem_defines_c_string)

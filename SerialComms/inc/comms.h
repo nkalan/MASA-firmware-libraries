@@ -25,13 +25,14 @@
 /* Global Defines */
 #define PING_MAX_PACKET_SIZE        253
 #define PONG_MAX_PACKET_SIZE        255
-#define CLB_HEADER_SZ               11       // packet header struct size (bytes)
+#define CLB_HEADER_SZ               12       // packet header struct size (bytes)
 
 /* Public Function Prototypes */
 
 // Packet Header 
 typedef struct CLB_Packet_Header {
     uint8_t packet_type;        // CMD/DATA packet ID
+    uint8_t origin_addr;        // origin board address
     uint8_t target_addr;        // target board address
     uint8_t priority;           // priority of packet
     uint8_t num_packets;        // number of packets in current transmission
