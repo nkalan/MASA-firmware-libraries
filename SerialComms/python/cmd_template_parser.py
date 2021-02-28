@@ -231,6 +231,8 @@ except FileNotFoundError:
 #write out c file template
 with open(output_dir+"/telem.c", 'w') as c_file:
     board_supported = functions['supported_target_addr']
+
+    # save extern variables defs in user generated section
     
     #write functions from csv file to c_file
     c_file.write("#include <stdint.h>\n\n")

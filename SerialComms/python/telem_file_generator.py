@@ -150,7 +150,7 @@ def main():
                              "\t\tself.units[self.items[6]] = \"ul\"\n"
     parser_csv_header = "Time (s),"
     parser_self_init_str = ""
-    parser_log_string = "\t\tself.log_string = str(time.clock()) + ','"
+    parser_log_string = "\t\tself.log_string = str(self.dict[self.items[6]]/1000000.0) + ','"
     parser_items_list = list()
 
     col = dict()  # Dictionary mapping column names to indices
