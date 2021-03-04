@@ -5,9 +5,9 @@ GLOBALS_H_FILE = ../../../Inc/globals.h
 GLOBALS_C_FILE = ../../../Src/globals.c
 
 # GUI Telem Data Templates
-TELEM_PARSE_FILE = ${GUI_PATH}/telemParse.py
-PRESS_TELEM_PARSE_FILE = ${GUI_PATH}/pressBoardParse.py
-FLIGHT_TELEM_PARSE_FILE = ${GUI_PATH}/flightCompParse.py
+TELEM_PARSE_FILE = ${GUI_PATH}/parsers/telemParse.py
+PRESS_TELEM_PARSE_FILE = ${GUI_PATH}/parsers/pressBoardParse.py
+FLIGHT_TELEM_PARSE_FILE = ${GUI_PATH}/parsers/flightCompParse.py
 
 # Telem Data CSV files
 TELEM_CSV_FILE = ./telem_data_template.csv
@@ -15,7 +15,7 @@ PRESS_TELEM_CSV_FILE = ./telem_data_pressboard.csv
 FLIGHT_TELEM_CSV_FILE= ./telem_data_flightcomp.csv
 
 # Calibration Files
-PT_CAL_CSV_FILE	= ./pt_calibration.csv 
+PT_CAL_CSV_FILE	= ./pt_calibration.csv
 PT_CAL_H_FILE	= ../../../Inc/pt_calibrations.h 
 PT_CAL_C_FILE	= ../../../Src/pt_calibrations.c
 
@@ -36,9 +36,9 @@ PRESS_BOARD_NUM		= 3
 
 press:
 	${PYTHON} ./telem_file_generator.py \
-		${PRESS_TELEM_CSV_FILE} ${TELEM_PARSE_FILE} \
-		${GLOBALS_H_FILE} ${GLOBALS_C_FILE}
-
+	${PRESS_TELEM_CSV_FILE} ${TELEM_PARSE_FILE} \
+	${GLOBALS_H_FILE} ${GLOBALS_C_FILE} ${PRESS_BOARD_NUM}
+	
 	${PYTHON} ./cmd_file_generator.py \
 		${TELEM_CMD_FILE} \
 		${TELEM_CMD_FILE_DIRECTORY}
@@ -51,7 +51,7 @@ press:
 flight:
 	${PYTHON} ./telem_file_generator.py \
 		${FLIGHT_TELEM_CSV_FILE} ${FLIGHT_TELEM_PARSE_FILE} \
-		${GLOBALS_H_FILE} ${GLOBALS_C_FILE}
+		${GLOBALS_H_FILE} ${GLOBALS_C_FILE} ${FLIGHT_BOARD_NUM}
 
 	${PYTHON} ./cmd_file_generator.py \
 		${TELEM_CMD_FILE} \
