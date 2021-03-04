@@ -5,9 +5,9 @@ GLOBALS_H_FILE = ../../../Inc/globals.h
 GLOBALS_C_FILE = ../../../Src/globals.c
 
 # GUI Telem Data Templates
-TELEM_PARSE_FILE = ${GUI_PATH}/telemParse.py
-PRESS_TELEM_PARSE_FILE = ${GUI_PATH}/pressBoardParse.py
-FLIGHT_TELEM_PARSE_FILE = ${GUI_PATH}/flightCompParse.py
+TELEM_PARSE_FILE = ${GUI_PATH}/parsers/telemParse.py
+PRESS_TELEM_PARSE_FILE = ${GUI_PATH}/parsers/pressBoardParse.py
+FLIGHT_TELEM_PARSE_FILE = ${GUI_PATH}/parsers/flightCompParse.py
 
 # Telem Data CSV files
 TELEM_CSV_FILE = ./telem_data_template.csv
