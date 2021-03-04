@@ -185,25 +185,28 @@ Telem Rate,telem_rate,,,Hz,uint32_t,%i,uint32_t,1,,int,,,y
 ADC Rate,adc_rate,,,Hz,uint32_t,%i,uint32_t,1,,int,,,y
 Flash Memory,flash_mem,,,bytes,uint32_t,%i,uint32_t,1,,int,,,y
 Own Board Addr,own_board_addr,1,1,ul,uint8_t,%i,uint8_t,1,,int,,,y
-Altitude,baro_alt,0,40000,ft,uint16_t,%i,uint16_t,1,,int,,,y
-X0,gx[0],-2000,2000,deg/s,float,%i,int16_t,10,,float,,,y
-X1,gx[1],-2000,2000,deg/s,float,%i,int16_t,10,,float,,,y
-X2,gx[2],-2000,2000,deg/s,float,%i,int16_t,10,,float,,,y
-X3,gx[3],-2000,2000,deg/s,float,%i,int16_t,10,,float,,,y
-X4,gx[4],-2000,2000,deg/s,float,%i,int16_t,10,,float,,,y
-X5,gx[5],-2000,2000,deg/s,float,%i,int16_t,10,,float,,,y
-Y0,gy[0],-2000,2000,deg/s,float,%i,int16_t,10,,float,,,y
-Y1,gy[1],-2000,2000,deg/s,float,%i,int16_t,10,,float,,,y
-Y2,gy[2],-2000,2000,deg/s,float,%i,int16_t,10,,float,,,y
-Y3,gy[3],-2000,2000,deg/s,float,%i,int16_t,10,,float,,,y
-Y4,gy[4],-2000,2000,deg/s,float,%i,int16_t,10,,float,,,y
-Y5,gy[5],-2000,2000,deg/s,float,%i,int16_t,10,,float,,,y
-Z0,gz[0],-2000,2000,deg/s,float,%i,int16_t,10,,float,,,y
-Z1,gz[1],-2000,2000,deg/s,float,%i,int16_t,10,,float,,,y
-Z2,gz[2],-2000,2000,deg/s,float,%i,int16_t,10,,float,,,y
-Z3,gz[3],-2000,2000,deg/s,float,%i,int16_t,10,,float,,,y
-Z4,gz[4],-2000,2000,deg/s,float,%i,int16_t,10,,float,,,y
-Z5,gz[5],-2000,2000,deg/s,float,%i,int16_t,10,,float,,,y
-Acceleration X,acceller[0],-10,10,g,float,%i,int32_t,100,,float,,,y
-Acceleration Y,acceller[1],-10,10,g,float,%i,int32_t,100,,float,,,y
-Acceleration Z,acceller[2],-10,10,g,float,%i,int32_t,100,,float,,,y
+Altitude,baro_alt,0,40000,ft,uint16_t,%i,uint16_t,1,baro.alt,int,,,y
+X0,gx[0],-2000,2000,deg/s,float,%i,int16_t,10,gyro0.x,float,,,y
+X1,gx[1],-2000,2000,deg/s,float,%i,int16_t,10,gyro1.x,float,,,y
+X2,gx[2],-2000,2000,deg/s,float,%i,int16_t,10,gyro2.x,float,,,y
+X3,gx[3],-2000,2000,deg/s,float,%i,int16_t,10,gyro3.x,float,,,y
+X4,gx[4],-2000,2000,deg/s,float,%i,int16_t,10,gyro4.x,float,,,y
+X5,gx[5],-2000,2000,deg/s,float,%i,int16_t,10,gyro5.x,float,,,y
+Y0,gy[0],-2000,2000,deg/s,float,%i,int16_t,10,gyro0.y,float,,,y
+Y1,gy[1],-2000,2000,deg/s,float,%i,int16_t,10,gyro1.y,float,,,y
+Y2,gy[2],-2000,2000,deg/s,float,%i,int16_t,10,gyro2.y,float,,,y
+Y3,gy[3],-2000,2000,deg/s,float,%i,int16_t,10,gyro3.y,float,,,y
+Y4,gy[4],-2000,2000,deg/s,float,%i,int16_t,10,gyro4.y,float,,,y
+Y5,gy[5],-2000,2000,deg/s,float,%i,int16_t,10,gyro5.y,float,,,y
+Z0,gz[0],-2000,2000,deg/s,float,%i,int16_t,10,gyro0.z,float,,,y
+Z1,gz[1],-2000,2000,deg/s,float,%i,int16_t,10,gyro1.z,float,,,y
+Z2,gz[2],-2000,2000,deg/s,float,%i,int16_t,10,gyro2.z,float,,,y
+Z3,gz[3],-2000,2000,deg/s,float,%i,int16_t,10,gyro3.z,float,,,y
+Z4,gz[4],-2000,2000,deg/s,float,%i,int16_t,10,gyro4.z,float,,,y
+Z5,gz[5],-2000,2000,deg/s,float,%i,int16_t,10,gyro5.z,float,,,y
+Acceleration X,acceller[0],-10,10,g,float,%i,int16_t,100,accel.x,float,,,y
+Acceleration Y,acceller[1],-10,10,g,float,%i,int16_t,100,accel.y,float,,,y
+Acceleration Z,acceller[2],-10,10,g,float,%i,int16_t,100,accel.z,float,,,y
+gyrox_avg,avg_x,-2000,2000,deg/s,float,%i,int16_t,10,gyro.x.avg,float,,,y
+gyroy_avg,avg_y,-2000,2000,deg/s,float,%i,int16_t,10,gyro.y.avg,float,,,y
+gyroz_avg,avg_z,-2000,2000,deg/s,float,%i,int16_t,10,gyro.z.avg,float,,,y
