@@ -36,7 +36,7 @@ PRESS_BOARD_NUM		= 3
 
 press:
 	${PYTHON} ./telem_file_generator.py \
-	${PRESS_TELEM_CSV_FILE} ${TELEM_PARSE_FILE} \
+	${PRESS_TELEM_CSV_FILE} ${PRESS_TELEM_PARSE_FILE} \
 	${GLOBALS_H_FILE} ${GLOBALS_C_FILE} ${PRESS_BOARD_NUM}
 	
 	${PYTHON} ./cmd_file_generator.py \
