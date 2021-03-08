@@ -1,10 +1,8 @@
-This file describes the board addresses for each of the boards used on TSM. It should not be modified under any circumstances. When creating a new board, you should modify the board addr row in the telem_data_template.csv file with the corresponding board address.
-
-mapping = {
-        "Engine Controller": 2,
-        "Flight Computer": 1,
-        "Pressurization Controller": 3,
-        "Recovery Controller": 4,
-        "GSE Controller": 0,
-        "Black Box": 5
+{
+        "2": "EngineController",
+        "1": "FlightComputer",
+        "3": "PressurizationController",
+        "4": "RecoveryController",
+        "0": "GSEController",
+        "5": "BlackBox"   
 }
