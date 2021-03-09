@@ -1,27 +1,27 @@
 name,firmware_variable,min_val,max_val,unit,firmware_type,printf_format,type_cast,xmit_scale,python_variable_override,python_type,python_globals,python_init,should_generate
 Valve State Feedback,valve_states,,,ul,uint32_t,%u,uint32_t,1,,int,,0,y
-Pressure 0,pressure[0],-100,3000,psi,float,%.1f,int16_t,1,,float,,[0]*22,y
-Pressure 1,pressure[1],-100,3000,psi,float,%.1f,int16_t,1,,float,,0,y
-Pressure 2,pressure[2],-100,3000,psi,float,%.1f,int16_t,1,,float,,[0]*4,y
-Pressure 3,pressure[3],-100,3000,psi,float,%.1f,int16_t,1,,float,,0,y
-Pressure 4,pressure[4],-100,3000,psi,float,%.1f,int16_t,1,,float,,0,y
-Pressure 5,pressure[5],-100,3000,psi,float,%.1f,int16_t,1,,float,,0,y
-Pressure 6,pressure[6],-100,3000,psi,float,%.1f,int16_t,1,,float,,0,n
-Pressure 7,pressure[7],-100,3000,psi,float,%.1f,int16_t,1,,float,,0,n
-Pressure 8,pressure[8],-100,3000,psi,float,%.1f,int16_t,1,,float,,0,n
-Pressure 9,pressure[9],-100,3000,psi,float,%.1f,int16_t,1,,float,,0,n
-Pressure 10,pressure[10],-100,3000,psi,float,%.1f,int16_t,1,,float,,[0]*4,n
-Pressure 11,pressure[11],-100,3000,psi,float,%.1f,int16_t,1,,float,,[0]*4,n
-Pressure 12,pressure[12],-100,3000,psi,float,%.1f,int16_t,1,,float,,[0]*4,n
-Pressure 13,pressure[13],-100,3000,psi,float,%.1f,int16_t,1,,float,,0,n
-Pressure 14,pressure[14],-100,3000,psi,float,%.1f,int16_t,1,,float,,0,n
-Pressure 15,pressure[15],-100,3000,psi,float,%.1f,int16_t,1,,float,,0,n
-Pressure 16,pressure[16],-100,3000,psi,float,%.1f,int16_t,1,,float,,0,n
-Pressure 17,pressure[17],-100,3000,psi,float,%.1f,int16_t,1,,float,,[0]*5,n
-Pressure 18,pressure[18],-100,3000,psi,float,%.1f,int16_t,1,,float,,0,n
-Pressure 19,pressure[19],-100,3000,psi,float,%.1f,int16_t,1,,float,,[0]*4,n
-Pressure 20,pressure[20],-100,3000,psi,float,%.1f,int16_t,1,,float,,[0]*32,n
-Pressure 21,pressure[21],-100,3000,psi,float,%.1f,int16_t,1,,float,,[0]*32,n
+Pressure 0,pressure[0],-100,3000,psi,float,%.1f,int16_t,10,,float,,[0]*22,y
+Pressure 1,pressure[1],-100,3000,psi,float,%.1f,int16_t,10,,float,,0,y
+Pressure 2,pressure[2],-100,3000,psi,float,%.1f,int16_t,10,,float,,[0]*4,y
+Pressure 3,pressure[3],-100,3000,psi,float,%.1f,int16_t,10,,float,,0,y
+Pressure 4,pressure[4],-100,3000,psi,float,%.1f,int16_t,10,,float,,0,y
+Pressure 5,pressure[5],-100,3000,psi,float,%.1f,int16_t,10,,float,,0,y
+Pressure 6,pressure[6],-100,3000,psi,float,%.1f,int16_t,10,,float,,0,n
+Pressure 7,pressure[7],-100,3000,psi,float,%.1f,int16_t,10,,float,,0,n
+Pressure 8,pressure[8],-100,3000,psi,float,%.1f,int16_t,10,,float,,0,n
+Pressure 9,pressure[9],-100,3000,psi,float,%.1f,int16_t,10,,float,,0,n
+Pressure 10,pressure[10],-100,3000,psi,float,%.1f,int16_t,10,,float,,[0]*4,n
+Pressure 11,pressure[11],-100,3000,psi,float,%.1f,int16_t,10,,float,,[0]*4,n
+Pressure 12,pressure[12],-100,3000,psi,float,%.1f,int16_t,10,,float,,[0]*4,n
+Pressure 13,pressure[13],-100,3000,psi,float,%.1f,int16_t,10,,float,,0,n
+Pressure 14,pressure[14],-100,3000,psi,float,%.1f,int16_t,10,,float,,0,n
+Pressure 15,pressure[15],-100,3000,psi,float,%.1f,int16_t,10,,float,,0,n
+Pressure 16,pressure[16],-100,3000,psi,float,%.1f,int16_t,10,,float,,0,n
+Pressure 17,pressure[17],-100,3000,psi,float,%.1f,int16_t,10,,float,,[0]*5,n
+Pressure 18,pressure[18],-100,3000,psi,float,%.1f,int16_t,10,,float,,0,n
+Pressure 19,pressure[19],-100,3000,psi,float,%.1f,int16_t,10,,float,,[0]*4,n
+Pressure 20,pressure[20],-100,3000,psi,float,%.1f,int16_t,10,,float,,[0]*32,n
+Pressure 21,pressure[21],-100,3000,psi,float,%.1f,int16_t,10,,float,,[0]*32,n
 ebatt,e_batt,-20,20,Volts,float,%.2f,int16_t,100,,float,,0,y
 ibatt,i_batt,-10,150,Amps,float,%.2f,int16_t,100,,float,,0,y
 STATE,STATE,0,127,ul,enum States,%u,uint8_t,1,,int,,[0]*8,y
@@ -153,32 +153,32 @@ mtr 2 vel,mtr_vel[2],,,step/s,int16_t,%d,int16_t,1,mtr2.vel,int,,,n
 mtr 3 vel,mtr_vel[3],,,step/s,int16_t,%d,int16_t,1,mtr3.vel,int,,,n
 mtr 0 setpoint,mtr_set[0],,,deg,float,%d,int16_t,10,mtr0.set,float,,,y
 mtr 1 setpoint,mtr_set[1],,,deg,float,%d,int16_t,10,mtr1.set,float,,,y
-mtr 0 Ki,mtr_ki[0],,,ul,float,%d,uint16_t,100,mtr0.i,float,,,y
-mtr 1 Ki,mtr_ki[1],,,ul,float,%d,uint16_t,100,mtr1.i,float,,,y
-mtr 0 Kd,mtr_kd[0],,,ul,float,%d,uint16_t,100,mtr0.d,float,,,y
-mtr 1 Kd,mtr_kd[1],,,ul,float,%d,uint16_t,100,mtr1.d,float,,,y
-mtr 0 Kp,mtr_kp[0],,,ul,float,%d,uint16_t,100,mtr0.p,float,,,y
-mtr 1 Kp,mtr_kp[1],,,ul,float,%d,uint16_t,100,mtr1.p,float,,,y
-mtr 0 Kp error,mtr_kp_err[0],,,ul,float,%d,int16_t,100,mtr0.kp_err,float,,,y
-mtr 1 Kp error,mtr_kp_err[1],,,ul,float,%d,int16_t,100,mtr1.kp_err,float,,,y
-mtr 0 Ki error,mtr_ki_err[0],,,ul,float,%d,int16_t,100,mtr0.ki_err,float,,,y
-mtr 1 Ki error,mtr_ki_err[1],,,ul,float,%d,int16_t,100,mtr1.ki_err,float,,,y
-mtr 0 Kd error,mtr_kd_err[0],,,ul,float,%d,int16_t,100,mtr0.kd_err,float,,,y
-mtr 1 Kd error,mtr_kd_err[1],,,ul,float,%d,int16_t,100,mtr1.kd_err,float,,,y
+mtr 0 Ki,mtr_ki[0],,,ul,float,%d,uint16_t,10,mtr0.i,float,,,y
+mtr 1 Ki,mtr_ki[1],,,ul,float,%d,uint16_t,10,mtr1.i,float,,,y
+mtr 0 Kd,mtr_kd[0],,,ul,float,%d,uint16_t,10,mtr0.d,float,,,y
+mtr 1 Kd,mtr_kd[1],,,ul,float,%d,uint16_t,10,mtr1.d,float,,,y
+mtr 0 Kp,mtr_kp[0],,,ul,float,%d,uint16_t,10,mtr0.p,float,,,y
+mtr 1 Kp,mtr_kp[1],,,ul,float,%d,uint16_t,10,mtr1.p,float,,,y
+mtr 0 Kp error,mtr_kp_err[0],,,ul,float,%d,int16_t,10,mtr0.kp_err,float,,,y
+mtr 1 Kp error,mtr_kp_err[1],,,ul,float,%d,int16_t,10,mtr1.kp_err,float,,,y
+mtr 0 Ki error,mtr_ki_err[0],,,ul,float,%d,int16_t,10,mtr0.ki_err,float,,,y
+mtr 1 Ki error,mtr_ki_err[1],,,ul,float,%d,int16_t,10,mtr1.ki_err,float,,,y
+mtr 0 Kd error,mtr_kd_err[0],,,ul,float,%d,int16_t,10,mtr0.kd_err,float,,,y
+mtr 1 Kd error,mtr_kd_err[1],,,ul,float,%d,int16_t,10,mtr1.kd_err,float,,,y
 tank 0 target pressure,tank_tar_pres[0],-100,3000,psi,float,%.1f,int16_t,10,tnk0.tp,float,,,y
 tank 1 target pressure,tank_tar_pres[1],-100,3000,psi,float,%.1f,int16_t,10,tnk1.tp,float,,,y
 tank 0 high pressure,tank_high_pres[0],-100,3000,psi,float,%.1f,int16_t,10,tnk0.hp,float,,,y
 tank 1 high pressure,tank_high_pres[1],-100,3000,psi,float,%.1f,int16_t,10,tnk1.hp,float,,,y
 tank 0 lower pressure,tank_low_pres[0],-100,3000,psi,float,%.1f,int16_t,10,tnk0.lp,float,,,y
 tank 1 lower pressure,tank_low_pres[1],-100,3000,psi,float,%.1f,int16_t,10,tnk1.lp,float,,,y
-pot 0,epot[0],,,deg,float,%d,int16_t,1000,,float,,,y
-pot 1,epot[1],,,deg,float,%d,int16_t,1000,,float,,,y
-pot 2,epot[2],,,deg,float,%d,int16_t,1000,,float,,,y
-pot 3,epot[3],,,deg,float,%d,int16_t,1000,,float,,,y
-pot 4,epot[4],,,deg,float,%d,int16_t,1000,,float,,,n
-pot 5,epot[5],,,deg,float,%d,int16_t,1000,,float,,,n
-pot 6,epot[6],,,deg,float,%d,int16_t,1000,,float,,,n
-pot 7,epot[7],,,deg,float,%d,int16_t,1000,,float,,,n
+pot 0,epot[0],,,deg,float,%d,int32_t,10,,float,,,y
+pot 1,epot[1],,,deg,float,%d,int32_t,10,,float,,,y
+pot 2,epot[2],,,deg,float,%d,int32_t,10,,float,,,y
+pot 3,epot[3],,,deg,float,%d,int32_t,10,,float,,,y
+pot 4,epot[4],,,deg,float,%d,int32_t,10,,float,,,n
+pot 5,epot[5],,,deg,float,%d,int32_t,10,,float,,,n
+pot 6,epot[6],,,deg,float,%d,int32_t,10,,float,,,n
+pot 7,epot[7],,,deg,float,%d,int32_t,10,,float,,,n
 Test Duration,test_duration,,,ms,uint32_t,%i,uint32_t,1,,int,,,y
 Micros,micros,,,us,uint64_t,%i,uint64_t,1,,int,micros,,y
 Telem Rate,telem_rate,,,Hz,uint32_t,%i,uint32_t,1,,int,,,y

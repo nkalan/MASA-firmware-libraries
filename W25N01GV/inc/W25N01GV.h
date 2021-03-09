@@ -5,7 +5,7 @@
  * Nathaniel Kalantar (nkalan@umich.edu)
  * Michigan Aeronautical Science Association
  * Created July 20, 2020
- * Last edited November 6, 2020
+ * Last edited February 26, 2021
  *
  * This code assumes the WP and HLD pins are always set high.
  *
@@ -101,7 +101,9 @@
 
 // Number of pages that can be read from. See README and
 // the above documentation for use when reading from flash.
-#define W25N01GV_NUM_PAGES (uint32_t) 65536
+// Note: there are actually 65536 pages, but the last block (64 pages)
+// is reserved by this firmware.
+#define W25N01GV_NUM_PAGES (uint32_t) 65472
 
 // Each page has a 2048-byte main data array to read/write
 #define W25N01GV_BYTES_PER_PAGE (uint16_t) 2048
@@ -137,6 +139,8 @@ typedef struct {
 	// Data buffer to store data before writing
 	uint8_t write_buffer[W25N01GV_SECTOR_SIZE];
 
+	uint32_t next_page_to_read;   // Tracking pages while reading
+
 	SPI_HandleTypeDef *SPI_bus;   // SPI struct, specified by user
 	GPIO_TypeDef *cs_base;        // Chip select GPIO base, specified by user
 	uint16_t cs_pin;              // Chip select GPIO pin, specified by user
@@ -145,8 +149,6 @@ typedef struct {
 
 	uint16_t current_page;        // Tracking pages while writing
 	uint16_t next_free_column;    // Tracking columns while writing
-
-	uint16_t next_page_to_read;   // Tracking pages while reading
 
 	// The firmware checks various status codes, all of
 	// which can be accessed at any time.
@@ -161,8 +163,9 @@ typedef struct {
 
 /**
  * Initializes the flash memory chip with SPI and pin information,
- * sets parameters to an initial state, and enables the onboard
- * ECC and buffer read mode.
+ * sets parameters to an initial state, enables the onboard
+ * ECC and buffer read mode, and finds the address of the first
+ * location in memory available to be written to.
  *
  * @param flash      <W25N01GV_Flash*>    Struct used to store flash pins and addresses
  * @param SPI_bus_in <SPI_HandleTypeDef*> Struct used for SPI communication
@@ -182,10 +185,10 @@ void init_flash(W25N01GV_Flash *flash, SPI_HandleTypeDef *SPI_bus_in,
  * @param flash      <W25N01GV_Flash*>    Struct used to store flash pins and addresses
  * @retval 1 if it read the ID back correctly, 0 if it didn't
  */
-uint8_t is_flash_ID_correct(W25N01GV_Flash *flash);
+uint8_t ping_flash(W25N01GV_Flash *flash);
 
 /**
- * Resets the flash chip to it's power-on state. If the device is busy when
+ * Resets the flash chip to its power-on state. If the device is busy when
  * this function is called, it will ignore the command and return 0 to avoid
  * corrupting data.
  *
@@ -201,6 +204,10 @@ uint8_t reset_flash(W25N01GV_Flash *flash);
 /**
  * Erase the entire flash memory chip. Erasing means setting every byte to 0xFF.
  * This function also resets the address counters in the W25N01GV_Flash struct.
+ *
+ * This function will not erase the last 64 pages / last block, which is reserved
+ * for pseudo-eeprom functionality, and those pages must be erased separately
+ * by calling erase_reserved_pages().
  *
  * WARNING: This function will erase all data, and causes a substantial delay
  * on the order of 2-10 seconds. Only use it if you're absolutely sure.
@@ -224,30 +231,20 @@ uint16_t erase_flash(W25N01GV_Flash *flash);
  *
  * After you're done with your program and will no longer write to flash,
  * call finish_flash_write() to store the remaining contents of the
- * write buffer to flash. Note that any other function calls to write_flash()
- * after finish_flash_write() has been called could potentially corrupt
- * the error correction codes.
- *
- * TODO: add a note about the minimum write size and the write buffer
- *
- * TODO: test more
+ * write buffer to flash.
  *
  * @param flash      <W25N01GV_Flash*>    Struct used to store flash pins and addresses
  * @param data       <uint8_t*>           Array of data to write to flash
  * @param num_bytes  <uint32_t>           Number of bytes to write to flash
  * @retval The number of memory blocks that failed to write
  */
-uint16_t write_to_flash(W25N01GV_Flash *flash, uint8_t *data, uint32_t size);
+uint16_t write_to_flash(W25N01GV_Flash *flash, uint8_t *data, uint32_t num_bytes);
 
 /**
  * Writes whatever is contained in the write buffer to flash.
  * You MUST call this function at the end of your program, before the
  * W25N10GV_Flash struct goes out of scope, or else you will lose
  * up to the last 512 bytes of data.
- *
- * Note: Any call to write_to_flash() after this function has been called
- * could potentially corrupt the flash chip's error correction codes.
- * Only call this function when you're sure you don't want to write any more.
  *
  * @param flash      <W25N01GV_Flash*>    Struct used to store flash pins and addresses
  */
@@ -287,6 +284,38 @@ void read_next_2KB_from_flash(W25N01GV_Flash *flash, uint8_t *buffer);
  * @retval Number of free bytes remaining in the flash chip to write to
  */
 uint32_t get_bytes_remaining(W25N01GV_Flash *flash);
+
+/**
+ * Allows the user to manually write data to specific pages in the last memory block.
+ * User specifies the page to write with a number from 0 to 63 inclusive.
+ * Note: remember to call erase_reserved_flash_pages() before updating the values.
+ * Note: calling erase_reserved_flash_pages() will erase all 64 reserved pages.
+ *
+ * @param flash       <W25N01GV_Flash*>     Struct used to store flash pins and addresses
+ * @param page_num    <uint8_t>             Address of page in block to write to (0-63 inclusive)
+ * @param data        <uint8_t*>            Array of data to be written to flash. Up to 2048 bytes.
+ * @param data_sz     <uint16_t>            Size of data array. Can be up to 2048.
+ * @retval 1 if it fails to write, 0 otherwise
+ */
+uint8_t write_reserved_flash_page(W25N01GV_Flash *flash, uint8_t page_num, uint8_t* data, uint16_t data_sz);
+
+/**
+ * Reads the data at the specified page in the reserved memory block into buffer.
+ *
+ * @param flash       <W25N01GV_Flash*>     Struct used to store flash pins and addresses
+ * @param page_num    <uint8_t>             Address of page in block to read from (0-63 inclusive)
+ * @param data        <uint8_t*>            Array to read data from flash into.
+ * @param buffer_sz   <uint16_t>            Size of buffer. Can be up to 2048 bytes.
+ */
+void read_reserved_flash_page(W25N01GV_Flash *flash, uint8_t page_num, uint8_t* buffer, uint16_t buffer_sz);
+
+/**
+ * Erases all 64 of the reserved pages.
+ *
+ * @param flash       <W25N01GV_Flash*>     Struct used to store flash pins and addresses
+ * @retval 1 if it fails to erase, 0 otherwise
+ */
+uint8_t erase_reserved_flash_pages(W25N01GV_Flash *flash);
 
 /**
  * Scan flash for bad memory blocks before writing to it for the first time.

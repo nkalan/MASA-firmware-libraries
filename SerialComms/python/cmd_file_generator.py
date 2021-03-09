@@ -120,19 +120,20 @@ def main():
     s2_command_str += "\t\t# Check that it's a valid function\n" \
         + "\t\tif (cmd_info[\"function_name\"] not in self.cmd_names_dict.keys()):" \
         + "\n\t\t\tprint(cmd_info[\"function_name\"] + \" is not a valid function name. No command was sent.\")\n\t\t\treturn\n\n"
-    s2_command_str += "\t\t# Initialize empty packet\n\t\tpacket = [0]*11  # Header is 11 bytes, will add bytes to fit function arguments\n" \
-        + "\n\t\t# Fill first 11 bytes of packet with CLB packet header information\n" \
+    s2_command_str += "\t\t# Initialize empty packet\n\t\tpacket = [0]*12 # Header is 12 bytes, will add bytes to fit function arguments\n" \
+        + "\n\t\t# Fill first 12 bytes of packet with CLB packet header information\n" \
         + "\t\tpacket[0] = self.cmd_names_dict[cmd_info[\"function_name\"]]\t# packet_type\n" \
-        + "\t\tpacket[1] = cmd_info[\"target_board_addr\"]\t# target_addr\n" \
-        + "\t\tpacket[2] = 1\t# priority\n" \
-        + "\t\tpacket[3] = 1\t# num_packets\n" \
-        + "\t\tpacket[4] = 1\t# do_cobbs\n" \
-        + "\t\tpacket[5] = 0\t# checksum\n" \
+        + "\t\tpacket[1] = 0\t# ground computer addr\n" \
+        + "\t\tpacket[2] = cmd_info[\"target_board_addr\"]\t# target_addr\n" \
+        + "\t\tpacket[3] = 1\t# priority\n" \
+        + "\t\tpacket[4] = 1\t# num_packets\n" \
+        + "\t\tpacket[5] = 1\t# do_cobbs\n" \
         + "\t\tpacket[6] = 0\t# checksum\n" \
-        + "\t\tpacket[7] = (cmd_info[\"timestamp\"] >> 0) & 0xFF\t# timestamp\n" \
-        + "\t\tpacket[8] = (cmd_info[\"timestamp\"] >> 8) & 0xFF\t# timestamp\n" \
-        + "\t\tpacket[9] = (cmd_info[\"timestamp\"] >> 16) & 0xFF\t# timestamp\n" \
-        + "\t\tpacket[10] = (cmd_info[\"timestamp\"] >> 24) & 0xFF\t# timestamp\n" \
+        + "\t\tpacket[7] = 0\t# checksum\n" \
+        + "\t\tpacket[8] = (cmd_info[\"timestamp\"] >> 0) & 0xFF\t# timestamp\n" \
+        + "\t\tpacket[9] = (cmd_info[\"timestamp\"] >> 8) & 0xFF\t# timestamp\n" \
+        + "\t\tpacket[10] = (cmd_info[\"timestamp\"] >> 16) & 0xFF\t# timestamp\n" \
+        + "\t\tpacket[11] = (cmd_info[\"timestamp\"] >> 24) & 0xFF\t# timestamp\n" \
         + "\n"
         
     #TODO: how to determine priority and checksum
