@@ -22,7 +22,7 @@ PT_CAL_C_FILE	= ../../../Src/pt_calibrations.c
 # Telem Command CSV Files
 TELEM_CMD_FILE	= ./telem_cmd_template.csv
 TELEM_CMD_FILE_DIRECTORY = ${GUI_PATH}
-TELEM_C_FILE_DIRECTORY = ./
+TELEM_C_FILE_DIRECTORY = ../../../Src/
 
 # Board Number Assignments
 FLIGHT_BOARD_NUM	= 1
