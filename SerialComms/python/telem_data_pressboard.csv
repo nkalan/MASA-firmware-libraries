@@ -151,8 +151,8 @@ mtr 0 vel,mtr_vel[0],,,step/s,int16_t,%d,int16_t,1,mtr0.vel,int,,,y
 mtr 1 vel,mtr_vel[1],,,step/s,int16_t,%d,int16_t,1,mtr1.vel,int,,,y
 mtr 2 vel,mtr_vel[2],,,step/s,int16_t,%d,int16_t,1,mtr2.vel,int,,,n
 mtr 3 vel,mtr_vel[3],,,step/s,int16_t,%d,int16_t,1,mtr3.vel,int,,,n
-mtr 0 setpoint,mtr_set[0],,,deg,float,%d,int16_t,10,mtr0.set,float,,,y
-mtr 1 setpoint,mtr_set[1],,,deg,float,%d,int16_t,10,mtr1.set,float,,,y
+mtr 0 setpoint,mtr_set[0],,,deg,float,%d,int32_t,100,mtr0.set,float,,,y
+mtr 1 setpoint,mtr_set[1],,,deg,float,%d,int32_t,100,mtr1.set,float,,,y
 mtr 0 Ki,mtr_ki[0],,,ul,float,%d,uint16_t,10,mtr0.i,float,,,y
 mtr 1 Ki,mtr_ki[1],,,ul,float,%d,uint16_t,10,mtr1.i,float,,,y
 mtr 0 Kd,mtr_kd[0],,,ul,float,%d,uint16_t,10,mtr0.d,float,,,y
@@ -171,14 +171,14 @@ tank 0 high pressure,tank_high_pres[0],-100,3000,psi,float,%.1f,int16_t,10,tnk0.
 tank 1 high pressure,tank_high_pres[1],-100,3000,psi,float,%.1f,int16_t,10,tnk1.hp,float,,,y
 tank 0 lower pressure,tank_low_pres[0],-100,3000,psi,float,%.1f,int16_t,10,tnk0.lp,float,,,y
 tank 1 lower pressure,tank_low_pres[1],-100,3000,psi,float,%.1f,int16_t,10,tnk1.lp,float,,,y
-pot 0,epot[0],,,deg,float,%d,int32_t,10,,float,,,y
-pot 1,epot[1],,,deg,float,%d,int32_t,10,,float,,,y
-pot 2,epot[2],,,deg,float,%d,int32_t,10,,float,,,y
-pot 3,epot[3],,,deg,float,%d,int32_t,10,,float,,,y
-pot 4,epot[4],,,deg,float,%d,int32_t,10,,float,,,n
-pot 5,epot[5],,,deg,float,%d,int32_t,10,,float,,,n
-pot 6,epot[6],,,deg,float,%d,int32_t,10,,float,,,n
-pot 7,epot[7],,,deg,float,%d,int32_t,10,,float,,,n
+pot 0,epot[0],,,deg,volatile float,%d,int32_t,10,,float,,,y
+pot 1,epot[1],,,deg,volatile float,%d,int32_t,10,,float,,,y
+pot 2,epot[2],,,deg,volatile float,%d,int32_t,10,,float,,,y
+pot 3,epot[3],,,deg,volatile float,%d,int32_t,10,,float,,,y
+pot 4,epot[4],,,deg,volatile float,%d,int32_t,10,,float,,,n
+pot 5,epot[5],,,deg,volatile float,%d,int32_t,10,,float,,,n
+pot 6,epot[6],,,deg,volatile float,%d,int32_t,10,,float,,,n
+pot 7,epot[7],,,deg,volatile float,%d,int32_t,10,,float,,,n
 Test Duration,test_duration,,,ms,uint32_t,%i,uint32_t,1,,int,,,y
 Micros,micros,,,us,uint64_t,%i,uint64_t,1,,int,micros,,y
 Telem Rate,telem_rate,,,Hz,uint32_t,%i,uint32_t,1,,int,,,y

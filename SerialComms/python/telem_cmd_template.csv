@@ -24,3 +24,4 @@ packet_type,function_name,nums args,arg0,arg_type0,xmit_scale,arg1,arg_type1,xmi
 30,set_stepper_speed,2,motor_num,uint8_t,1,target_speed,uint16_t,1,,,,0 3,sets stepper motor n speed (in steps/sec)
 31,set_telem,1,state,uint8_t,1,,,,,,,0 3,enables/disables telem
 32,set_presstank_status,2,tank_num,uint8_t,1,state,uint8_t,1,,,,0 3,enables/disables pressurization tank num
+33,ambientize_pot,1,pot_num,uint8_t,1,,,,,,,0 3,ambientizes potentiometer position
