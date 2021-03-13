@@ -6,10 +6,10 @@
  */
 #include "MAX31855.h"
 
-uint16_t findClosestTTMV(float target) {
-    uint16_t right = MAX31855_TTMV_LUT_SZ - 1;
-    uint16_t left = 0;
-    uint16_t mid = 0;
+int32_t findClosestTTMV(float target) {
+	int32_t right = MAX31855_TTMV_LUT_SZ - 1;
+	int32_t left = 0;
+	int32_t mid = 0;
     // Find the two closest microvolt points
     while (left < right) {
         mid = ((right-left)/2)+left;
@@ -29,7 +29,7 @@ float read_tc(SPI_HandleTypeDef *SPI_BUS, MAX31855_Pinfo *pinfo) {
     __disable_irq();
     HAL_GPIO_WritePin(pinfo->MAX31855_CS_PORT, pinfo->MAX31855_CS_ADDR,
             GPIO_PIN_RESET);
-    HAL_SPI_TransmitReceive(SPI_BUS, tx, rx, 4, 1);
+    HAL_SPI_Receive(SPI_BUS, rx, 4, 1);
     HAL_GPIO_WritePin(pinfo->MAX31855_CS_PORT, pinfo->MAX31855_CS_ADDR,
             GPIO_PIN_SET);
     __enable_irq();
@@ -43,7 +43,7 @@ float read_tc(SPI_HandleTypeDef *SPI_BUS, MAX31855_Pinfo *pinfo) {
     float totalOutputMicroVolts;
     float refJuncMicroVolts;
     float thermocoupleMicroVolts;
-    float correctedThermocoupleTemp;
+    float correctedThermocoupleTemp = 0.0f;
     uint8_t ocFaultFlag = rx[3]&0b1;
 
     faultFlag = (spiData & 0x00010000) >> 16;
@@ -97,13 +97,9 @@ float read_tc(SPI_HandleTypeDef *SPI_BUS, MAX31855_Pinfo *pinfo) {
         int32_t correctedMicrovoltsHigh;
         int32_t correctedMicrovoltsLow;
         int32_t correctedMicrovoltsSlope;
-        uint16_t closestIdx;
+        int32_t closestIdx;
         // Set the starting points
-        if (thermocoupleMicroVolts < 0) {
-            closestIdx = 1;
-        } else {
-            closestIdx = findClosestTTMV(thermocoupleMicroVolts);
-        } // Find the two closest microvolt points
+        closestIdx = findClosestTTMV(thermocoupleMicroVolts);
         correctedMicrovoltsHigh = (int32_t) MAX31855_TTMV_LUT[closestIdx];
         correctedMicrovoltsLow  = (int32_t) MAX31855_TTMV_LUT[closestIdx-1];
 
