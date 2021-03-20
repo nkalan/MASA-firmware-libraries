@@ -185,16 +185,16 @@ Telem Rate,telem_rate,,,Hz,uint32_t,%i,uint32_t,1,,int,,,y
 ADC Rate,adc_rate,,,Hz,uint32_t,%i,uint32_t,1,,int,,,n
 Flash Memory,flash_mem,,,bytes,uint32_t,%i,uint32_t,1,,int,,,y
 Own Board Addr,own_board_addr,0,0,ul,uint8_t,%i,uint8_t,1,,int,,,y
-sample rate,sample_rate,,,Hz,float,%u,uint32_t,1,,float,,,y
-main cycle time,main_cycle_time,,,ms,float,%u,uint16_t,1,,float,,,y
+sample rate,sample_rate,,,Hz,uint16_t,%u,uint32_t,1,,int,,,n
+main cycle time,main_cycle_time,,,ms,float,%u,uint16_t,1,,float,,,n
 motor cycle time,motor_cycle_time,,,ms,float,%u,uint16_t,1,,float,,,n
-adc cycle time,adc_cycle_time,,,ms,float,%u,uint16_t,1,,float,,,y
-telemetry cycle time,telemetry_cycle_time,,,ms,float,%u,uint32_t,1,,float,,,y
-I bus,ibus,,,amps,float,%i,int16_t,1,,float,,,y
+adc cycle time,adc_cycle_time,,,ms,float,%u,uint16_t,1,,float,,,n
+telemetry cycle time,telemetry_cycle_time,,,ms,float,%u,uint32_t,1,,float,,,n
+I bus,ibus,,,amps,float,%i,int16_t,1,,float,,,n
 last packet number,last_packet_number,,,ul,float,%u,uint16_t,1,,float,,,y
 tbrd,tbrd,,,ul,float,%u,uint16_t,1,,float,,,y
 tvlv,tvlv,,,ul,float,%u,uint16_t,1,,float,,,y
 tmtr,tmtr,,,ul,float,%u,uint16_t,1,,float,,,y
-error code,error_code,,,ul,float,%u,uint8_t,1,,float,,,y
-logging active,logging_active,,,ul,float,%u,uint8_t,1,,float,,,y
-log file,log_file,,,ul,float,%u,uint16_t,1,,float,,,y
+error code,error_code,,,ul,float,%u,uint8_t,1,,int,,,n
+logging active,LOGGING_ACTIVE,,,ul,uint8_t,%u,uint8_t,1,,int,,,y
+telem active,TELEM_ACTIVE,,,ul,uint8_t,%u,uint8_t,1,,int,,,y
