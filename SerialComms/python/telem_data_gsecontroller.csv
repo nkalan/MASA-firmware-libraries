@@ -23,7 +23,7 @@ Pressure 19,pressure[19],-100,3000,psi,float,%.1f,int16_t,1,,float,,[0]*4,y
 Pressure 20,pressure[20],-100,3000,psi,float,%.1f,int16_t,1,,float,,[0]*32,y
 Pressure 21,pressure[21],-100,3000,psi,float,%.1f,int16_t,1,,float,,[0]*32,y
 ebatt,e_batt,-20,20,Volts,float,%.2f,int16_t,100,,float,,0,y
-ibatt,i_batt,-10,150,Amps,float,%.2f,int16_t,100,,float,,0,n
+ibatt,ibus,-10,150,Amps,float,%.2f,int16_t,100,,float,,0,y
 STATE,STATE,0,127,ul,uint8_t,%u,uint8_t,1,,int,,[0]*8,y
 Load 0,load[0],,,kg,float,%.1f,uint16_t,1,,int,,0,y
 Load 1,load[1],,,kg,float,%.1f,uint16_t,1,,float,,0,y
@@ -190,7 +190,6 @@ main cycle time,main_cycle_time,,,ms,float,%u,uint16_t,1,,float,,,n
 motor cycle time,motor_cycle_time,,,ms,float,%u,uint16_t,1,,float,,,n
 adc cycle time,adc_cycle_time,,,ms,float,%u,uint16_t,1,,float,,,n
 telemetry cycle time,telemetry_cycle_time,,,ms,float,%u,uint32_t,1,,float,,,n
-I bus,ibus,,,amps,float,%i,int16_t,1,,float,,,n
 last packet number,last_packet_number,,,ul,float,%u,uint16_t,1,,float,,,y
 tbrd,tbrd,,,ul,float,%u,uint16_t,1,,float,,,y
 tvlv,tvlv,,,ul,float,%u,uint16_t,1,,float,,,y
