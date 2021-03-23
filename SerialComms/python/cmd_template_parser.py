@@ -242,17 +242,17 @@ with open("../../../Src/pack_cmd_defines.c", 'w+') as header_c_test:
     board_supported = functions['supported_target_addr']
     for  name in function_names:
         #fix check for board support 
-        if board_num in str(board_supported[function_name_index]):
+        if str(board_num) in str(board_supported[function_name_index]):
             try:
                 if int(function_names.count()-1) != int(function_name_index):
                     header_c_test.write(name + ",\n")
-                    function_name_index += 1
                 else:
                     header_c_test.write(name + "\n")
-
+        
             except TypeError:
                 #skips over nan values
                 pass
+        function_name_index += 1
     header_c_test.write("};\n\n")
 
     ## Writing Command Remap Array
