@@ -8,6 +8,7 @@
 #include "../../SerialComms/inc/comms.h"
 
 extern int16_t* command_map;
+extern uint16_t command_map_sz;
 
 void init_board(uint8_t board_addr) {
     CLB_receive_header.num_packets = 0;
@@ -136,10 +137,12 @@ uint8_t receive_data(UART_HandleTypeDef* uartx, uint8_t* buffer, uint16_t buffer
 
 	if (CLB_board_addr == CLB_receive_header.target_addr) {
 	    // TODO: handle receiving different packet types besides cmd
-    	int16_t cmd_index = command_map[CLB_receive_header.packet_type];
-        if(command_map[cmd_index] != -1) {
-        	(*cmds_ptr[cmd_index])(CLB_ping_packet+CLB_HEADER_SZ, &cmd_status);
-        }
+		if (CLB_receive_header.packet_type < command_map_sz) {
+			int16_t cmd_index = command_map[CLB_receive_header.packet_type];
+			if(command_map[cmd_index] != -1) {
+				(*cmds_ptr[cmd_index])(CLB_ping_packet+CLB_HEADER_SZ, &cmd_status);
+			}
+		}
 	} else {
 	    // Pass on daisy chained telem over uart channel
 	    transmit_packet(uartx, buffer_sz);

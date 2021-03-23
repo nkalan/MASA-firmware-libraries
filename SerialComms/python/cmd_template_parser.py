@@ -257,13 +257,13 @@ with open("../../../Src/pack_cmd_defines.c", 'w+') as header_c_test:
 
     ## Writing Command Remap Array
     header_c_test.write("int16_t command_map[" + str(function_point + 8) + "] = {")
-    header_c_test.write("uint16_t num_commands = " str(len(command_map)))
     for i in range(0, function_point + 8):
         header_c_test.write(str(command_map[i]))
         if i != function_point + 7:
             header_c_test.write(", ")
 
-    header_c_test.write("};\n\n")
+    header_c_test.write("};\n")
+    header_c_test.write("uint16_t command_map_sz = " + str(len(command_map)) + ";\n\n")
 
     #write user gen code to pointer file
     line_index_pointer = 0
