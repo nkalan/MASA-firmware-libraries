@@ -4,5 +4,6 @@
         "3": "PressurizationController",
         "4": "RecoveryController",
         "0": "GSEController",
-        "5": "BlackBox"   
+        "5": "BlackBox",
+	"7": "Server"   
 }
