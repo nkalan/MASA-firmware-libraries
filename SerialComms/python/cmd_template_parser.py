@@ -177,7 +177,7 @@ with open("../../../Inc/pack_cmd_defines.h", 'w') as header_file:
     header_file.write(autogen_label + "\n\n")
     #defines and includes and stuff for beginning of h file go here
     header_file.write("#ifndef PACK_CMD_DEFINES_H\n#define PACK_CMD_DEFINES_H\n#define NUM_CMD_ITEMS " + 
-                      function_num + "\n#include <stdint.h>\n\n")
+                      function_num + "\n#define COMMAND_MAP_SZ " + str(int(function_num)+8) + "\n#include <stdint.h>\n\n")
 
 
     #for each function name in file, write out a function definition
@@ -256,14 +256,14 @@ with open("../../../Src/pack_cmd_defines.c", 'w+') as header_c_test:
     header_c_test.write("};\n\n")
 
     ## Writing Command Remap Array
-    header_c_test.write("int16_t command_map[" + str(function_point + 8) + "] = {")
+    header_c_test.write("int16_t command_map[COMMAND_MAP_SZ] = {")
     for i in range(0, function_point + 8):
         header_c_test.write(str(command_map[i]))
         if i != function_point + 7:
             header_c_test.write(", ")
 
     header_c_test.write("};\n")
-    header_c_test.write("uint16_t command_map_sz = " + str(len(command_map)) + ";\n\n")
+    # header_c_test.write("uint16_t command_map_sz = " + str(len(command_map)) + ";\n\n")
 
     #write user gen code to pointer file
     line_index_pointer = 0
