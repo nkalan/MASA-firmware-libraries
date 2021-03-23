@@ -7,6 +7,8 @@
 
 #include "../../SerialComms/inc/comms.h"
 
+extern int16_t* command_map;
+
 void init_board(uint8_t board_addr) {
     CLB_receive_header.num_packets = 0;
 	CLB_board_addr = board_addr;
@@ -134,7 +136,7 @@ uint8_t receive_data(UART_HandleTypeDef* uartx, uint8_t* buffer, uint16_t buffer
 
 	if (CLB_board_addr == CLB_receive_header.target_addr) {
 	    // TODO: handle receiving different packet types besides cmd
-        if(*cmds_ptr[CLB_receive_header.packet_type] != -1) {
+        if(command_map[CLB_receive_header.packet_type] != -1) {
 		(*cmds_ptr[command_map[CLB_receive_header.packet_type]])
 		                        (CLB_ping_packet+CLB_HEADER_SZ, &cmd_status);
         }
