@@ -210,3 +210,7 @@ Acceleration Z,acceller[2],-10,10,g,float,%i,int16_t,100,accel.z,float,,,y
 gyrox_avg,avg_x,-2000,2000,deg/s,float,%i,int16_t,10,gyro.x.avg,float,,,y
 gyroy_avg,avg_y,-2000,2000,deg/s,float,%i,int16_t,10,gyro.y.avg,float,,,y
 gyroz_avg,avg_z,-2000,2000,deg/s,float,%i,int16_t,10,gyro.z.avg,float,,,y
+GPS Timestamp,gps_t,0,86400,s,float,%i,uint32_t,10,gps.time,float,,,y
+GPS Lattitude,gps_lat,-90,90,deg,float,%i,int32_t,1,gps.lat,float,,,y
+GPS Longitude,gps_long,-180,180,deg,float,%i,int32_t,1,gps.long,float,,,y
+GPS Altitude,gps_alt,0,40000,ft,float,%i,uint32_t,1,gps.alt,float,,,y
