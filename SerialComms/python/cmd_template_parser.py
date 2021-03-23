@@ -140,6 +140,14 @@ file_name = args.file_name
 board_num = args.board_num
 output_dir= args.output_dir
 
+command_map = []
+
+# Create a remapping array for function calls, first 8 commands ID's are not used at this time
+for i in range(0, 8): 
+    command_map.append(-1)
+
+
+
 try:
     functions = pd.read_csv(file_name)
 except FileNotFoundError:
@@ -175,14 +183,20 @@ with open("../../../Inc/pack_cmd_defines.h", 'w') as header_file:
     #for each function name in file, write out a function definition
     board_supported = functions['supported_target_addr']
     function_point = 0
+    supported_functions = 0
     for name in function_names:
-        if board_num in str(board_supported[function_point]):
+        if str(board_num) in str(board_supported[function_point]):
             try:
                 header_file.write("void " + name + "(uint8_t* data, uint8_t* status);\n\n")
-                function_point += 1
+                command_map.append(supported_functions)
+                supported_functions += 1
             except TypeError:
                 #skips over nan values 
                 pass
+        else:
+            command_map.append(-1)
+
+        function_point += 1
 
     header_file.write("typedef void (*Cmd_Pointer)(uint8_t* x, uint8_t* y);\n\n")
     header_file.write("Cmd_Pointer cmds_ptr[NUM_CMD_ITEMS];\n\n")
@@ -239,6 +253,15 @@ with open("../../../Src/pack_cmd_defines.c", 'w+') as header_c_test:
             except TypeError:
                 #skips over nan values
                 pass
+    header_c_test.write("};\n\n")
+
+    ## Writing Command Remap Array
+    header_c_test.write("int16_t command_map[" + str(function_point + 8) + "] = {")
+    for i in range(0, function_point + 8):
+        header_c_test.write(str(command_map[i]))
+        if i != function_point + 7:
+            header_c_test.write(", ")
+
     header_c_test.write("};\n\n")
 
     #write user gen code to pointer file
