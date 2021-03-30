@@ -1,27 +1,27 @@
 name,firmware_variable,min_val,max_val,unit,firmware_type,printf_format,type_cast,xmit_scale,python_variable_override,python_type,python_globals,python_init,should_generate
 Valve State Feedback,valve_states,,,ul,uint32_t,%u,uint32_t,1,,int,,0,y
-Pressure 0,pressure[0],-100,3000,psi,float,%.1f,int16_t,10,,float,,[0]*22,y
-Pressure 1,pressure[1],-100,3000,psi,float,%.1f,int16_t,10,,float,,0,y
-Pressure 2,pressure[2],-100,3000,psi,float,%.1f,int16_t,10,,float,,[0]*4,y
-Pressure 3,pressure[3],-100,3000,psi,float,%.1f,int16_t,10,,float,,0,y
-Pressure 4,pressure[4],-100,3000,psi,float,%.1f,int16_t,10,,float,,0,y
-Pressure 5,pressure[5],-100,3000,psi,float,%.1f,int16_t,10,,float,,0,y
-Pressure 6,pressure[6],-100,3000,psi,float,%.1f,int16_t,10,,float,,0,n
-Pressure 7,pressure[7],-100,3000,psi,float,%.1f,int16_t,10,,float,,0,n
-Pressure 8,pressure[8],-100,3000,psi,float,%.1f,int16_t,10,,float,,0,n
-Pressure 9,pressure[9],-100,3000,psi,float,%.1f,int16_t,10,,float,,0,n
-Pressure 10,pressure[10],-100,3000,psi,float,%.1f,int16_t,10,,float,,[0]*4,n
-Pressure 11,pressure[11],-100,3000,psi,float,%.1f,int16_t,10,,float,,[0]*4,n
-Pressure 12,pressure[12],-100,3000,psi,float,%.1f,int16_t,10,,float,,[0]*4,n
-Pressure 13,pressure[13],-100,3000,psi,float,%.1f,int16_t,10,,float,,0,n
-Pressure 14,pressure[14],-100,3000,psi,float,%.1f,int16_t,10,,float,,0,n
-Pressure 15,pressure[15],-100,3000,psi,float,%.1f,int16_t,10,,float,,0,n
-Pressure 16,pressure[16],-100,3000,psi,float,%.1f,int16_t,10,,float,,0,n
-Pressure 17,pressure[17],-100,3000,psi,float,%.1f,int16_t,10,,float,,[0]*5,n
-Pressure 18,pressure[18],-100,3000,psi,float,%.1f,int16_t,10,,float,,0,n
-Pressure 19,pressure[19],-100,3000,psi,float,%.1f,int16_t,10,,float,,[0]*4,n
-Pressure 20,pressure[20],-100,3000,psi,float,%.1f,int16_t,10,,float,,[0]*32,n
-Pressure 21,pressure[21],-100,3000,psi,float,%.1f,int16_t,10,,float,,[0]*32,n
+Pressure 0,pressure[0],-100,10000,psi,float,%.1f,int32_t,10,,float,,[0]*22,y
+Pressure 1,pressure[1],-100,10000,psi,float,%.1f,int32_t,10,,float,,0,y
+Pressure 2,pressure[2],-100,10000,psi,float,%.1f,int32_t,10,,float,,[0]*4,y
+Pressure 3,pressure[3],-100,10000,psi,float,%.1f,int32_t,10,,float,,0,y
+Pressure 4,pressure[4],-100,10000,psi,float,%.1f,int32_t,10,,float,,0,y
+Pressure 5,pressure[5],-100,10000,psi,float,%.1f,int32_t,10,,float,,0,y
+Pressure 6,pressure[6],-100,10000,psi,float,%.1f,int32_t,10,,float,,0,n
+Pressure 7,pressure[7],-100,10000,psi,float,%.1f,int32_t,10,,float,,0,n
+Pressure 8,pressure[8],-100,10000,psi,float,%.1f,int32_t,10,,float,,0,n
+Pressure 9,pressure[9],-100,10000,psi,float,%.1f,int32_t,10,,float,,0,n
+Pressure 10,pressure[10],-100,10000,psi,float,%.1f,int32_t,10,,float,,[0]*4,n
+Pressure 11,pressure[11],-100,10000,psi,float,%.1f,int32_t,10,,float,,[0]*4,n
+Pressure 12,pressure[12],-100,10000,psi,float,%.1f,int32_t,10,,float,,[0]*4,n
+Pressure 13,pressure[13],-100,10000,psi,float,%.1f,int32_t,10,,float,,0,n
+Pressure 14,pressure[14],-100,10000,psi,float,%.1f,int32_t,10,,float,,0,n
+Pressure 15,pressure[15],-100,10000,psi,float,%.1f,int32_t,10,,float,,0,n
+Pressure 16,pressure[16],-100,10000,psi,float,%.1f,int32_t,10,,float,,0,n
+Pressure 17,pressure[17],-100,10000,psi,float,%.1f,int32_t,10,,float,,[0]*5,n
+Pressure 18,pressure[18],-100,10000,psi,float,%.1f,int32_t,10,,float,,0,n
+Pressure 19,pressure[19],-100,10000,psi,float,%.1f,int32_t,10,,float,,[0]*4,n
+Pressure 20,pressure[20],-100,10000,psi,float,%.1f,int32_t,10,,float,,[0]*32,n
+Pressure 21,pressure[21],-100,10000,psi,float,%.1f,int32_t,10,,float,,[0]*32,n
 ebatt,e_batt,-20,20,Volts,float,%.2f,int16_t,100,,float,,0,y
 ibatt,i_batt,-10,150,Amps,float,%.2f,int16_t,100,,float,,0,y
 STATE,STATE,0,127,ul,enum States,%u,uint8_t,1,,int,,[0]*8,y
@@ -181,6 +181,7 @@ pot 6,epot[6],,,deg,volatile float,%d,int32_t,10,,float,,,n
 pot 7,epot[7],,,deg,volatile float,%d,int32_t,10,,float,,,n
 tank 0 enable,is_tank_enabled[0],,,ul,volatile uint8_t,%i,uint8_t,1,tnk0.en,int,,,y
 tank 1 enable,is_tank_enabled[1],,,ul,volatile uint8_t,%i,uint8_t,1,tnk1.en,int,,,y
+AutoPress Duration,autopress_duration,,,ms,uint32_t,%i,uint32_t,1,,int,,,y
 Test Duration,test_duration,,,ms,uint32_t,%i,uint32_t,1,,int,,,y
 Micros,micros,,,us,uint64_t,%i,uint64_t,1,,int,micros,,y
 Telem Rate,telem_rate,,,Hz,uint32_t,%i,uint32_t,1,,int,,,y
