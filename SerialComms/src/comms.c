@@ -143,7 +143,7 @@ uint8_t receive_data(UART_HandleTypeDef* uartx, uint8_t* buffer, uint16_t buffer
 		if (CLB_receive_header.packet_type < COMMAND_MAP_SZ) {
 			int16_t cmd_index = command_map[CLB_receive_header.packet_type];
 			if(cmd_index != -1
-			   && validate_command(cmd_index, data_sz) == CLB_receive_nominal) {
+			   && validate_command(CLB_receive_header.packet_type, data_sz) == CLB_receive_nominal) {
 				(*cmds_ptr[cmd_index])(CLB_ping_packet+CLB_HEADER_SZ, &cmd_status);
 			}
 		}
