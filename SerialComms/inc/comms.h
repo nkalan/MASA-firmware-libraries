@@ -58,6 +58,11 @@ enum CLB_send_data_type {
 	CLB_Flash = 1
 };
 
+enum CLB_receive_data_errors {
+    CLB_receive_nominal         = 0,
+    CLB_receive_sz_error        = 1
+};
+
 /* Telemetry Data */
 uint8_t CLB_ping_packet[PING_MAX_PACKET_SIZE];   // unencoded packet (ping)
 uint8_t CLB_pong_packet[PONG_MAX_PACKET_SIZE];   // encoded packet (pong)

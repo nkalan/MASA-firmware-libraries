@@ -7,7 +7,10 @@
 
 #include "../../SerialComms/inc/comms.h"
 
-extern int16_t command_map[COMMAND_MAP_SZ];
+// Prviate function prototypes here
+static inline uint8_t validate_command(int16_t cmd_index, uint16_t data_sz);
+
+// Private function prototypes end
 
 void init_board(uint8_t board_addr) {
     CLB_receive_header.num_packets = 0;
@@ -123,8 +126,9 @@ uint8_t receive_data(UART_HandleTypeDef* uartx, uint8_t* buffer, uint16_t buffer
 		CLB_pong_packet[i] = buffer[i]; // copy items over for uart reception
 	}
 
+	int16_t data_sz = 0;
 	if (CLB_receive_header.num_packets == 0) {
-	    unstuff_packet(CLB_pong_packet, CLB_ping_packet, buffer_sz);
+	    data_sz = unstuff_packet(CLB_pong_packet, CLB_ping_packet, buffer_sz);
 	    unpack_header(&CLB_receive_header, CLB_ping_packet);
 	    uint8_t checksum_status = verify_checksum(CLB_receive_header.checksum);
         if (checksum_status!=0) {
@@ -138,7 +142,8 @@ uint8_t receive_data(UART_HandleTypeDef* uartx, uint8_t* buffer, uint16_t buffer
 	    // TODO: handle receiving different packet types besides cmd
 		if (CLB_receive_header.packet_type < COMMAND_MAP_SZ) {
 			int16_t cmd_index = command_map[CLB_receive_header.packet_type];
-			if(cmd_index != -1) {
+			if(cmd_index != -1
+			   && validate_command(cmd_index, data_sz) == CLB_receive_nominal) {
 				(*cmds_ptr[cmd_index])(CLB_ping_packet+CLB_HEADER_SZ, &cmd_status);
 			}
 		}
@@ -153,19 +158,30 @@ uint8_t receive_data(UART_HandleTypeDef* uartx, uint8_t* buffer, uint16_t buffer
 	return cmd_status;
 }
 
+static inline uint8_t validate_command(int16_t cmd_index, uint16_t data_sz) {
+    if (data_sz == command_sz[cmd_index]) {
+        return CLB_receive_nominal;
+    }
+    return CLB_receive_sz_error;
+}
+
 uint8_t* return_telem_buffer(uint8_t*buffer_sz) {
     *buffer_sz = CLB_buffer_sz;
     return CLB_buffer;
 }
 
 void receive_packet(UART_HandleTypeDef* uartx, uint16_t sz) {
+    __disable_irq();
 	HAL_UART_Receive(uartx, CLB_pong_packet, sz, 1);
+	__enable_irq();
 }
 
 void transmit_packet(UART_HandleTypeDef* uartx, uint16_t sz) {
 	// currently abstracted in case we need more transmisison options
 	// transmit packet via serial TODO: error handling
+    __disable_irq();
 	HAL_UART_Transmit(uartx, CLB_pong_packet, sz, HAL_MAX_DELAY);
+	__enable_irq();
 }
 
 void unpack_header(CLB_Packet_Header* header, uint8_t* header_buffer) {
