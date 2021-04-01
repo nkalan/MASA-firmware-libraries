@@ -196,4 +196,4 @@ tvlv,tvlv,,,ul,float,%u,uint16_t,1,,float,,,y
 tmtr,tmtr,,,ul,float,%u,uint16_t,1,,float,,,y
 error code,error_code,,,ul,float,%u,uint8_t,1,,int,,,n
 logging active,LOGGING_ACTIVE,,,ul,uint8_t,%u,uint8_t,1,,int,,,y
-telem active,TELEM_ACTIVE,,,ul,uint8_t,%u,uint8_t,1,,int,,,y
+telem active,TELEM_INACTIVE,,,ul,uint8_t,%u,uint8_t,1,,int,,,y
