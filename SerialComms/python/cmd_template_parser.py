@@ -18,6 +18,8 @@ import argparse
 import sys
 import time
 
+clb_packet_header_sz = 12
+
 telem_c_user_begin_tag = "// USER CODE BEGIN - MODIFICATIONS OUTSIDE THIS SECTION WILL BE DELETED"
 telem_c_user_end_tag = "// USER CODE END - MODIFICATIONS OUTSIDE THIS SECTION WILL BE DELETED"
 
@@ -124,6 +126,22 @@ def function_writer(row_number, function_contents):
         c_file.write("\n")
     c_file.write("\t" + telem_c_user_end_tag + "\n\n}\n\n")
 
+def computeExpectedFunctionSize(functions, function_point):
+    num_args    = int(functions["nums args"][function_point])
+    function_sz = clb_packet_header_sz
+    for i in range(num_args):
+        arg_col = "arg_type" + str(i)
+        arg_type = functions[arg_col][function_point]
+        if arg_type == "uint32_t" or arg_type == "int32_t" or arg_type == "float":
+            function_sz += 4
+        elif arg_type == "uint8_t" or arg_type == "int8_t":
+            function_sz += 1
+        elif arg_type == "uint16_t" or arg_type == "int16_t":
+            function_sz += 2
+        elif arg_type == "double":
+            function_sz += 8
+
+    return function_sz
 
 
 #argument parsing
@@ -141,10 +159,13 @@ board_num = args.board_num
 output_dir= args.output_dir
 
 command_map = []
+command_sz = []
 
 # Create a remapping array for function calls, first 8 commands ID's are not used at this time
 for i in range(0, 8): 
     command_map.append(-1)
+    command_sz.append(-1)
+
 
 
 
@@ -184,21 +205,27 @@ with open("../../../Inc/pack_cmd_defines.h", 'w') as header_file:
     board_supported = functions['supported_target_addr']
     function_point = 0
     supported_functions = 0
+    function_expected_sz = 0 # default expected size of function to just header
     for name in function_names:
         if str(board_num) in str(board_supported[function_point]):
             try:
                 header_file.write("void " + name + "(uint8_t* data, uint8_t* status);\n\n")
                 command_map.append(supported_functions)
+                function_expected_sz = computeExpectedFunctionSize(functions, function_point)
+                command_sz.append(function_expected_sz)
                 supported_functions += 1
             except TypeError:
                 #skips over nan values 
                 pass
         else:
             command_map.append(-1)
+            command_sz.append(-1)
 
         function_point += 1
 
     header_file.write("typedef void (*Cmd_Pointer)(uint8_t* x, uint8_t* y);\n\n")
+    header_file.write("int16_t command_map[COMMAND_MAP_SZ];\n\n")
+    header_file.write("int16_t command_sz[COMMAND_MAP_SZ];\n\n")
     header_file.write("Cmd_Pointer cmds_ptr[NUM_CMD_ITEMS];\n\n")
     header_file.write("// Note: to call a function do\n/**\n* (*cmds_ptr[0])(array ptr here)\n"
                       "*\n* The actual cmd functions will be defined in a separate c file by the firwmare\n"
@@ -264,6 +291,15 @@ with open("../../../Src/pack_cmd_defines.c", 'w+') as header_c_test:
 
     header_c_test.write("};\n")
     # header_c_test.write("uint16_t command_map_sz = " + str(len(command_map)) + ";\n\n")
+
+    ## Writing Command Size Check Array
+    header_c_test.write("int16_t command_sz[COMMAND_MAP_SZ] = {")
+    for i in range(0, function_point + 8):
+        header_c_test.write(str(command_sz[i]))
+        if i != function_point + 7:
+            header_c_test.write(", ")
+
+    header_c_test.write("};\n")
 
     #write user gen code to pointer file
     line_index_pointer = 0
