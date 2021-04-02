@@ -12,6 +12,8 @@ static inline uint8_t validate_command(int16_t cmd_index, uint16_t data_sz);
 
 // Private function prototypes end
 
+extern UART_HandleTypeDef huart6;
+
 void init_board(uint8_t board_addr) {
     CLB_receive_header.num_packets = 0;
 	CLB_board_addr = board_addr;
@@ -130,6 +132,11 @@ uint8_t receive_data(UART_HandleTypeDef* uartx, uint8_t* buffer, uint16_t buffer
 	if (CLB_receive_header.num_packets == 0) {
 	    data_sz = unstuff_packet(CLB_pong_packet, CLB_ping_packet, buffer_sz);
 	    unpack_header(&CLB_receive_header, CLB_ping_packet);
+	    // TODO: fix this later numpackets is randomly a large number
+	    // FIX LATER USING CRC CHECK
+	    if (CLB_receive_header.num_packets > 1) {
+	    	CLB_receive_header.num_packets = 1;
+	    }
 	    uint8_t checksum_status = verify_checksum(CLB_receive_header.checksum);
         if (checksum_status!=0) {
             return 1; // drop transmission if checksum is bad
@@ -137,6 +144,10 @@ uint8_t receive_data(UART_HandleTypeDef* uartx, uint8_t* buffer, uint16_t buffer
 	} // only unstuff packet if expecting data from new board
 
 	uint8_t cmd_status = 0;
+
+	if (uartx == &huart6) {  // received from server
+		asm("nop");
+	}
 
 	if (CLB_board_addr == CLB_receive_header.target_addr) {
 	    // TODO: handle receiving different packet types besides cmd
