@@ -171,17 +171,17 @@ uint8_t* return_telem_buffer(uint8_t*buffer_sz) {
 }
 
 void receive_packet(UART_HandleTypeDef* uartx, uint16_t sz) {
-    __disable_irq();
-	HAL_UART_Receive(uartx, CLB_pong_packet, sz, 1);
-	__enable_irq();
+//    __disable_irq();
+	HAL_UART_Receive(uartx, CLB_pong_packet, sz, HAL_MAX_DELAY);
+//	__enable_irq();
 }
 
 void transmit_packet(UART_HandleTypeDef* uartx, uint16_t sz) {
 	// currently abstracted in case we need more transmisison options
 	// transmit packet via serial TODO: error handling
-    __disable_irq();
-	HAL_UART_Transmit(uartx, CLB_pong_packet, sz, 1);
-	__enable_irq();
+//    __disable_irq();
+	HAL_UART_Transmit(uartx, CLB_pong_packet, sz, HAL_MAX_DELAY);
+//	__enable_irq();
 }
 
 void unpack_header(CLB_Packet_Header* header, uint8_t* header_buffer) {
