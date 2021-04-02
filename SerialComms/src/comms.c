@@ -180,7 +180,7 @@ void transmit_packet(UART_HandleTypeDef* uartx, uint16_t sz) {
 	// currently abstracted in case we need more transmisison options
 	// transmit packet via serial TODO: error handling
     __disable_irq();
-	HAL_UART_Transmit(uartx, CLB_pong_packet, sz, HAL_MAX_DELAY);
+	HAL_UART_Transmit(uartx, CLB_pong_packet, sz, 1);
 	__enable_irq();
 }
 
