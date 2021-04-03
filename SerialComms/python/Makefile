@@ -79,7 +79,7 @@ gse:
 		-n ${GSE_BOARD_NUM} \
 		-o ${TELEM_C_FILE_DIRECTORY}
 
-cal:
-	${PYTHON} ./pt_calibration_generator.py \
-		${PT_CAL_CSV_FILE}	\
-		${PT_CAL_H_FILE} ${PT_CAL_C_FILE}
+#cal:
+#	${PYTHON} ./pt_calibration_generator.py \
+#		${PT_CAL_CSV_FILE}	\
+#		${PT_CAL_H_FILE} ${PT_CAL_C_FILE}
