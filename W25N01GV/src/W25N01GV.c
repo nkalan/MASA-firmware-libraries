@@ -1129,6 +1129,7 @@ uint16_t erase_flash(W25N01GV_Flash *flash) {
 	// Reset the address pointer after erasing
 	flash->current_page = 0;
 	flash->next_free_column = 0;
+	flash->write_buffer_size = 0;
 
 	return erase_failures;
 }
