@@ -179,9 +179,9 @@ void receive_packet(UART_HandleTypeDef* uartx, uint16_t sz) {
 void transmit_packet(UART_HandleTypeDef* uartx, uint16_t sz) {
 	// currently abstracted in case we need more transmisison options
 	// transmit packet via serial TODO: error handling
-    __disable_irq();
+    //__disable_irq();
 	HAL_UART_Transmit(uartx, CLB_pong_packet, sz, HAL_MAX_DELAY);
-	__enable_irq();
+	//__enable_irq();
 }
 
 void unpack_header(CLB_Packet_Header* header, uint8_t* header_buffer) {
