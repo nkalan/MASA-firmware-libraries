@@ -17,9 +17,9 @@ PRESS_TELEM_CSV_FILE = ./telem_data_pressboard.csv
 FLIGHT_TELEM_CSV_FILE= ./telem_data_flightcomp.csv
 
 # Calibration Files
-PT_CAL_CSV_FILE	= ./pt_calibration.csv
-PT_CAL_H_FILE	= ../../../Inc/pt_calibrations.h 
-PT_CAL_C_FILE	= ../../../Src/pt_calibrations.c
+CAL_CSV_FILE	= ./calibrations.csv
+CAL_H_FILE	= ../../../Inc/calibrations.h 
+CAL_C_FILE	= ../../../Src/calibrations.c
 
 # Telem Command CSV Files
 TELEM_CMD_FILE	= ./telem_cmd_template.csv
@@ -79,7 +79,12 @@ gse:
 		-n ${GSE_BOARD_NUM} \
 		-o ${TELEM_C_FILE_DIRECTORY}
 
-#cal:
-#	${PYTHON} ./pt_calibration_generator.py \
-#		${PT_CAL_CSV_FILE}	\
-#		${PT_CAL_H_FILE} ${PT_CAL_C_FILE}
+gsecal:
+	${PYTHON} ./calibration_generator.py	\
+		${CAL_CSV_FILE}	\
+		${GSE_BOARD_NUM}
+		
+presscal:
+	${PYTHON} ./calibration_generator.py	\
+		${CAL_CSV_FILE}	\
+		${PRESS_BOARD_NUM}
