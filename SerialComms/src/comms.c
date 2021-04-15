@@ -79,7 +79,7 @@ uint8_t send_data(CLB_send_data_info* info, uint8_t type) {
 					send_termination_bit = 1;
 				}
 			}
-			transmit_packet(info->uartx, stuffed_packet_sz);
+			transmit_packet(info->uartx, stuffed_packet_sz, info);
 		} else if (type == CLB_Flash) {
 			stuffed_packet_sz = stuff_packet(CLB_ping_packet,
 										info->flash_arr+flash_pos, ping_pos);
@@ -106,7 +106,7 @@ uint8_t send_data(CLB_send_data_info* info, uint8_t type) {
 
 	if (send_termination_bit) {
 	    CLB_pong_packet[0] = 0;
-	    transmit_packet(info->uartx, 1);
+	    transmit_packet(info->uartx, 1, info);
 	}
 
 	return status; // TODO: return better error handling
@@ -165,17 +165,61 @@ uint8_t* return_telem_buffer(uint8_t*buffer_sz) {
 }
 
 void receive_packet(UART_HandleTypeDef* uartx, uint16_t sz) {
-//    __disable_irq();
 	HAL_UART_Receive(uartx, CLB_pong_packet, sz, HAL_MAX_DELAY);
-//	__enable_irq();
 }
 
-void transmit_packet(UART_HandleTypeDef* uartx, uint16_t sz) {
+void transmit_packet(UART_HandleTypeDef* uartx, uint16_t sz, CLB_send_data_info* info) {
 	// currently abstracted in case we need more transmisison options
 	// transmit packet via serial TODO: error handling
-//    __disable_irq();
-	HAL_UART_Transmit(uartx, CLB_pong_packet, sz, HAL_MAX_DELAY);
-//	__enable_irq();
+    if (!info->use_dma) {
+        HAL_UART_Transmit(uartx, CLB_pong_packet, sz, HAL_MAX_DELAY);
+    } else {
+        queue_transmit_packet(uartx, CLB_pong_packet, sz, info->queue);
+    }
+}
+
+void queue_transmit_packet(UART_HandleTypeDef* uartx, uint8_t* src, uint16_t sz,
+                           TelemQueue* queue) {
+    // Update shared telem queue
+    // Dont directly transmit yourself unless queue is empty
+    int16_t next_packet_len_pos = (queue->next_packet_len_pos +
+                                   queue->num_packets_left) %
+                                   CLB_TELEM_QUEUE_MAX_PACKETS;
+    int16_t next_packet_pos     = (queue->next_packets_pos +
+                                   queue->num_bytes_to_send) %
+                                   CLB_TELEM_QUEUE_BUFFER_SZ;
+
+    // Do this anyways for both cases
+    copy_into_circular_queue(src, queue->packets+next_packet_pos,
+                             queue->next_packets_pos, sz,
+                             CLB_TELEM_QUEUE_BUFFER_SZ);
+    queue->num_bytes_to_send += sz;
+    queue->num_packets_left++;
+
+    if (!queue->is_dma_busy) {
+
+        queue->is_dma_busy = 1;
+        queue->next_packets_pos = (queue->next_packets_pos + sz)
+                                         % CLB_TELEM_QUEUE_BUFFER_SZ;
+        queue->num_bytes_to_send -= sz;
+        HAL_UART_Transmit_DMA(uartx, queue->packets+next_packet_pos, sz);
+    } else {
+        queue->packet_len[next_packet_len_pos]  = sz;
+    }
+}
+
+void copy_into_circular_queue(uint8_t* src, uint8_t* dst, uint16_t dst_start,
+                                int16_t len, int16_t dst_sz) {
+    int16_t bytes_in_first_part = len;
+    int16_t bytes_in_second_part = 0;
+    if (dst_start+len >= dst_sz) {
+        bytes_in_first_part = dst_sz - dst_start;
+        bytes_in_second_part= len - bytes_in_first_part;
+    }
+    memcpy(dst, src,
+           bytes_in_first_part);
+    memcpy(dst+bytes_in_first_part,
+            src, bytes_in_second_part);
 }
 
 void unpack_header(CLB_Packet_Header* header, uint8_t* header_buffer) {
