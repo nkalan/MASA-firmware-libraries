@@ -194,7 +194,8 @@ void queue_transmit_packet(UART_HandleTypeDef* uartx, uint8_t* src, uint16_t sz,
                              queue->next_packets_pos, sz,
                              CLB_TELEM_QUEUE_BUFFER_SZ);
     queue->num_bytes_to_send += sz;
-    queue->num_packets_left++;
+    queue->num_packets_left = queue->num_packets_left + 1;
+    queue->packet_len[next_packet_len_pos]  = sz;
 
     if (!queue->is_dma_busy) {
 
@@ -203,8 +204,6 @@ void queue_transmit_packet(UART_HandleTypeDef* uartx, uint8_t* src, uint16_t sz,
                                          % CLB_TELEM_QUEUE_BUFFER_SZ;
         queue->num_bytes_to_send -= sz;
         HAL_UART_Transmit_DMA(uartx, queue->packets+next_packet_pos, sz);
-    } else {
-        queue->packet_len[next_packet_len_pos]  = sz;
     }
 }
 
@@ -278,6 +277,7 @@ uint16_t stuff_packet(const uint8_t *unstuffed, uint8_t *stuffed, uint16_t lengt
 
 	//Start just keeps track of the start point
 	uint8_t *start = stuffed;
+
 	if (CLB_header->do_cobbs) {
 		//Code represents the number of positions till the next 0 and code_ptr
         //holds the position of the last zero to be updated when the next 0 is found
