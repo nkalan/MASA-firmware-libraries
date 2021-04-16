@@ -63,18 +63,18 @@ def main():
     cal_c_str = autogen_tag + "#include \"calibrations.h\"\n\n"
 
     for device in cal_dict.keys():
-        cal_h_str += "#define NUM_" + device.upper() + "S\t\t" + str(len(cal_dict[device]['Slope'])) + "\n"
+        cal_h_str += "#define NUM_" + device.upper() + "_CALS\t\t" + str(len(cal_dict[device]['Slope'])) + "\n"
     cal_h_str += "\n"
 
     for device in cal_dict.keys():
         for cal_type, cals in cal_dict[device].items():
             # Declare cal array
             cal_h_str += "extern " + cal_vartype_dict[device] + " " + device + "_" + cal_type.lower() + "[" \
-                + "NUM_" + device.upper() + "S];\n\n"
+                + "NUM_" + device.upper() + "_CALS];\n\n"
 
             # Fill cal arrays
             cal_c_str += cal_vartype_dict[device] + " " + device + "_" + cal_type.lower() + "[" \
-                + "NUM_" + device.upper() + "S] = {\n"
+                + "NUM_" + device.upper() + "_CALS] = {\n"
             for index, cal in enumerate(cals):
                 cal_c_str += "\t" + str(cal)
                 if (index < len(cals)-1):  # No comma on last entry
