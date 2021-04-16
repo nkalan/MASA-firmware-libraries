@@ -1,0 +1,27 @@
+variable,type,xmit_scale,board
+pt_ambients[0],float,10,0 1
+pt_ambients[1],float,10,0 1
+pt_ambients[2],float,10,0 1
+pt_ambients[3],float,10,0 1
+pt_ambients[4],float,10,0 1
+pt_ambients[5],float,10,0 1
+pt_ambients[6],float,10,0 1
+pt_ambients[7],float,10,0 1
+pt_ambients[8],float,10,0
+pt_ambients[9],float,10,0
+pt_ambients[10],float,10,0
+pt_ambients[11],float,10,0
+pt_ambients[12],float,10,0
+pt_ambients[13],float,10,0
+pt_ambients[14],float,10,0
+pt_ambients[15],float,10,0
+pt_ambients[16],float,10,0
+pt_ambients[17],float,10,0
+pt_ambients[18],float,10,0
+pt_ambients[19],float,10,0
+pt_ambients[20],float,10,0
+lc_ambients[0],float,10,0 1 3
+lc_ambients[1],float,10,0 1 3
+lc_ambients[2],float,10,0 3
+lc_ambients[3],float,10,0
+lc_ambients[4],float,10,0
