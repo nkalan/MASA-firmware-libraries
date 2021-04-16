@@ -58,9 +58,11 @@ enum CLB_send_data_type {
 	CLB_Flash = 1
 };
 
-enum CLB_receive_data_errors {
-    CLB_receive_nominal         = 0,
-    CLB_receive_sz_error        = 1
+enum CLB_receive_data_status {
+    CLB_RECEIVE_NOMINAL         = 0,
+    CLB_RECEIVE_SZ_ERROR        = 1,
+    CLB_RECEIVE_DAISY_TELEM     = 2,
+    CLB_RECEIVE_CHECKSUM_ERROR  = 3
 };
 
 /* Telemetry Data */
