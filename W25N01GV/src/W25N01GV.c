@@ -838,9 +838,11 @@ static void find_write_ptr(W25N01GV_Flash *flash) {
 
 		// Debug code
 		// TODO: delete in final release
+		/*
 		if (page_empty) {
 			asm("nop");  // if you get here, I fucked up
 		}
+		*/
 	}
 
 	// flash->next_free_column should only ever be at the beginning of one of the sectors on a page.
@@ -935,17 +937,21 @@ static uint16_t write_to_flash_contiguous(W25N01GV_Flash *flash, uint8_t *data, 
 
 	// Debug code
 	// TODO: delete in final release
+	/*
 	if (!(flash->next_free_column == 0 || flash->next_free_column == 512
 			|| flash->next_free_column == 1024 || flash->next_free_column == 1536
 			|| flash->next_free_column == 2048)) {
 		asm("nop");
 	}
+	*/
 
 	// Debug code
 	// TODO: delete in final release
+	/*
 	if (num_bytes % 512 != 0) {
 		asm("nop");
 	}
+	*/
 
 	uint32_t write_counter = 0;  // Track how many bytes have been written so far
 	uint16_t write_failures = 0;  // Track write errors
@@ -987,11 +993,13 @@ static uint16_t write_to_flash_contiguous(W25N01GV_Flash *flash, uint8_t *data, 
 
 	// Debug code
 	// TODO: delete in final release
+	/*
 	if (!(flash->next_free_column == 0 || flash->next_free_column == 512
 			|| flash->next_free_column == 1024 || flash->next_free_column == 1536
 			|| flash->next_free_column == 2048)) {
 		asm("nop");
 	}
+	*/
 
 	return write_failures;
 }
