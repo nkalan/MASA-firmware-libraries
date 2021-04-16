@@ -88,3 +88,8 @@ presscal:
 	${PYTHON} ./calibration_generator.py	\
 		${CAL_CSV_FILE}	\
 		${PRESS_BOARD_NUM}
+
+constants:
+	${PYTHON} ./flash_constants_autogen.py	\
+		flash_constants.csv \
+		0
