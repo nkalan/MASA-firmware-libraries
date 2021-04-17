@@ -126,15 +126,12 @@ uint8_t receive_data(UART_HandleTypeDef* uartx, uint8_t* buffer, uint16_t buffer
 		CLB_pong_packet[i] = buffer[i]; // copy items over for uart reception
 	}
 
-	int16_t data_sz = 0;
-	if (CLB_receive_header.num_packets == 0) {
-	    data_sz = unstuff_packet(CLB_pong_packet, CLB_ping_packet, buffer_sz);
-	    unpack_header(&CLB_receive_header, CLB_ping_packet);
-	    uint8_t checksum_status = verify_checksum(CLB_receive_header.checksum);
-        if (checksum_status!=0) {
-            return 1; // drop transmission if checksum is bad
-        }
-	} // only unstuff packet if expecting data from new board
+	int16_t data_sz = unstuff_packet(CLB_pong_packet, CLB_ping_packet, buffer_sz);
+    unpack_header(&CLB_receive_header, CLB_ping_packet);
+    uint8_t checksum_status = verify_checksum(CLB_receive_header.checksum);
+    if (checksum_status!=0) {
+        return CLB_RECEIVE_CHECKSUM_ERROR; // drop transmission if checksum is bad
+    }
 
 	uint8_t cmd_status = 0;
 
@@ -143,26 +140,23 @@ uint8_t receive_data(UART_HandleTypeDef* uartx, uint8_t* buffer, uint16_t buffer
 		if (CLB_receive_header.packet_type < COMMAND_MAP_SZ) {
 			int16_t cmd_index = command_map[CLB_receive_header.packet_type];
 			if(cmd_index != -1
-			   && validate_command(CLB_receive_header.packet_type, data_sz) == CLB_receive_nominal) {
+			   && validate_command(CLB_receive_header.packet_type, data_sz) == CLB_RECEIVE_NOMINAL) {
 				(*cmds_ptr[cmd_index])(CLB_ping_packet+CLB_HEADER_SZ, &cmd_status);
 			}
 		}
 	} else {
 	    // Pass on daisy chained telem over uart channel
-	    transmit_packet(uartx, buffer_sz);
+	    cmd_status = CLB_RECEIVE_DAISY_TELEM;
 	}
-	// Decrement number packets left to handle
-	CLB_receive_header.num_packets--;
 
-	// TODO: more error handling depending on cmd status
 	return cmd_status;
 }
 
 static inline uint8_t validate_command(int16_t cmd_index, uint16_t data_sz) {
     if (data_sz == command_sz[cmd_index]) {
-        return CLB_receive_nominal;
+        return CLB_RECEIVE_NOMINAL;
     }
-    return CLB_receive_sz_error;
+    return CLB_RECEIVE_SZ_ERROR;
 }
 
 uint8_t* return_telem_buffer(uint8_t*buffer_sz) {
@@ -179,9 +173,9 @@ void receive_packet(UART_HandleTypeDef* uartx, uint16_t sz) {
 void transmit_packet(UART_HandleTypeDef* uartx, uint16_t sz) {
 	// currently abstracted in case we need more transmisison options
 	// transmit packet via serial TODO: error handling
-    //__disable_irq();
+//    __disable_irq();
 	HAL_UART_Transmit(uartx, CLB_pong_packet, sz, HAL_MAX_DELAY);
-	//__enable_irq();
+//	__enable_irq();
 }
 
 void unpack_header(CLB_Packet_Header* header, uint8_t* header_buffer) {
