@@ -153,12 +153,12 @@ mtr 2 vel,mtr_vel[2],,,step/s,int16_t,%d,int16_t,1,mtr2.vel,int,,,n
 mtr 3 vel,mtr_vel[3],,,step/s,int16_t,%d,int16_t,1,mtr3.vel,int,,,n
 mtr 0 setpoint,mtr_set[0],,,deg,float,%d,int32_t,100,mtr0.set,float,,,y
 mtr 1 setpoint,mtr_set[1],,,deg,float,%d,int32_t,100,mtr1.set,float,,,y
-mtr 0 Ki,mtr_ki[0],,,ul,float,%d,uint16_t,10,mtr0.i,float,,,y
-mtr 1 Ki,mtr_ki[1],,,ul,float,%d,uint16_t,10,mtr1.i,float,,,y
-mtr 0 Kd,mtr_kd[0],,,ul,float,%d,uint16_t,10,mtr0.d,float,,,y
-mtr 1 Kd,mtr_kd[1],,,ul,float,%d,uint16_t,10,mtr1.d,float,,,y
-mtr 0 Kp,mtr_kp[0],,,ul,float,%d,uint16_t,10,mtr0.p,float,,,y
-mtr 1 Kp,mtr_kp[1],,,ul,float,%d,uint16_t,10,mtr1.p,float,,,y
+mtr 0 Ki,mtr_ki[0],,,ul,float,%d,uint16_t,100,mtr0.i,float,,,y
+mtr 1 Ki,mtr_ki[1],,,ul,float,%d,uint16_t,100,mtr1.i,float,,,y
+mtr 0 Kd,mtr_kd[0],,,ul,float,%d,uint16_t,100,mtr0.d,float,,,y
+mtr 1 Kd,mtr_kd[1],,,ul,float,%d,uint16_t,100,mtr1.d,float,,,y
+mtr 0 Kp,mtr_kp[0],,,ul,float,%d,uint16_t,100,mtr0.p,float,,,y
+mtr 1 Kp,mtr_kp[1],,,ul,float,%d,uint16_t,100,mtr1.p,float,,,y
 mtr 0 Kp error,mtr_kp_err[0],,,ul,float,%d,int16_t,10,mtr0.kp_err,float,,,y
 mtr 1 Kp error,mtr_kp_err[1],,,ul,float,%d,int16_t,10,mtr1.kp_err,float,,,y
 mtr 0 Ki error,mtr_ki_err[0],,,ul,float,%d,int16_t,10,mtr0.ki_err,float,,,y
