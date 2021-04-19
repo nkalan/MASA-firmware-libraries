@@ -174,36 +174,27 @@ void transmit_packet(UART_HandleTypeDef* uartx, uint16_t sz, CLB_send_data_info*
     if (!info->use_dma) {
         HAL_UART_Transmit(uartx, CLB_pong_packet, sz, HAL_MAX_DELAY);
     } else {
-        queue_transmit_packet(uartx, CLB_pong_packet, sz, info->queue);
+        queue_transmit_packet(uartx, CLB_pong_packet, sz, info->queue_info);
     }
 }
 
-void queue_transmit_packet(UART_HandleTypeDef* uartx, uint8_t* src, uint16_t sz,
-                           TelemQueue* queue) {
-    // Update shared telem queue
-    // Dont directly transmit yourself unless queue is empty
-    int16_t next_packet_len_pos = (queue->next_packet_len_pos +
-                                   queue->num_packets_left) %
-                                   CLB_TELEM_QUEUE_MAX_PACKETS;
-    int16_t next_packet_pos     = (queue->next_packets_pos +
-                                   queue->num_bytes_to_send) %
-                                   CLB_TELEM_QUEUE_BUFFER_SZ;
+void queue_transmit_packet( UART_HandleTypeDef* uartx, uint8_t* src, uint16_t sz,
+                            CLB_TelemQueue* q_info) {
+    // Allocate space for telem packet
+    CLB_TelemPacket p;
+    memcpy(p.buffer, src, sz);
+    p.buffer_len = sz;
+    p.port = uartx;
 
-    // Do this anyways for both cases
-    copy_into_circular_queue(src, queue->packets+next_packet_pos,
-                             queue->next_packets_pos, sz,
-                             CLB_TELEM_QUEUE_BUFFER_SZ);
-    queue->num_bytes_to_send += sz;
-    queue->num_packets_left = queue->num_packets_left + 1;
-    queue->packet_len[next_packet_len_pos]  = sz;
+    // Push packet to back of queue
+    q_info->queue[q_info->next_free_pos] = &p;
+    q_info->next_free_pos = (q_info->next_free_pos+1)
+                            % CLB_TELEM_QUEUE_MAX_PACKETS;
 
-    if (!queue->is_dma_busy) {
-
-        queue->is_dma_busy = 1;
-        queue->next_packets_pos = (queue->next_packets_pos + sz)
-                                         % CLB_TELEM_QUEUE_BUFFER_SZ;
-        queue->num_bytes_to_send -= sz;
-        HAL_UART_Transmit_DMA(uartx, queue->packets+next_packet_pos, sz);
+    // Send packet immediately if dma is not busy
+    if (!q_info->is_dma_busy) {
+        q_info->is_dma_busy = 1;
+        HAL_UART_Transmit_DMA(p.port, p.buffer, p.buffer_len);
     }
 }
 
