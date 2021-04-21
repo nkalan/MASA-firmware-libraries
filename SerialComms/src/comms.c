@@ -79,7 +79,7 @@ uint8_t send_data(CLB_send_data_info* info, uint8_t type) {
 					send_termination_bit = 1;
 				}
 			}
-			transmit_packet(info->uartx, NULL, stuffed_packet_sz, info);
+			transmit_packet(info->uartx, stuffed_packet_sz, info);
 		} else if (type == CLB_Flash) {
 			stuffed_packet_sz = stuff_packet(CLB_ping_packet,
 										info->flash_arr+flash_pos, ping_pos);
@@ -106,7 +106,7 @@ uint8_t send_data(CLB_send_data_info* info, uint8_t type) {
 
 	if (send_termination_bit) {
 	    CLB_pong_packet[0] = 0;
-	    transmit_packet(info->uartx, NULL, 1, info);
+	    transmit_packet(info->uartx, 1, info);
 	}
 
 	return status; // TODO: return better error handling
@@ -168,17 +168,17 @@ void receive_packet(UART_HandleTypeDef* uartx, uint16_t sz) {
 	HAL_UART_Receive(uartx, CLB_pong_packet, sz, HAL_MAX_DELAY);
 }
 
-void transmit_packet(UART_HandleTypeDef* uartx, DMA_HandleTypeDef* dma, uint16_t sz, CLB_send_data_info* info) {
+void transmit_packet(UART_HandleTypeDef* uartx,  uint16_t sz, CLB_send_data_info* info) {
 	// currently abstracted in case we need more transmisison options
 	// transmit packet via serial TODO: error handling
     if (!info->use_dma) {
         HAL_UART_Transmit(uartx, CLB_pong_packet, sz, HAL_MAX_DELAY);
     } else {
-        queue_transmit_packet(dma, CLB_pong_packet, sz, info->queue_info);
+        queue_transmit_packet(uartx, CLB_pong_packet, sz, info->queue_info);
     }
 }
 
-void queue_transmit_packet( DMA_HandleTypeDef* dma, uint8_t* src, uint16_t sz,
+void queue_transmit_packet( DMA_HandleTypeDef* uartx, uint8_t* src, uint16_t sz,
                             CLB_TelemQueue* q_info) {
     // Allocate space for telem packet
     CLB_TelemPacket p;
@@ -187,7 +187,7 @@ void queue_transmit_packet( DMA_HandleTypeDef* dma, uint8_t* src, uint16_t sz,
     }
     memcpy(p.buffer, src, sz);
     p.buffer_len = sz;
-    p.port = dma;
+    p.port = ;
 
     if (q_info->num_packets_left < CLB_TELEM_QUEUE_MAX_PACKETS) {
     	// Push packet to back of queue if there's space
