@@ -1135,15 +1135,14 @@ uint16_t erase_flash(W25N01GV_Flash *flash) {
 	lock_flash(flash);
 
 	// Reset the address pointer after erasing
-	flash->current_page = 0;
-	flash->next_free_column = 0;
+	find_write_ptr(flash);  // Don't manually set addr pointers to ensure it actually erases
 	flash->write_buffer_size = 0;
 
 	return erase_failures;
 }
 
 uint32_t get_bytes_remaining(W25N01GV_Flash *flash) {
-	return (W25N01GV_NUM_BLOCKS * W25N01GV_PAGES_PER_BLOCK * W25N01GV_BYTES_PER_PAGE)
+	return ((W25N01GV_NUM_BLOCKS-1) * W25N01GV_PAGES_PER_BLOCK * W25N01GV_BYTES_PER_PAGE)
 			- (flash->current_page * W25N01GV_BYTES_PER_PAGE + flash->next_free_column)
 			- flash->write_buffer_size;
 
