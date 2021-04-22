@@ -27,7 +27,7 @@
 #define PING_MAX_PACKET_SIZE        253
 #define PONG_MAX_PACKET_SIZE        255
 #define CLB_HEADER_SZ               12       // packet header struct size (bytes)
-#define CLB_TELEM_QUEUE_MAX_PACKETS       10       // number of allowed queued bytes
+#define CLB_TELEM_QUEUE_MAX_PACKETS 20       // number of packets allowed in allowed queue
 
 /* Public Function Prototypes */
 
