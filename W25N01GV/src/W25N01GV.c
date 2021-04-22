@@ -1195,11 +1195,7 @@ void add_test_delimiter(W25N01GV_Flash *flash) {
 	// This is kind of dumb but it works
 	uint8_t delimiter_arr[W25N01GV_BYTES_PER_PAGE] = { 0 };
 
-	// Fill the current page
-	uint16_t cur_page_bytes_left = W25N01GV_BYTES_PER_PAGE - flash->next_free_column;
-	write_to_flash(flash, delimiter_arr, cur_page_bytes_left);
-
-	// Fill another page just for good measure
+	// Fill an entire page worth of bytes with 0's
 	write_to_flash(flash, delimiter_arr, W25N01GV_BYTES_PER_PAGE);
 }
 
