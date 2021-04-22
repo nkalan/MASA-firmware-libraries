@@ -27,22 +27,23 @@
 #define PING_MAX_PACKET_SIZE        253
 #define PONG_MAX_PACKET_SIZE        255
 #define CLB_HEADER_SZ               12       // packet header struct size (bytes)
-#define CLB_TELEM_QUEUE_MAX_PACKETS 20       // number of packets allowed in allowed queue
+#define CLB_TELEM_QUEUE_MAX_PACKETS       20       // number of allowed queued bytes
 
 /* Public Function Prototypes */
 
 // Telemetry Queue for DMA
 typedef struct CLB_TelemPacket {
-    uint8_t buffer[PONG_MAX_PACKET_SIZE];
+    uint8_t buffer[300];
     int16_t buffer_len;
-    UART_HandleTypeDef* port;
 } CLB_TelemPacket;
 
 typedef struct CLB_TelemQueue {
     CLB_TelemPacket* queue[CLB_TELEM_QUEUE_MAX_PACKETS];
+    UART_HandleTypeDef* uartx;
+    DMA_HandleTypeDef* dmatx;
     uint8_t queue_pos;
     uint8_t next_free_pos;
-    uint8_t is_dma_busy;
+    int8_t num_packets_left;
 } CLB_TelemQueue;
 
 // Packet Header 
@@ -59,6 +60,7 @@ typedef struct CLB_Packet_Header {
 
 typedef struct CLB_send_data_info {
 	UART_HandleTypeDef* uartx;
+	DMA_HandleTypeDef* dmatx;
 	int16_t flash_arr_sz;
 	int16_t flash_arr_used;
 	uint8_t *flash_arr;
@@ -133,11 +135,10 @@ void pack_telem_data(uint8_t* dst);
 void receive_packet(UART_HandleTypeDef* uartx, uint16_t sz);
 
 // TODO: do definition
-void transmit_packet(UART_HandleTypeDef* uartx, uint16_t sz, CLB_send_data_info* info);
+void transmit_packet(CLB_send_data_info* info, uint16_t sz);
 
 // TODO: do definition
-void queue_transmit_packet( UART_HandleTypeDef* uartx, uint8_t* src, uint16_t sz,
-                            CLB_TelemQueue* q_info);
+void queue_transmit_packet(CLB_TelemQueue* q_info, uint8_t* src, uint16_t sz);
 
 // TODO: do definition
 void copy_into_circular_queue(uint8_t* src, uint8_t* dst, uint16_t src_start,

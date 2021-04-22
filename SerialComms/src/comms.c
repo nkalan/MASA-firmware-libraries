@@ -79,7 +79,7 @@ uint8_t send_data(CLB_send_data_info* info, uint8_t type) {
 					send_termination_bit = 1;
 				}
 			}
-			transmit_packet(info->uartx, stuffed_packet_sz, info);
+			transmit_packet(info, stuffed_packet_sz);
 		} else if (type == CLB_Flash) {
 			stuffed_packet_sz = stuff_packet(CLB_ping_packet,
 										info->flash_arr+flash_pos, ping_pos);
@@ -106,7 +106,7 @@ uint8_t send_data(CLB_send_data_info* info, uint8_t type) {
 
 	if (send_termination_bit) {
 	    CLB_pong_packet[0] = 0;
-	    transmit_packet(info->uartx, 1, info);
+	    transmit_packet(info, 1);
 	}
 
 	return status; // TODO: return better error handling
@@ -168,33 +168,37 @@ void receive_packet(UART_HandleTypeDef* uartx, uint16_t sz) {
 	HAL_UART_Receive(uartx, CLB_pong_packet, sz, HAL_MAX_DELAY);
 }
 
-void transmit_packet(UART_HandleTypeDef* uartx, uint16_t sz, CLB_send_data_info* info) {
+void transmit_packet(CLB_send_data_info* info, uint16_t sz) {
 	// currently abstracted in case we need more transmisison options
 	// transmit packet via serial TODO: error handling
     if (!info->use_dma) {
-        HAL_UART_Transmit(uartx, CLB_pong_packet, sz, HAL_MAX_DELAY);
+        HAL_UART_Transmit(info->uartx, CLB_pong_packet, sz, HAL_MAX_DELAY);
     } else {
-        queue_transmit_packet(uartx, CLB_pong_packet, sz, info->queue_info);
+        queue_transmit_packet(info->queue_info, CLB_pong_packet, sz);
     }
 }
 
-void queue_transmit_packet( UART_HandleTypeDef* uartx, uint8_t* src, uint16_t sz,
-                            CLB_TelemQueue* q_info) {
+void queue_transmit_packet(CLB_TelemQueue* q_info, uint8_t* src, uint16_t sz) {
     // Allocate space for telem packet
     CLB_TelemPacket p;
+    if (sz > PONG_MAX_PACKET_SIZE) {
+    	return; // bad packet if size is too big
+    }
     memcpy(p.buffer, src, sz);
     p.buffer_len = sz;
-    p.port = uartx;
 
-    // Push packet to back of queue
-    q_info->queue[q_info->next_free_pos] = &p;
-    q_info->next_free_pos = (q_info->next_free_pos+1)
-                            % CLB_TELEM_QUEUE_MAX_PACKETS;
-
-    // Send packet immediately if dma is not busy
-    if (!q_info->is_dma_busy) {
-        q_info->is_dma_busy = 1;
-        HAL_UART_Transmit_DMA(p.port, p.buffer, p.buffer_len);
+    if (q_info->num_packets_left < CLB_TELEM_QUEUE_MAX_PACKETS) {
+    	// Push packet to back of queue if there's space
+		q_info->queue[q_info->next_free_pos] = &p;
+		q_info->next_free_pos = (q_info->next_free_pos+1)
+								% CLB_TELEM_QUEUE_MAX_PACKETS;
+		++q_info->num_packets_left;
+		// Send packet immediately if dma is not busy
+		if (q_info->dmatx->State != HAL_DMA_STATE_BUSY) {
+			HAL_DMA_Start_IT(   q_info->dmatx, (uint32_t) p.buffer,
+			                    (uint32_t) &q_info->uartx->Instance->DR,
+			                    p.buffer_len);
+		}
     }
 }
 
