@@ -189,3 +189,4 @@ Telem Rate,telem_rate,,,Hz,uint32_t,%i,uint32_t,1,,int,,,y
 ADC Rate,adc_rate,,,Hz,uint32_t,%i,uint32_t,1,,int,,,y
 Flash Memory,flash_mem,,,bytes,uint32_t,%i,uint32_t,1,,int,,,y
 Own Board Addr,own_board_addr,3,3,ul,uint8_t,%i,uint8_t,1,,int,,,y
+Flash Logging Active,LOGGING_ACTIVE,,,ul,uint8_t,%d,uint8_t,1,,int,,,y

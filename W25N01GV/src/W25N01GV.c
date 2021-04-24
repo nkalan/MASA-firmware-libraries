@@ -1135,15 +1135,14 @@ uint16_t erase_flash(W25N01GV_Flash *flash) {
 	lock_flash(flash);
 
 	// Reset the address pointer after erasing
-	flash->current_page = 0;
-	flash->next_free_column = 0;
+	find_write_ptr(flash);  // Don't manually set addr pointers to ensure it actually erases
 	flash->write_buffer_size = 0;
 
 	return erase_failures;
 }
 
 uint32_t get_bytes_remaining(W25N01GV_Flash *flash) {
-	return (W25N01GV_NUM_BLOCKS * W25N01GV_PAGES_PER_BLOCK * W25N01GV_BYTES_PER_PAGE)
+	return ((W25N01GV_NUM_BLOCKS-1) * W25N01GV_PAGES_PER_BLOCK * W25N01GV_BYTES_PER_PAGE)
 			- (flash->current_page * W25N01GV_BYTES_PER_PAGE + flash->next_free_column)
 			- flash->write_buffer_size;
 
@@ -1190,6 +1189,14 @@ uint16_t scan_bad_blocks(W25N01GV_Flash *flash, uint16_t *bad_blocks) {
 	}
 
 	return num_bad_blocks;
+}
+
+void add_test_delimiter(W25N01GV_Flash *flash) {
+	// This is kind of dumb but it works
+	uint8_t delimiter_arr[W25N01GV_BYTES_PER_PAGE] = { 0 };
+
+	// Fill an entire page worth of bytes with 0's
+	write_to_flash(flash, delimiter_arr, W25N01GV_BYTES_PER_PAGE);
 }
 
 #endif	// End SPI include protection
