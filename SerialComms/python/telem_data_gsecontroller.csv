@@ -190,7 +190,6 @@ main cycle time,main_cycle_time,,,ms,float,%u,uint16_t,1,,float,,,n
 motor cycle time,motor_cycle_time,,,ms,float,%u,uint16_t,1,,float,,,n
 adc cycle time,adc_cycle_time,,,ms,float,%u,uint16_t,1,,float,,,n
 telemetry cycle time,telemetry_cycle_time,,,ms,float,%u,uint32_t,1,,float,,,n
-last packet number,last_packet_number,,,ul,float,%u,uint16_t,1,,float,,,y
 tbrd,tbrd,,,ul,float,%u,uint16_t,1,,float,,,y
 tvlv,tvlv,,,ul,float,%u,uint16_t,1,,float,,,y
 tmtr,tmtr,,,ul,float,%u,uint16_t,1,,float,,,y
