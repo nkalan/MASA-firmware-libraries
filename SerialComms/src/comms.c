@@ -194,12 +194,14 @@ void queue_transmit_packet(CLB_TelemQueue* q_info, uint8_t* src, uint16_t sz) {
 								% CLB_TELEM_QUEUE_MAX_PACKETS;
 		++q_info->num_packets_left;
 		// Send packet immediately if dma is not busy
-		if (HAL_DMA_GetState(q_info->dmatx) != HAL_DMA_STATE_BUSY) {
-			__disable_irq();
-			HAL_DMA_Start_IT(   q_info->dmatx, (uint32_t) q_info->queue[q_info->queue_pos]->buffer,
-			                    (uint32_t) &q_info->uartx->Instance->DR,
-			                    q_info->queue[q_info->queue_pos]->buffer_len);
-			__enable_irq();
+		if (HAL_DMA_STATE_READY == q_info->dmatx->State) {
+//			__disable_irq();
+//			HAL_DMA_Start_IT(   q_info->dmatx, (uint32_t) q_info->queue[q_info->queue_pos]->buffer,
+//			                    (uint32_t) &q_info->uartx->Instance->DR,
+//			                    q_info->queue[q_info->queue_pos]->buffer_len);
+			HAL_UART_Transmit_DMA(  q_info->uartx, q_info->queue[q_info->queue_pos]->buffer,
+			                        q_info->queue[q_info->queue_pos]->buffer_len);
+//			__enable_irq();
 		}
     }
 }
