@@ -335,5 +335,15 @@ uint8_t erase_reserved_flash_pages(W25N01GV_Flash *flash);
  */
 uint16_t scan_bad_blocks(W25N01GV_Flash *flash, uint16_t *bad_blocks);
 
+/**
+ * Adds at least an entire page of 0s (2048B) so that a flash parser can
+ * differentiate between sections.
+ *
+ * Use case: call this function after you stop logging a test.
+ *
+ * @param flash      <W25N01GV_Flash*>    Struct used to store flash pins and addresses
+ */
+void add_test_delimiter(W25N01GV_Flash *flash);
+
 #endif	// end SPI include protection
 #endif	// end header include protection

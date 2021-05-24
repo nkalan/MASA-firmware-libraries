@@ -142,6 +142,7 @@ uint8_t receive_data(UART_HandleTypeDef* uartx, uint8_t* buffer, uint16_t buffer
 			if(cmd_index != -1
 			   && validate_command(CLB_receive_header.packet_type, data_sz) == CLB_RECEIVE_NOMINAL) {
 				(*cmds_ptr[cmd_index])(CLB_ping_packet+CLB_HEADER_SZ, &cmd_status);
+				CLB_last_cmd_received = CLB_receive_header.packet_type;
 			}
 		}
 	} else {
