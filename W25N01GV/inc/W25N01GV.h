@@ -96,6 +96,11 @@
 #define W25N01GV_H
 
 #include "stm32f4xx_hal.h"
+#include "pack_telem_defines.h" // For unpack telem method
+#include "fake_data.h"
+#include "comms.h"
+
+void send_telem_packet(UART_HandleTypeDef* huartx, CLB_Packet_Header* header, uint8_t* buffer, int32_t buffer_sz);
 
 #ifdef HAL_SPI_MODULE_ENABLED	// Begin SPI include protection
 
@@ -344,6 +349,20 @@ uint16_t scan_bad_blocks(W25N01GV_Flash *flash, uint16_t *bad_blocks);
  * @param flash      <W25N01GV_Flash*>    Struct used to store flash pins and addresses
  */
 void add_test_delimiter(W25N01GV_Flash *flash);
+
+/**
+ * Reads the data at the specified page in the reserved memory block into buffer.
+ *
+ * @param flash       <W25N01GV_Flash*>     Struct used to store flash pins and addresses
+ * @param page_num    <uint8_t>             Address of page in block to read from (0-63 inclusive)
+ * @param data        <uint8_t*>            Array to read data from flash into.
+ * @param buffer_sz   <uint16_t>            Size of buffer. Can be up to 2048 bytes.
+ */
+void readFakeData();
+
+uint8_t data_has_been_written;
+uint32_t fake_data_counter;
+uint8_t read_buffer[2048];
 
 #endif	// end SPI include protection
 #endif	// end header include protection

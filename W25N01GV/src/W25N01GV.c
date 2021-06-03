@@ -866,6 +866,8 @@ static void find_write_ptr(W25N01GV_Flash *flash) {
 
 void init_flash(W25N01GV_Flash *flash, SPI_HandleTypeDef *SPI_bus_in,
 		GPIO_TypeDef *cs_base_in,	uint16_t cs_pin_in) {
+	fake_data_counter = 0;
+
 	flash->SPI_bus = SPI_bus_in;
 	flash->cs_base = cs_base_in;
 	flash->cs_pin = cs_pin_in;
@@ -1197,6 +1199,43 @@ void add_test_delimiter(W25N01GV_Flash *flash) {
 
 	// Fill an entire page worth of bytes with 0's
 	write_to_flash(flash, delimiter_arr, W25N01GV_BYTES_PER_PAGE);
+}
+
+void write_fake_data(W25N01GV_Flash *flash, uint8_t* buffer, uint16_t buffer_sz) {
+	write_to_flash(flash, buffer, buffer_sz);
+}
+
+uint16_t read_buffer_pointer = 0;
+
+void readFakeData(W25N01GV_Flash *flash, UART_HandleTypeDef *huart) {
+	//data_has_been_written = 1;
+	if (data_has_been_written) {
+
+		uint8_t unstuffed [CLB_NUM_TELEM_ITEMS+14]= {0}; //14 larger to account for cobbs and header
+		/*
+
+		unstuff_packet(fake_data[fake_data_counter++/EVERY_OTHER], unstuffed, CLB_NUM_TELEM_ITEMS+14); //Need to unpack cobbs encoding
+
+		unpack_telem_data(unstuffed); //Take data from packet, place it into system variables
+		fake_data_counter = fake_data_counter % (FAKE_DATA_LENGTH*EVERY_OTHER);
+		*/
+
+		uint8_t packet[CLB_NUM_TELEM_ITEMS+14];
+		uint8_t len = 0;
+
+		for (;*(read_buffer+read_buffer_pointer); read_buffer_pointer++) {
+			if (read_buffer_pointer >= 2048) {
+				read_next_2KB_from_flash(flash, read_buffer);
+				read_buffer_pointer = 0;
+			}
+
+			packet[len++] = *(read_buffer+read_buffer_pointer);
+		}
+
+		unstuff_packet(packet, unstuffed, len); //Need to unpack cobbs encoding
+		unpack_telem_data(unstuffed); //Take data from packet, place it into system variables
+
+	}
 }
 
 #endif	// End SPI include protection

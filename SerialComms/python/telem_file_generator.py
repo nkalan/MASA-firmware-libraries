@@ -158,6 +158,9 @@ def main():
 
     # num_items begins at 8 to account for the hardcoded packet header
     num_items = 8  # Doesn't use enumerate to get the number of items because not all lines get telem'd (should_generate column)
+
+    unpack_string = "void unpack_telem_data(uint8_t* dst){\n"
+
     for csv_row_num, line in enumerate(template_file):
         split_string = line.strip().split(COLUMN_DELIMITER)  # strip() because last column sometimes has trailing '\n'
 
@@ -236,6 +239,13 @@ def main():
             for b in range(0, byte_length):
                 pack_telem_defines_h_string += "#define\tTELEM_ITEM_" + str(packet_byte_length - byte_length + b) + \
                 "\t((" + type_cast + ") (" + str(firmware_variable) + "*" + str(xmit_scale) + ")) >> " + str(8*b) + " \n"
+
+            # Fille up pack_telem_defines.c with code to unpack packet
+            unpack_string += f"\t{firmware_variable} = ("
+            for b in range(0, byte_length):
+                unpack_string += f"*(dst + {str(packet_byte_length - byte_length + b)} + header_size << {str(8*b)})|"
+            unpack_string = unpack_string[:len(unpack_string)-1]
+            unpack_string += f")/{xmit_scale};\n"
 
 
             """ Update globals.h / globals.c strings """
@@ -318,12 +328,16 @@ def main():
     pack_telem_defines_h_string += "#define\tCLB_NUM_TELEM_ITEMS\t" + str(packet_byte_length) + "\n"
     pack_telem_defines_h_string += "\n/**\n * Takes in a uint8_t array of size CLB_NUM_TELEM_ITEMS and packs the " \
         + "\n * global variables into it as defined in pack_telem_defines.h\n *\n * @param dst\t<uint8_t*>\tArray to " \
-        + "write the global variables to after packing their bytes for telemetry.\n**/\nextern void pack_telem_data(uint8_t* dst);\n"
+        + "write the global variables to after packing their bytes for telemetry.\n**/\nextern void pack_telem_data(uint8_t* dst);\n" \
+        + "extern void unpack_telem_data(uint8_t* dst);\n#define header_size 12"
 
     # Fill up pack_telem_defines.c with unpacking code
     for m in range(0, packet_byte_length):
         pack_telem_defines_c_string += "\t*(dst + " + str(m) + ") = TELEM_ITEM_" + str(m) + ";\n"
-    pack_telem_defines_c_string += "}"
+    pack_telem_defines_c_string += "}\n"
+
+    unpack_string += "}"
+    pack_telem_defines_c_string += unpack_string
 
     # Updating telem_parser.py strings
 
@@ -361,6 +375,8 @@ def main():
         pack_telem_defines_c = open("../../../Src/pack_telem_defines.c", "w+")
     except:
         print("Creating new pack files...\n")
+        pack_telem_defines_h = open("pack_telem_defines.h", "w+")  # Generates file in project folder
+        pack_telem_defines_c = open("pack_telem_defines.c", "w+")
     globals_h = open(output_globals_h_file, "w+")
     globals_c = open(output_globals_c_file, "w+")
 
