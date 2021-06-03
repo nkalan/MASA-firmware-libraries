@@ -360,9 +360,10 @@ void add_test_delimiter(W25N01GV_Flash *flash);
  */
 void readFakeData();
 
-uint8_t data_has_been_written;
+
 uint32_t fake_data_counter;
 uint8_t read_buffer[2048];
+
 
 #endif	// end SPI include protection
 #endif	// end header include protection

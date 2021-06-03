@@ -867,6 +867,7 @@ static void find_write_ptr(W25N01GV_Flash *flash) {
 void init_flash(W25N01GV_Flash *flash, SPI_HandleTypeDef *SPI_bus_in,
 		GPIO_TypeDef *cs_base_in,	uint16_t cs_pin_in) {
 	fake_data_counter = 0;
+	data_has_been_written = 0;
 
 	flash->SPI_bus = SPI_bus_in;
 	flash->cs_base = cs_base_in;
@@ -1211,19 +1212,29 @@ void readFakeData(W25N01GV_Flash *flash, UART_HandleTypeDef *huart) {
 	//data_has_been_written = 1;
 	if (data_has_been_written) {
 
+		//Will hold unstuffed packet from flash or fake_data_arr
 		uint8_t unstuffed [CLB_NUM_TELEM_ITEMS+14]= {0}; //14 larger to account for cobbs and header
-		/*
 
+		/*
 		unstuff_packet(fake_data[fake_data_counter++/EVERY_OTHER], unstuffed, CLB_NUM_TELEM_ITEMS+14); //Need to unpack cobbs encoding
 
 		unpack_telem_data(unstuffed); //Take data from packet, place it into system variables
 		fake_data_counter = fake_data_counter % (FAKE_DATA_LENGTH*EVERY_OTHER);
 		*/
 
+		//Will hold one packet from the read_buffer read from flash
 		uint8_t packet[CLB_NUM_TELEM_ITEMS+14];
+
+		//Current length of packet
 		uint8_t len = 0;
 
-		for (;*(read_buffer+read_buffer_pointer); read_buffer_pointer++) {
+		//Fixes hard fault, but might cut off ~10 packets
+		if (flash->next_page_to_read == read_until_page) {
+			reset_flash_read_pointer(flash);
+		}
+
+		//Copy packet data into packet from the read_buffer
+		for (;*(read_buffer+read_buffer_pointer) || read_buffer_pointer >= 2048 && len < CLB_NUM_TELEM_ITEMS+14; read_buffer_pointer++) {
 			if (read_buffer_pointer >= 2048) {
 				read_next_2KB_from_flash(flash, read_buffer);
 				read_buffer_pointer = 0;
@@ -1231,6 +1242,7 @@ void readFakeData(W25N01GV_Flash *flash, UART_HandleTypeDef *huart) {
 
 			packet[len++] = *(read_buffer+read_buffer_pointer);
 		}
+		read_buffer_pointer++;
 
 		unstuff_packet(packet, unstuffed, len); //Need to unpack cobbs encoding
 		unpack_telem_data(unstuffed); //Take data from packet, place it into system variables

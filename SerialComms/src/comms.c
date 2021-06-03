@@ -134,7 +134,6 @@ uint8_t receive_data(UART_HandleTypeDef* uartx, uint8_t* buffer, uint16_t buffer
     }
 
 	uint8_t cmd_status = 0;
-	CLB_board_addr = 3;
 
 	if (CLB_board_addr == CLB_receive_header.target_addr) {
 	    // TODO: handle receiving different packet types besides cmd
