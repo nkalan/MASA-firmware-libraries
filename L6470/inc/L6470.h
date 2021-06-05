@@ -8,6 +8,8 @@
 #ifndef INC_L6470_H_
 #define INC_L6470_H_
 
+#include
+
 //#ifdef HAL_SPI_MODULE_ENABLED	// Begin SPI include protection
 
 
