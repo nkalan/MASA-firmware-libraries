@@ -1,1 +1,6 @@
-test
+type (d)ata/(c)md/(s)kip,duration (ms),function_name,arg0,arg1,arg2,pressure[0],pressure[1],tc[3]
+c,1,download_flash,,,,,,
+c,1,set_vlv,1,0,,,3,
+d,1,,,2,,0,0,0
+d,1,,,,,,1,
+c,1,wipe_flash,,,,,,
