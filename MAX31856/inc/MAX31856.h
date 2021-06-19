@@ -2,6 +2,9 @@
  * Interface for MASA's MAX31856 thermocouple firmware library
  * Datasheet: https://datasheets.maximintegrated.com/en/ds/MAX31856.pdf
  *
+ *
+ * REMEMBER TO FILL OUT THE README
+ *
  * Created: June 19, 2021
  */
 
@@ -22,11 +25,18 @@
  */
 
 
-
 typedef struct {
-	// each thermocouple should have its own struct (not final, still need more architecture design)
-} tc_struct_name_not_final;
+	SPI_HandleTypeDef* SPI_bus;
+	void (*chip_select)(uint8_t tc_index);  // Function pointer to select a single TC given its index
+	void (*chip_release)(uint8_t tc_index);  // Function pointer to release all TCs in the array
+	uint8_t num_tcs;
 
-void init_thermocouple(MAX31856* tc);
+} MAX31856_TC_Array;
 
-float read_thermocouple(MAX31856* tc);
+/*
+ * Initialize all chips as T type thermocouples,
+ *
+ */
+void MAX31856_init_thermocouples(MAX31856_TC_Array* tcs);
+
+float MAX31856_read_thermocouple(MAX31856_TC_Array* tcs, uint8_t tc_index);
