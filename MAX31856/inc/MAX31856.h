@@ -34,7 +34,11 @@ typedef struct {
 } MAX31856_TC_Array;
 
 /*
- * Initialize all chips as T type thermocouples,
+ * Initialize all chips as T type thermocouples, configure correct
+ * conversion settings.
+ *
+ * Feel free to change this to init a single TC if wanted, but it
+ * doesn't really matter.
  *
  */
 void MAX31856_init_thermocouples(MAX31856_TC_Array* tcs);
