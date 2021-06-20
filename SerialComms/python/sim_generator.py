@@ -33,7 +33,7 @@ def main():
         test_case_filename = sys.argv[2]
     else:
         # For debugging only
-        board_num = 0
+        board_num = 3
         test_case_filename = "test1.csv"
     
 
