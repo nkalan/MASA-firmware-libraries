@@ -247,7 +247,7 @@
 /* Exported types ------------------------------------------------------------*/
 
 //typedef u8  bool;
-
+#define L6470
 #if defined(L6470)
 /** 
   * @brief dSPIN Init structure definition
