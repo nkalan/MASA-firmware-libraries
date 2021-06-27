@@ -88,14 +88,7 @@ void init_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo) {
     if (pinfo->HARDWARE_CONFIGURATION != NO_EOC_NOR_CNVST) {
 		// Generate adc config data
 		uint16_t ADC_CONFIG_REG = MAX11131_CONFIG|SET_MAX11131_AVGON;
-		uint16_t ADC_MODE_CNTL_REG;
-
-		// Set settings based on hardware configuration
-		if (pinfo->HARDWARE_CONFIGURATION == EOC_AND_CNVST) {
-			ADC_MODE_CNTL_REG = MAX11131_MODE_CNTL|(CUSTOM_INT<<11);
-		} else { // EOC pin but no CNVST so set CNVST bit to 1 in ADC_MODE_CNTL_REG
-			ADC_MODE_CNTL_REG = SET_MAX11131_SWCNV|(CUSTOM_INT<<11);
-		}
+		uint16_t ADC_MODE_CNTL_REG = MAX11131_MODE_CNTL|(CUSTOM_INT<<11);
 
 		configure_read_adc_all(pinfo);
 		set_read_adc_range(SPI_BUS, pinfo);
@@ -139,44 +132,81 @@ void read_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo,
             early to avoid an infinite loop
     */
     /* ADC startup and FIFO register intialization */
+	/* Serial communications with ADC */
 
-    set_adc(pinfo, GPIO_PIN_SET);
+	// The number of bytes in the FIFO is simply the
+	// number of channels * 2 (bytes for each channel)
+	uint8_t rx[2] = {0};
+	uint8_t tx[2] = {0};
 
-    if (pinfo->HARDWARE_CONFIGURATION == EOC_AND_CNVST) {
-    	cycle_cnvst(pinfo);
-    }
+	if (pinfo->HARDWARE_CONFIGURATION == NO_EOC_NOR_CNVST) {
+		uint8_t adcn = adc0 + adc_number;
 
-    uint16_t elapsed_cycles = 0;
-    while (HAL_GPIO_ReadPin(pinfo->MAX11131_EOC_PORT,
-                            pinfo->MAX11131_EOC_ADDR)) {
-        if (elapsed_cycles > MAX11131_EOC_WAIT_TIME) {
-            break;
-        }
-        ++elapsed_cycles;
-    }
+		// Select channel 0 to start
+		tx[0] = 0b00000000;
+		tx[1] = 0b0000100;
 
-    /* Serial communications with ADC */
+		 __disable_irq();
+		set_adc(pinfo, GPIO_PIN_RESET);
+		if(HAL_SPI_TransmitReceive(SPI_BUS, tx, rx, 2, 1) ==  HAL_TIMEOUT){
+		}
+		set_adc(pinfo, GPIO_PIN_SET);
+		__enable_irq();
 
-    // The number of bytes in the FIFO is simply the
-    // number of channels * 2 (bytes for each channel)
-    uint8_t rx[2] = {0};
-    uint8_t tx[2] = {0};
-    uint16_t adc_counts = 0;
-    uint16_t channelId  = 0;
-    for (uint8_t i = 0; i < pinfo->NUM_CHANNELS; ++i) {
-        rx[0] = rx[1] = 0;
-        tx[0] = tx[1] = 0;
-        __disable_irq();
-        set_adc(pinfo, GPIO_PIN_RESET);
-        write_adc_reg(SPI_BUS, tx, rx);
-        set_adc(pinfo, GPIO_PIN_SET);
-        __enable_irq();
+		for(uint8_t channel = 1; channel <= 16; channel++){
 
-        adc_counts = ((rx[0]<<8)|rx[1]) & 0x0FFF;
-        channelId = (rx[0] >> 4) & 0x0F;
-        adc_out[channelId] = adc_counts;
-    }
+			tx[0] = (channel >> 1) | 0b00001000;
+			tx[1] = (channel << 7) | 0b00000100;
 
+			__disable_irq();
+			set_adc(pinfo, GPIO_PIN_RESET);
+			if(HAL_SPI_TransmitReceive(SPI_BUS, tx, rx, 2, 1) == HAL_TIMEOUT){
+
+			}
+			set_adc(pinfo, GPIO_PIN_SET);
+			__enable_irq();
+
+			adc_data[adcn-adc0][channel-1] = ((rx[1])|(rx[0] << 8)) & 0x0FFF;
+
+		}
+	} else { // ADC configuration has EOC and possibly CNVST
+
+		set_adc(pinfo, GPIO_PIN_SET);
+
+		if (pinfo->HARDWARE_CONFIGURATION == EOC_AND_CNVST) {
+			cycle_cnvst(pinfo);
+		} else if (pinfo->HARDWARE_CONFIGURATION == EOC_ONLY){
+			set_adc(pinfo, GPIO_PIN_RESET);
+			ADC_MODE_CNTL_REG = SET_MAX11131_SWCNV|(CUSTOM_INT<<11);
+			set_adc(pinfo, GPIO_PIN_SET);
+		}
+
+		uint16_t elapsed_cycles = 0;
+		while (HAL_GPIO_ReadPin(pinfo->MAX11131_EOC_PORT,
+								pinfo->MAX11131_EOC_ADDR)) {
+			if (elapsed_cycles > MAX11131_EOC_WAIT_TIME) {
+				break;
+			}
+			++elapsed_cycles;
+		}
+
+
+		uint16_t adc_counts = 0;
+		uint16_t channelId  = 0;
+		for (uint8_t i = 0; i < pinfo->NUM_CHANNELS; ++i) {
+			rx[0] = rx[1] = 0;
+			tx[0] = tx[1] = 0;
+			__disable_irq();
+			set_adc(pinfo, GPIO_PIN_RESET);
+			write_adc_reg(SPI_BUS, tx, rx);
+			set_adc(pinfo, GPIO_PIN_SET);
+			__enable_irq();
+
+			adc_counts = ((rx[0]<<8)|rx[1]) & 0x0FFF;
+			channelId = (rx[0] >> 4) & 0x0F;
+			adc_out[channelId] = adc_counts;
+		}
+	}
 }
 
 void set_read_adc_range(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo) {
