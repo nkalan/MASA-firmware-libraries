@@ -10,7 +10,7 @@
  *   write_adc_reg
  *   package_cmd
  */
-#include "../inc/MAX11131.h"
+#include "../inc/MAX11128.h"
 
 /*---------------------- Private Functions Declarations ----------------------*/
 
@@ -140,12 +140,10 @@ void read_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo,
 	uint8_t tx[2] = {0};
 
 	if (pinfo->HARDWARE_CONFIGURATION == NO_EOC_NOR_CNVST) {
-		uint8_t adcn = adc0 + adc_number;
-
 		// Select channel 0 to start
-		tx[0] = 0b00000000;
-		tx[1] = 0b0000100;
+		uint16_t ADC_MODE_CNTL_REG = MAX11131_MODE_CNTL | SET_MAX11131_CHAN_ID;
 
+		//Transmit chan_id of 0 to ADC for next frame to transmit and set
 		 __disable_irq();
 		set_adc(pinfo, GPIO_PIN_RESET);
 		if(HAL_SPI_TransmitReceive(SPI_BUS, tx, rx, 2, 1) ==  HAL_TIMEOUT){
@@ -153,10 +151,11 @@ void read_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo,
 		set_adc(pinfo, GPIO_PIN_SET);
 		__enable_irq();
 
+		uint8_t channelId;
 		for(uint8_t channel = 1; channel <= 16; channel++){
 
-			tx[0] = (channel >> 1) | 0b00001000;
-			tx[1] = (channel << 7) | 0b00000100;
+			tx[0] = (channel >> 1) | MAX11128_MODE_MANUAL;
+			tx[1] = (channel << 7) | SET_MAX11131_CHAN_ID;
 
 			__disable_irq();
 			set_adc(pinfo, GPIO_PIN_RESET);
@@ -166,19 +165,27 @@ void read_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo,
 			set_adc(pinfo, GPIO_PIN_SET);
 			__enable_irq();
 
-			adc_data[adcn-adc0][channel-1] = ((rx[1])|(rx[0] << 8)) & 0x0FFF;
+			channelId = (rx[0] >> 4) & 0x0F;
+			adc_out[channelId] = ((rx[1])|(rx[0] << 8)) & 0x0FFF;
 
 		}
 	} else { // ADC configuration has EOC and possibly CNVST
 
 		set_adc(pinfo, GPIO_PIN_SET);
 
+		uint8_t ADC_MODE_CNTL_REG;
+
 		if (pinfo->HARDWARE_CONFIGURATION == EOC_AND_CNVST) {
 			cycle_cnvst(pinfo);
 		} else if (pinfo->HARDWARE_CONFIGURATION == EOC_ONLY){
-			set_adc(pinfo, GPIO_PIN_RESET);
 			ADC_MODE_CNTL_REG = SET_MAX11131_SWCNV|(CUSTOM_INT<<11);
+
+			package_cmd(ADC_MODE_CNTL_REG, tx);
+			__disable_irq();
+			set_adc(pinfo, GPIO_PIN_RESET);
+			if (HAL_SPI_Transmit(SPI_BUS, tx, 2, 1) == HAL_TIMEOUT) {}
 			set_adc(pinfo, GPIO_PIN_SET);
+			__enable_irq();
 		}
 
 		uint16_t elapsed_cycles = 0;

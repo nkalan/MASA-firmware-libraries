@@ -109,11 +109,12 @@
 
 // Register Identification Code
 // datasheet definitions between on pg21
-#define MAX11131_MODE_CNTL  (uint16_t) 0x0000   // 0b0          followed by 0s
-#define MAX11131_CONFIG     (uint16_t) 0x8000   // 0b1000       followed by 0s
-#define MAX11131_UNIPOLAR   (uint16_t) 0x8800   // 0b10001000   followed by 0s
-#define MAX11131_BIPOLAR    (uint16_t) 0x9000   // 0b1001       followed by 0s
-#define MAX11131_RANGE      (uint16_t) 0x9800   // 0b10011000   followed by 0
+#define MAX11131_MODE_CNTL   (uint16_t) 0x0000   // 0b0          followed by 0s
+#define MAX11128_MODE_MANUAL (uint16_t) 0x0800   // 0b00001      followed by 0s
+#define MAX11131_CONFIG      (uint16_t) 0x8000   // 0b1000       followed by 0s
+#define MAX11131_UNIPOLAR    (uint16_t) 0x8800   // 0b10001000   followed by 0s
+#define MAX11131_BIPOLAR     (uint16_t) 0x9000   // 0b1001       followed by 0s
+#define MAX11131_RANGE       (uint16_t) 0x9800   // 0b10011000   followed by 0
 
 /* Offset bits mapping adc channel numbers to bit number */
 #define MAX11131_CUSTOM_SCAN0_SUB   (uint8_t) 5
@@ -153,7 +154,7 @@ typedef struct GPIO_MAX11131_Pinfo {
     uint8_t NUM_CHANNELS;               // Number of channels to read from
     uint8_t MAX11131_CHANNELS[16];      // Channel Identification Numbers
 
-    uint8_t HARDWARE_CONFIGURATION;     // EOC and CNVST pin confiuration
+    uint8_t HARDWARE_CONFIGURATION;     // EOC and CNVST pin configuration
 } GPIO_MAX11131_Pinfo;
 
 // Mode Control Scan Registers
