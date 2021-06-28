@@ -18,7 +18,9 @@
  * Constants
  *
  */
-#define L6470_SPI_TIMEOUT (0xFF)
+#define L6470_SPI_TIMEOUT   (0xFF)
+#define L6470_TICK_DURATION (0.000000250F)  // 250 ns
+#define L6470_STEP_ANGLE    (1.8F) // deg per step? TODO: check this
 
 /**
  * Stepping Mode
@@ -158,7 +160,7 @@ void L6470_SPI_transmit_receive(L6470_Motor_IC *motor, uint8_t *tx,
 	motor->HAL_SPI_Status = HAL_SPI_Transmit(motor->hspi, tx, tx_sz,
 			L6470_SPI_TIMEOUT);
 	motor->HAL_SPI_Status |= HAL_SPI_Receive(motor->hspi, rx, rx_sz,
-			L6470_SPI_TIMEOUT);
+			L6470_SPI_TIMEOUT);  // Don't overwrite transmit status
 	HAL_GPIO_WritePin(motor->cs_base, motor->cs_pin, GPIO_PIN_SET);
 	__enable_irq();
 }

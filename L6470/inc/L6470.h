@@ -46,7 +46,6 @@ typedef struct {
 	// Status bits that get updated when the STATUS register is read
 	L6470_Motor_Status MOT_status;
 	uint8_t HiZ_status;
-	uint8_t BUSY_status;
 	uint8_t SW_F_status;  // unused
 	uint8_t SW_EVN_status;  // unused
 	uint8_t DIR_status;
@@ -60,6 +59,9 @@ typedef struct {
 	uint8_t STEP_LOSS_B_status;
 	uint8_t SCK_MOD_status;  // unused
 
+	// Should be set by interrupts, not by the status register
+	volatile uint8_t BUSY_status;
+
 } L6470_Motor_IC;
 
 /**
@@ -67,6 +69,8 @@ typedef struct {
  * Raw bits are in steps/tick, function returns steps/s
  */
 float L640_get_motor_speed(L6470_Motor_IC* motor);
+
+void L6470_set_motor_speed(L6470_Motor_IC* motor);
 
 void L6470_update_status(L6470_Motor_IC* motor);
 
