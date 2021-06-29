@@ -24,6 +24,8 @@
  * board, so it should be flexible and support both methods of chip selects.
  */
 
+#include <stdint.h>
+#include "stm32f4xx_hal.h"
 
 typedef struct {
 	SPI_HandleTypeDef* SPI_bus;
