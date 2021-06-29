@@ -18,7 +18,7 @@
 // Datasheet pg 20, stuff related to TC TYPE[3:0]
 #define MAX31856_CR1_REG_Read (0x01)
 #define MAX31856_CR1_REG_Write (0x81)
-#define MAX31856_TCTYPE_T (0b0111) // should I #define here?
+#define MAX31856_TCTYPE_T ((uint8_t) 0b0111)
 
 // Add any private helper functions here as required
 
@@ -36,20 +36,24 @@ void MAX31856_init_thermocouples(MAX31856_TC_Array* tcs) {
     // Read the type (default should be K) in CR1_REG
     uint8_t reg_addr[1] = {MAX31856_CR1_REG_Read};
     uint8_t type[1] = {0};
-    tcs->chip_select(i)
-    HAL_SPI_Transmit(tcs->SPI_bus, (uint8_t *)reg_addr, 1, 1)
+    __disable_irq();
+    tcs->(*chip_select)(i)
+    HAL_SPI_Transmit(tcs->SPI_bus, (uint8_t *)reg_addr, 1, 0xFF)
     HAL_SPI_Receive(tcs->SPI_bus, (uint8_t *)type, 1, 1); //interrupt?
-    HAL_GPIO_WritePin(1);
+    tcs->(*chip_release)(i)
+    __enable_irq();
     
     // Switch to type T
     type[0] &= 0xF0; // mask off bottom 4 bits
-    type[0] |= (uint8_t) MAX31856_TCTYPE_T & 0x0F;
+    type[0] |= MAX31856_TCTYPE_T;
     
     // Write the register
     uint8_t tx[2] = {MAX31856_CR1_REG_Write, type[0]};
-    tcs->chip_select(i)
+    __disable_irq();
+    tcs->(*chip_select)(i)
     HAL_SPI_Transmit(tcs->SPI_bus, (uint8_t *)tx, 2, 1);
-    HAL_GPIO_WritePin(1);
+    tcs->(*chip_release)(i)
+    __enable_irq();
   }
 }
 
@@ -59,14 +63,16 @@ float MAX31856_read_thermocouple(MAX31856_TC_Array* tcs, uint8_t tc_index) {
   
   uint8_t reg_addr[1] = {MAX31856_LNRZD_TC_TEMP_B0}
   uint8_t rx[3] = { 0, 0, 0 };
-  int24_t temp24;
+  uint32_t temp32;
   float real_temp_c;
   
   // Write into rx
+  __disable_irq();
   tcs->chip_select(i)
   HAL_SPI_Transmit(tcs->SPI_bus, (uint8_t *)reg_addr, 1, 1)
   HAL_SPI_Receive(tcs->SPI_bus, (uint8_t *)rx, 3, 1); //DRDY?
-  HAL_GPIO_WritePin(1);
+  tcs->(*chip_release)(i)
+  __enable_irq();
   
   // Convert rx into real_temp
   temp24 = rx[0] << 16 | rx[1] << 8 | rx[2]

@@ -29,8 +29,8 @@
 
 typedef struct {
 	SPI_HandleTypeDef* SPI_bus;
-	void (*chip_select)(uint8_t tc_index);  // Function pointer to select a single TC given its index
-	void (*chip_release)(uint8_t tc_index);  // Function pointer to release all TCs in the array
+	void (*chip_select)(uint8_t);  // Function pointer to select a single TC given its index
+	void (*chip_release)(uint8_t);  // Function pointer to release all TCs in the array
 	uint8_t num_tcs;
 
 } MAX31856_TC_Array;
