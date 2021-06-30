@@ -24,8 +24,13 @@
  * board, so it should be flexible and support both methods of chip selects.
  */
 
+#ifndef MAX31856_H
+#define MAX31856_H
+
 #include <stdint.h>
 #include "stm32f4xx_hal.h"
+
+#ifdef HAL_SPI_MODULE_ENABLED
 
 typedef struct {
 	SPI_HandleTypeDef* SPI_bus;
@@ -46,3 +51,7 @@ typedef struct {
 void MAX31856_init_thermocouples(MAX31856_TC_Array* tcs);
 
 float MAX31856_read_thermocouple(MAX31856_TC_Array* tcs, uint8_t tc_index);
+
+#endif
+
+#endif

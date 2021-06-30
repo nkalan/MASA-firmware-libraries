@@ -37,10 +37,10 @@ void MAX31856_init_thermocouples(MAX31856_TC_Array* tcs) {
     uint8_t reg_addr[1] = {MAX31856_CR1_REG_Read};
     uint8_t type[1] = {0};
     __disable_irq();
-    tcs->(*chip_select)(i)
-    HAL_SPI_Transmit(tcs->SPI_bus, (uint8_t *)reg_addr, 1, 0xFF)
+    (*tcs->chip_select)(i);
+    HAL_SPI_Transmit(tcs->SPI_bus, (uint8_t *)reg_addr, 1, 0xFF);
     HAL_SPI_Receive(tcs->SPI_bus, (uint8_t *)type, 1, 1); //interrupt?
-    tcs->(*chip_release)(i)
+    (*tcs->chip_release)(i);
     __enable_irq();
     
     // Switch to type T
@@ -50,9 +50,9 @@ void MAX31856_init_thermocouples(MAX31856_TC_Array* tcs) {
     // Write the register
     uint8_t tx[2] = {MAX31856_CR1_REG_Write, type[0]};
     __disable_irq();
-    tcs->(*chip_select)(i)
+    (*tcs->chip_select)(i);
     HAL_SPI_Transmit(tcs->SPI_bus, (uint8_t *)tx, 2, 1);
-    tcs->(*chip_release)(i)
+    (*tcs->chip_release)(i);
     __enable_irq();
   }
 }
@@ -61,24 +61,24 @@ float MAX31856_read_thermocouple(MAX31856_TC_Array* tcs, uint8_t tc_index) {
 	// Read the temperature value from a single thermocouple chip, specified by tc_index.
 	// Then convert that number into a real temp in Celcius, then convert that to Kelvin and return it.
   
-  uint8_t reg_addr[1] = {MAX31856_LNRZD_TC_TEMP_B0}
+  uint8_t reg_addr[1] = {MAX31856_LNRZD_TC_TEMP_B0};
   uint8_t rx[3] = { 0, 0, 0 };
   uint32_t temp32;
   float real_temp_c;
   
   // Write into rx
   __disable_irq();
-  tcs->chip_select(i)
-  HAL_SPI_Transmit(tcs->SPI_bus, (uint8_t *)reg_addr, 1, 1)
+  (*tcs->chip_select)(tc_index);
+  HAL_SPI_Transmit(tcs->SPI_bus, (uint8_t *)reg_addr, 1, 1);
   HAL_SPI_Receive(tcs->SPI_bus, (uint8_t *)rx, 3, 1); //DRDY?
-  tcs->(*chip_release)(i)
+  (*tcs->chip_release)(tc_index);
   __enable_irq();
   
   // Convert rx into real_temp
-  temp24 = rx[0] << 16 | rx[1] << 8 | rx[2]
-  temp24 >>= 5
-  real_temp_c = temp24 / 128
+  temp32 = rx[0] << 16 | rx[1] << 8 | rx[2];
+  temp32 >>= 5;
+  real_temp_c = temp32 / 128;
   
   // Convert from Celsius to Kelvin and return
-  return real_temp + 273.15;
+  return real_temp_c + 273.15;
 }
