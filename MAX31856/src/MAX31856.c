@@ -1,5 +1,11 @@
-/*
- * Write some quick information about the library here
+/** MAX31856.c
+ * This is MASA's library for the MAX31856 thermocouple library
+ * Datasheet: https://datasheets.maximintegrated.com/en/ds/MAX31856.pdf
+ *
+ * Samantha Liu (samzliu@umich.edu)
+ * Michigan Aeronautical Science Association
+ * Created June 19, 2021
+ * Last edited:
  */
 
 #include "MAX31856.h"
