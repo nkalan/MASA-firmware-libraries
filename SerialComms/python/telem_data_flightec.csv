@@ -10,7 +10,8 @@ I 3V,i3v,0,2,Amps,float,%.1f,uint8_t,100,,float,,,y
 Board Temp 0,t_brd[0],,,C,float,%.1f,uint16_t,10,,float,,,y
 Board Temp 1,t_brd[1],,,C,float,%.1f,uint16_t,10,,float,,,y
 Board Temp 2,t_brd[2],,,C,float,%.1f,uint16_t,10,,float,,,y
-Last Command ID,last_command_id,,,ul,uint8_t,%d,uint16_t,1,,float,,,y
+Last Command ID,last_command_id,,,ul,uint8_t,%d,uint8_t,1,,float,,,y
+Status flag feedback,status_flags,,,ul,uint32_t,%d,uint32_t,1,,int,,,y
 Pressure 0,pressure[0],-100,10000,psi,float,%.1f,int32_t,10,,float,,,y
 Pressure 1,pressure[1],-100,10000,psi,float,%.1f,int32_t,10,,float,,,y
 Pressure 2,pressure[2],-100,10000,psi,float,%.1f,int32_t,10,,float,,,y
@@ -108,8 +109,9 @@ tank 0 enable,is_tank_enabled[0],,,ul,volatile uint8_t,%i,uint8_t,1,tnk0.en,int,
 tank 1 enable,is_tank_enabled[1],,,ul,volatile uint8_t,%i,uint8_t,1,tnk1.en,int,,,n
 AutoPress Duration,autopress_duration,,,ms,uint32_t,%i,uint32_t,1,,int,,,y
 Test Duration,test_duration,,,ms,uint32_t,%i,uint32_t,1,,int,,,y
+Purge Duration,purge_duration,,,ms,uint32_t,%i,uint32_t,1,,int,,,y
 Remaining Time in State,state_rem_duration,,,ms,int32_t,%i,int32_t,1,,int,,,y
-Microseconds since reset,micros,,,us,uint64_t,%i,uint64_t,1,,int,,,y
+Microseconds since reset,micros,,,us,uint64_t,%i,uint64_t,1,,int,,,n
 Telem Rate,telem_rate,,,Hz,uint32_t,%i,uint32_t,1,,int,,,y
 ADC Rate,adc_rate,,,Hz,uint32_t,%i,uint32_t,1,,int,,,y
 Flash Memory,flash_mem,,,bytes,uint32_t,%i,uint32_t,1,,int,,,y
