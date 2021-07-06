@@ -1,7 +1,7 @@
-/** MAX11128.c
- *  @author ryankima, anathas, firuzo
+/** MAX11131.c
+ *  @author arthurzh
  *
- *  See MAX11128.h for usage and public function documentation
+ *  See MAX11131.h for usage and public function documentation
  *
  * Private Functions:
  *   set_adc
@@ -163,7 +163,7 @@ void read_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo,
         channelId = (rx[0] >> 4) & 0x0F;
         adc_out[channelId] = adc_counts;
     }
-    asm("nop");
+
 }
 
 void set_read_adc_range(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo) {
