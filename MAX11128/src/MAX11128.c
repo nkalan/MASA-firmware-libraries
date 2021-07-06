@@ -1,7 +1,7 @@
-/** MAX11131.c
- *  @author arthurzh
+/** MAX11128.c
+ *  @author ryankima, anathas, firuzo, arthurzh (wrote MAX11131 library which this one is based off of)
  *
- *  See MAX11131.h for usage and public function documentation
+ *  See MAX11128.h for usage and public function documentation
  *
  * Private Functions:
  *   set_adc
@@ -18,27 +18,27 @@
 /**
  *  Selects/Disables adc for SPI transmissions
  *
- *  @param pinfo        <GPIO_MAX11131_Pinfo*> contains ADC pin defs
+ *  @param pinfo        <GPIO_MAX11128_Pinfo*> contains ADC pin defs
  *  @param state        <GPIO_PinState>        state of GPIO PIN
  *                            Note:
  */
-static inline void set_adc(GPIO_MAX11131_Pinfo *pinfo, GPIO_PinState state);
+static inline void set_adc(GPIO_MAX11128_Pinfo *pinfo, GPIO_PinState state);
 
 /**
  *  Cycles CNVST pin to wakeup ADC for adc conversions
  *
- *  @param pinfo        <GPIO_MAX11131_Pinfo*>   contains ADC pin defs
+ *  @param pinfo        <GPIO_MAX11128_Pinfo*>   contains ADC pin defs
  *
  */
-void cycle_cnvst(GPIO_MAX11131_Pinfo *pinfo);
+void cycle_cnvst(GPIO_MAX11128_Pinfo *pinfo);
 
 /**
- * 	Convenience function for updating GPIO_MAX11131_Pinfo to read from pins 0-13
+ * 	Convenience function for updating GPIO_MAX11128_Pinfo to read from pins 0-13
  *
- * 	@param pinfo        <GPIO_MAX11131_Pinfo*>   contains ADC pin defs
+ * 	@param pinfo        <GPIO_MAX11128_Pinfo*>   contains ADC pin defs
  *
  */
-void configure_read_adc_all(GPIO_MAX11131_Pinfo *pinfo);
+void configure_read_adc_all(GPIO_MAX11128_Pinfo *pinfo);
 
 /**
  *  Private function for transmit and receiving bytes to selected ADC
@@ -61,9 +61,9 @@ static inline void package_cmd(uint16_t cmd, uint8_t *tx);
 
 /*-------------------------Public Interface Functions-------------------------*/
 
-void init_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo) {
+void init_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11128_Pinfo *pinfo) {
     /*
-     * 	Automatically configures ADC to read from custom internal channels
+     * 	Automatically configures ADC to read from custom internal channels for hardware configurations with EOC and/or CNVST
      * 	Steps:
      * 	ADC configuration register
      *      1.  Set AVG_ON bit to 1
@@ -87,8 +87,8 @@ void init_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo) {
 
     if (pinfo->HARDWARE_CONFIGURATION != NO_EOC_NOR_CNVST) {
 		// Generate adc config data
-		uint16_t ADC_CONFIG_REG = MAX11131_CONFIG|SET_MAX11131_AVGON;
-		uint16_t ADC_MODE_CNTL_REG = MAX11131_MODE_CNTL|(CUSTOM_INT<<11);
+		uint16_t ADC_CONFIG_REG = MAX11128_CONFIG|SET_MAX11128_AVGON;
+		uint16_t ADC_MODE_CNTL_REG = MAX11128_MODE_CNTL|(CUSTOM_INT<<11);
 
 		configure_read_adc_all(pinfo);
 		set_read_adc_range(SPI_BUS, pinfo);
@@ -109,7 +109,7 @@ void init_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo) {
     }
 }
 
-void read_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo,
+void read_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11128_Pinfo *pinfo,
                                                 uint16_t *adc_out) {
     /*
      Read ADC Procedure for internal clock using SWCNV bit set(pg17):
@@ -141,7 +141,9 @@ void read_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo,
 
 	if (pinfo->HARDWARE_CONFIGURATION == NO_EOC_NOR_CNVST) {
 		// Select channel 0 to start
-		uint16_t ADC_MODE_CNTL_REG = MAX11131_MODE_CNTL | SET_MAX11131_CHAN_ID;
+		uint16_t ADC_MODE_CNTL_REG = MAX11128_MODE_CNTL | SET_MAX11128_CHAN_ID;
+
+		package_cmd(ADC_MODE_CNTL_REG, tx);
 
 		//Transmit chan_id of 0 to ADC for next frame to transmit and set
 		 __disable_irq();
@@ -155,7 +157,7 @@ void read_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo,
 		for(uint8_t channel = 1; channel <= 16; channel++){
 
 			tx[0] = (channel >> 1) | MAX11128_MODE_MANUAL;
-			tx[1] = (channel << 7) | SET_MAX11131_CHAN_ID;
+			tx[1] = (channel << 7) | SET_MAX11128_CHAN_ID;
 
 			__disable_irq();
 			set_adc(pinfo, GPIO_PIN_RESET);
@@ -178,7 +180,7 @@ void read_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo,
 		if (pinfo->HARDWARE_CONFIGURATION == EOC_AND_CNVST) {
 			cycle_cnvst(pinfo);
 		} else if (pinfo->HARDWARE_CONFIGURATION == EOC_ONLY){
-			ADC_MODE_CNTL_REG = SET_MAX11131_SWCNV|(CUSTOM_INT<<11);
+			ADC_MODE_CNTL_REG = SET_MAX11128_SWCNV|(CUSTOM_INT<<11);
 
 			package_cmd(ADC_MODE_CNTL_REG, tx);
 			__disable_irq();
@@ -189,9 +191,9 @@ void read_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo,
 		}
 
 		uint16_t elapsed_cycles = 0;
-		while (HAL_GPIO_ReadPin(pinfo->MAX11131_EOC_PORT,
-								pinfo->MAX11131_EOC_ADDR)) {
-			if (elapsed_cycles > MAX11131_EOC_WAIT_TIME) {
+		while (HAL_GPIO_ReadPin(pinfo->MAX11128_EOC_PORT,
+								pinfo->MAX11128_EOC_ADDR)) {
+			if (elapsed_cycles > MAX11128_EOC_WAIT_TIME) {
 				break;
 			}
 			++elapsed_cycles;
@@ -216,7 +218,7 @@ void read_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo,
 	}
 }
 
-void set_read_adc_range(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo) {
+void set_read_adc_range(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11128_Pinfo *pinfo) {
     /*
      Configure Custom ADC read procedure (pg32-33):
      1. Set AVGON BIT reg to 1
@@ -228,17 +230,17 @@ void set_read_adc_range(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo) 
      */
     uint8_t tx[2];
 
-    uint16_t SET_SCAN_REGISTER_0 = MAX11131_CUSTOM_SCAN0;
-    uint16_t SET_SCAN_REGISTER_1 = MAX11131_CUSTOM_SCAN1;
+    uint16_t SET_SCAN_REGISTER_0 = MAX11128_CUSTOM_SCAN0;
+    uint16_t SET_SCAN_REGISTER_1 = MAX11128_CUSTOM_SCAN1;
     uint8_t num_channels		= pinfo->NUM_CHANNELS;
 
     for (uint8_t i = 0; i < num_channels; ++i) {
-        uint8_t ch = pinfo->MAX11131_CHANNELS[i];
+        uint8_t ch = pinfo->MAX11128_CHANNELS[i];
         if (ch > 7) {
-            ch -= MAX11131_CUSTOM_SCAN0_SUB;
+            ch -= MAX11128_CUSTOM_SCAN0_SUB;
             SET_SCAN_REGISTER_0 = SET_SCAN_REGISTER_0 | (1 << ch);
         } else {
-            ch += MAX11131_CUSTOM_SCAN1_ADD;
+            ch += MAX11128_CUSTOM_SCAN1_ADD;
             SET_SCAN_REGISTER_1 = SET_SCAN_REGISTER_1 | (1 << ch);
         } // sets channel register bit in Custom Scan0 Register
     }
@@ -261,13 +263,13 @@ void set_read_adc_range(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11131_Pinfo *pinfo) 
     __enable_irq();
 }
 
-void configure_read_adc_all(GPIO_MAX11131_Pinfo *pinfo) {
+void configure_read_adc_all(GPIO_MAX11128_Pinfo *pinfo) {
     // Convenience function for reading all channels on adc
-    pinfo->NUM_CHANNELS = MAX11131_MAX_CHANNELS;
-    for (uint8_t i = 0; i < MAX11131_MAX_CHANNELS; ++i) {
-        pinfo->MAX11131_CHANNELS[i] = i;
+    pinfo->NUM_CHANNELS = MAX11128_MAX_CHANNELS;
+    for (uint8_t i = 0; i < MAX11128_MAX_CHANNELS; ++i) {
+        pinfo->MAX11128_CHANNELS[i] = i;
     }
-    pinfo->MAX11131_CHANNELS[14] = 15;
+    pinfo->MAX11128_CHANNELS[14] = 15;
 }
 
 static inline void write_adc_reg(SPI_HandleTypeDef *SPI_BUS, uint8_t *tx, uint8_t *rx) {
@@ -281,18 +283,18 @@ static inline void package_cmd(uint16_t cmd, uint8_t *tx) {
     tx[1] = (cmd & 0x00ff);
 }
 
-static inline void set_adc(GPIO_MAX11131_Pinfo *pinfo, GPIO_PinState state) {
-    HAL_GPIO_WritePin(pinfo->MAX11131_CS_PORT, pinfo->MAX11131_CS_ADDR, state);
+static inline void set_adc(GPIO_MAX11128_Pinfo *pinfo, GPIO_PinState state) {
+    HAL_GPIO_WritePin(pinfo->MAX11128_CS_PORT, pinfo->MAX11128_CS_ADDR, state);
 }
 
-void cycle_cnvst(GPIO_MAX11131_Pinfo *pinfo) {
+void cycle_cnvst(GPIO_MAX11128_Pinfo *pinfo) {
     HAL_GPIO_WritePin(
-        pinfo->MAX11131_CNVST_PORT, pinfo->MAX11131_CNVST_ADDR, GPIO_PIN_RESET
+        pinfo->MAX11128_CNVST_PORT, pinfo->MAX11128_CNVST_ADDR, GPIO_PIN_RESET
     );
     asm("nop");  // Clock Freq maxes at 180 MHz, at which each noop instruction
     asm("nop");  // takes about 5.5 ns to complete
     HAL_GPIO_WritePin(
-        pinfo->MAX11131_CNVST_PORT, pinfo->MAX11131_CNVST_ADDR, GPIO_PIN_SET
+        pinfo->MAX11128_CNVST_PORT, pinfo->MAX11128_CNVST_ADDR, GPIO_PIN_SET
     );
 }
 #endif
