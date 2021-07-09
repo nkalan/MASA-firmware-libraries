@@ -5,7 +5,7 @@
  * Samantha Liu (samzliu@umich.edu)
  * Michigan Aeronautical Science Association
  * Created June 19, 2021
- * Last edited:
+ * Last edited: July 8 2021
  */
 
 #include "MAX31856.h"
@@ -26,6 +26,7 @@
 #define MAX31856_CR1_REG_Write (0x81)
 #define MAX31856_TCTYPE_T ((uint8_t) 0b0111)
 
+#define MAX31856_TIMEOUT (0xFF)
 // Add any private helper functions here as required
 
 
@@ -42,22 +43,34 @@ void MAX31856_init_thermocouples(MAX31856_TC_Array* tcs) {
     // Read the type (default should be K) in CR1_REG
     uint8_t reg_addr[1] = {MAX31856_CR1_REG_Read};
     uint8_t type[1] = {0};
+    uint8_t check_type[1] = {0xff};
+
     __disable_irq();
     (*tcs->chip_select)(i);
-    HAL_SPI_Transmit(tcs->SPI_bus, (uint8_t *)reg_addr, 1, 0xFF);
-    HAL_SPI_Receive(tcs->SPI_bus, (uint8_t *)type, 1, 1); //interrupt?
+    HAL_SPI_Transmit(tcs->SPI_bus, (uint8_t *)reg_addr, 1, MAX31856_TIMEOUT);
+    HAL_SPI_Receive(tcs->SPI_bus, (uint8_t *)type, 1, MAX31856_TIMEOUT); //interrupt?
     (*tcs->chip_release)(i);
     __enable_irq();
-    
+
     // Switch to type T
-    type[0] &= 0xF0; // mask off bottom 4 bits
+    type[0] &= 0xF0; // mask off bottom 4 bits, clear bits 3:0
     type[0] |= MAX31856_TCTYPE_T;
     
     // Write the register
     uint8_t tx[2] = {MAX31856_CR1_REG_Write, type[0]};
     __disable_irq();
     (*tcs->chip_select)(i);
-    HAL_SPI_Transmit(tcs->SPI_bus, (uint8_t *)tx, 2, 1);
+    HAL_SPI_Transmit(tcs->SPI_bus, (uint8_t *)&tx[0], 1, MAX31856_TIMEOUT);
+    HAL_SPI_Transmit(tcs->SPI_bus, (uint8_t *)&tx[1], 1, MAX31856_TIMEOUT);
+    (*tcs->chip_release)(i);
+    __enable_irq();
+
+    // Checking the register
+    reg_addr[0] = 0x02;
+    __disable_irq();
+    (*tcs->chip_select)(i);
+    HAL_SPI_Transmit(tcs->SPI_bus, (uint8_t *)reg_addr, 1, MAX31856_TIMEOUT);
+    HAL_SPI_Receive(tcs->SPI_bus, (uint8_t *)check_type, 1, MAX31856_TIMEOUT);
     (*tcs->chip_release)(i);
     __enable_irq();
   }
@@ -75,13 +88,16 @@ float MAX31856_read_thermocouple(MAX31856_TC_Array* tcs, uint8_t tc_index) {
   // Write into rx
   __disable_irq();
   (*tcs->chip_select)(tc_index);
-  HAL_SPI_Transmit(tcs->SPI_bus, (uint8_t *)reg_addr, 1, 1);
-  HAL_SPI_Receive(tcs->SPI_bus, (uint8_t *)rx, 3, 1); //DRDY?
+  HAL_SPI_Transmit(tcs->SPI_bus, (uint8_t *)reg_addr, 1, MAX31856_TIMEOUT);
+  HAL_SPI_Receive(tcs->SPI_bus, (uint8_t *)rx, 3, MAX31856_TIMEOUT); //DRDY?
   (*tcs->chip_release)(tc_index);
   __enable_irq();
   
   // Convert rx into real_temp
-  temp32 = rx[0] << 16 | rx[1] << 8 | rx[2];
+  temp32 = 0b00000000| rx[0] << 16 | rx[1] << 8 | rx[2];
+  if (temp32 & 0x800000) {
+      temp32 |= 0xFF000000; // fix sign
+    }
   temp32 >>= 5;
   real_temp_c = temp32 / 128;
   
