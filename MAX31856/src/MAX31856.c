@@ -125,11 +125,20 @@ float MAX31856_read_thermocouple(MAX31856_TC_Array* tcs, uint8_t tc_index) {
   
   // Convert rx into real_temp
   temp32 = 0b00000000| rx[0] << 16 | rx[1] << 8 | rx[2];
+  temp32 = 0b111100000110000000000000;
   if (temp32 & 0x800000) { //if first bit is 1
       temp32 |= 0xFF000000; // fix sign
+      temp32 = ~temp32; // 2's complement
+      temp32 >>= 5;
+      temp32 += 1;
+	  real_temp_c = temp32 / 128.0 * -1;
   }
-  temp32 >>= 5;
-  real_temp_c = temp32 / 128.0;
+  else {
+	  temp32 >>= 5;
+	  real_temp_c = temp32 / 128.0;
+  }
+
+
   
   // Convert from Celsius to Kelvin and return
   return real_temp_c + 273.15;
