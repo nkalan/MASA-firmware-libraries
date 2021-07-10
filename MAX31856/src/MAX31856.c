@@ -77,9 +77,10 @@ void MAX31856_init_thermocouples(MAX31856_TC_Array* tcs) {
     __disable_irq();
     (*tcs->chip_select)(i);
     HAL_SPI_Transmit(tcs->SPI_bus, (uint8_t *)reg_addr, 1, MAX31856_TIMEOUT);
-    HAL_SPI_Receive(tcs->SPI_bus, (uint8_t *)check, 1, MAX31856_TIMEOUT);
+    HAL_SPI_Receive(tcs->SPI_bus, (uint8_t *)check, 2, MAX31856_TIMEOUT);
     (*tcs->chip_release)(i);
     __enable_irq();
+
 
     // Change to automatic conversion every 100 ms (datasheet p19)
 	reg_addr[0] = MAX31856_CR0_REG_Read;
