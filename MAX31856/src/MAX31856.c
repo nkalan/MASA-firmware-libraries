@@ -16,7 +16,7 @@
 #define MAX31856_CFG_REG_1_TC_TYPE_MASK (0x07)
 
 // Datasheet pg 24-25, concatenate the 3 bytes and convert to real number
-#define MAX31856_LNRZD_TC_TEMP_B2 (0x0C)
+#define MAX31856_LNRZD_TC_TEMP_B2 (0x0C) //High
 #define MAX31856_LNRZD_TC_TEMP_B1 (0x0D)
 #define MAX31856_LNRZD_TC_TEMP_B0 (0x0E)
 
@@ -26,7 +26,11 @@
 #define MAX31856_CR1_REG_Write (0x81)
 #define MAX31856_TCTYPE_T ((uint8_t) 0b0111)
 
-#define MAX31856_TIMEOUT (0xff)
+//Datasheet pg 19, Configuration 0 Register for changing conversion mode
+#define MAX31856_CR0_REG_Read (0x00)
+#define MAX31856_CR0_REG_Write (0x80)
+
+#define MAX31856_TIMEOUT (0x01)
 // Add any private helper functions here as required
 
 
@@ -39,41 +43,65 @@ void MAX31856_init_thermocouples(MAX31856_TC_Array* tcs) {
 	// We want to be able to read it by only using chip select and MISO,
 	// and shouldn't need to transmit commands.
 
-	uint8_t reg_addr[1] = {MAX31856_CR1_REG_Read};
-	uint8_t type[1];
+	uint8_t reg_addr[1];
+	uint8_t rx[1];
 	uint8_t tx[2];
-//	uint8_t check_type[1] = {0};
+	uint8_t check[1];
   
   for (uint8_t i = 0; i < tcs->num_tcs; i++) {
     // Read the type (default should be K) in CR1_REG
-	type[0] = 0;
+	reg_addr[0] = MAX31856_CR1_REG_Read;
+	rx[0] = 0;
     __disable_irq();
     (*tcs->chip_select)(i);
     HAL_SPI_Transmit(tcs->SPI_bus, (uint8_t *)reg_addr, 1, MAX31856_TIMEOUT);
-    HAL_SPI_Receive(tcs->SPI_bus, (uint8_t *)type, 1, MAX31856_TIMEOUT); //interrupt?
+    HAL_SPI_Receive(tcs->SPI_bus, (uint8_t *)rx, 1, MAX31856_TIMEOUT); //interrupt?
     (*tcs->chip_release)(i);
     __enable_irq();
 
     // Switch to type T
-    type[0] &= 0xF0; // mask off bottom 4 bits, clear bits 3:0
-    type[0] |= MAX31856_TCTYPE_T;
+    rx[0] &= 0xF0; // mask off bottom 4 bits, clear bits 3:0
+    rx[0] |= MAX31856_TCTYPE_T;
     
     // Write the register
     tx[0] = MAX31856_CR1_REG_Write;
-    tx[1] = type[0];
+    tx[1] = rx[0];
     __disable_irq();
     (*tcs->chip_select)(i);
     HAL_SPI_Transmit(tcs->SPI_bus, (uint8_t *)tx, 2, MAX31856_TIMEOUT);
     (*tcs->chip_release)(i);
     __enable_irq();
 
-//    // Checking the register
-//    __disable_irq();
-//    (*tcs->chip_select)(i);
-//    HAL_SPI_Transmit(tcs->SPI_bus, (uint8_t *)reg_addr, 1, MAX31856_TIMEOUT);
-//    HAL_SPI_Receive(tcs->SPI_bus, (uint8_t *)check_type, 1, MAX31856_TIMEOUT);
-//    (*tcs->chip_release)(i);
-//    __enable_irq();
+    // Checking the register
+    check[0] = 0;
+    __disable_irq();
+    (*tcs->chip_select)(i);
+    HAL_SPI_Transmit(tcs->SPI_bus, (uint8_t *)reg_addr, 1, MAX31856_TIMEOUT);
+    HAL_SPI_Receive(tcs->SPI_bus, (uint8_t *)check, 1, MAX31856_TIMEOUT);
+    (*tcs->chip_release)(i);
+    __enable_irq();
+
+    // Change to automatic conversion every 100 ms (datasheet p19)
+	reg_addr[0] = MAX31856_CR0_REG_Read;
+    rx[0] = 0;
+    __disable_irq();
+    (*tcs->chip_select)(i);
+    HAL_SPI_Transmit(tcs->SPI_bus, (uint8_t *)reg_addr, 1, MAX31856_TIMEOUT);
+    HAL_SPI_Receive(tcs->SPI_bus, (uint8_t *)rx, 1, MAX31856_TIMEOUT); //interrupt?
+    (*tcs->chip_release)(i);
+    __enable_irq();
+
+    // Change bit 7 to high, Automatic Conversion mode
+    rx[0] |= 0b10000000;
+
+    // Write the register CR0
+    tx[0] = MAX31856_CR0_REG_Write;
+    tx[1] = rx[0];
+    __disable_irq();
+    (*tcs->chip_select)(i);
+    HAL_SPI_Transmit(tcs->SPI_bus, (uint8_t *)tx, 2, MAX31856_TIMEOUT);
+    (*tcs->chip_release)(i);
+    __enable_irq();
   }
 }
 
