@@ -125,11 +125,10 @@ float MAX31856_read_thermocouple(MAX31856_TC_Array* tcs, uint8_t tc_index) {
   
   // Convert rx into real_temp
   temp32 = 0b00000000| rx[0] << 16 | rx[1] << 8 | rx[2];
-  temp32 = 0b111100000110000000000000;
-  if (temp32 & 0x800000) { //if first bit is 1
-      temp32 |= 0xFF000000; // fix sign
+  if (temp32 & 0x800000) { //if first bit is 1, temp is negative
+      temp32 |= 0xFF000000; // fill the first 8 bits that will be 0 later
       temp32 = ~temp32; // 2's complement
-      temp32 >>= 5;
+      temp32 >>= 5; //last 5 bits are not used
       temp32 += 1;
 	  real_temp_c = temp32 / 128.0 * -1;
   }
