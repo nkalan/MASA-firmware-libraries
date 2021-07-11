@@ -11,11 +11,21 @@ The main difference between this firmware library and others is that previous li
 [Old MAX31855 TC library](https://gitlab.eecs.umich.edu/masa/avionics/firmware-libraries/-/tree/feature-MAX31856-dev/MAX31855)
 The difference between this library and the MAX31855 library is that this library uses an internal look up table (LUT) for linearization.
 
+## Procedure
+The MAX31856_init_thermocouples function first reads register CR1 from the chip, then change bits 3:0 of that byte (without changing the others) from the default type K to type T. Then, it transmits the register back to the chip. It does the same thing with the converstion mode, reading CR0, changing bit 7 from 0 to 1, then transmits it back. 
+
+The MAX31856_read_thermocouple function reads 3 bytes from register 0C. Then it fixes the sign if necessary, changes to decimal, and converts to Kelvin to return. 
+
 ## SPI configuration
 * Frame Format: Motorola
 * Data Size: 8 bits
 * First Bit: MSB First
 * Maximum Serial Clock Frequency: 5MHz
+
+* Configuration for STM32CudeIDE:
+* Prescaler: 16
+* CPOL: Low
+* CPHA: 2 Edge (This is really important! According to the Digikey tutorial, CPOL low and CPHA 2 are the most commonly used, but remember to change to this in the IDE. Receive is supposed to sample on the falling edge. See datasheet pg 15-17. )
 
 ## Testing
 When testing with a nucleo board, we need to implement the chip select and chip release functions. Because the nucleo board acts nomal (like the nosecone recovery board), chip select and chip release will just write the CS pin. 
