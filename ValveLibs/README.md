@@ -19,7 +19,7 @@ In particular, `num_channels` specifies the channels in use, which should be bel
 
 The `valve_channels` array initializes an array of length `VALVELIB_MAX_CHANNELS` which assigns a specified valve to its corresponding channel indicated by its index.
 
-Lastly, `set_valve_func' takes initializes a function pointer, i.e. a memory address to a function responsible for setting the valve state. It is important note that each `Valve` instance requires a `set_valve_func` passed in, even if several instances share the same function.
+Lastly, `set_valve_func` takes initializes a function pointer, i.e. a memory address to a function responsible for setting the valve state. It is important note that each `Valve` instance requires a `set_valve_func` passed in, even if several instances share the same function.
 
 
 ## Valve functions
