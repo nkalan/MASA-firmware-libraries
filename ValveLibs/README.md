@@ -1,7 +1,6 @@
 # Valve Libraries (LAST UPDATED: July 11, 2021)
 
-This library serves to abstract the implementation of mutating valve states by wrapping around an existing implementation.
-
+This library serves to abstract the implementation of mutating valve states by wrapping around an existing valve mutator.
 ## Valve Struct Explanation
 
 Valve struct consists channel information. 
