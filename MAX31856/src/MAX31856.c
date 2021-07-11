@@ -86,7 +86,7 @@ void MAX31856_init_thermocouples(MAX31856_TC_Array* tcs) {
 	uint8_t check[2];
   
   for (uint8_t i = 0; i < tcs->num_tcs; i++) {
-    // Read the type (default should be K) in CR1_REG
+    // Read the type (default should be K, 00000011) in CR1_REG
 	rx[0] = 0;
     MAX31856_Read_Register(tcs, i, MAX31856_CR1_REG_Read, rx, 1);
 
@@ -105,13 +105,12 @@ void MAX31856_init_thermocouples(MAX31856_TC_Array* tcs) {
 //    MAX31856_Read_Register(tcs, i, MAX31856_CR0_REG_Read, check, 2);
 
     // Change to automatic conversion every 100 ms (datasheet p19)
-	reg_addr[0] = MAX31856_CR0_REG_Read;
     rx[0] = 0;
 
     // Changing to Automatic Conversion mode
     MAX31856_Read_Register(tcs, i, MAX31856_CR0_REG_Read, rx, 1);
 
-    // Set bit 7 to high (default should be 0, Normally Off)
+    // Set bit 7 to high (default should be 0, Normally Off, and all 0's for this register)
     rx[0] |= 0b10000000;
 
     // Write the register CR0
@@ -131,8 +130,7 @@ void MAX31856_init_thermocouples(MAX31856_TC_Array* tcs) {
 float MAX31856_read_thermocouple(MAX31856_TC_Array* tcs, uint8_t tc_index) {
 	// Read the temperature value from a single thermocouple chip, specified by tc_index.
 	// Then convert that number into a real temp in Celcius, then convert that to Kelvin and return it.
-  
-  uint8_t reg_addr[1] = {MAX31856_LNRZD_TC_TEMP_B2};
+
   uint8_t rx[3] = { 0, 0, 0 };
   uint32_t temp32;
   float real_temp_c;

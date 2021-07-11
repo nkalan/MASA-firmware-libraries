@@ -1,4 +1,4 @@
-# MAX31856 thermocouple library User Guide (Last Updated: Jun 30 2021)
+# MAX31856 thermocouple library User Guide (Last Updated: Jul 11 2021)
 This repository contains the MASA firmware library for the MAX31856  thermocouple to digital converter.
 
 [MAX31856 Datasheet](https://datasheets.maximintegrated.com/en/ds/MAX31856.pdf)
