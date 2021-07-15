@@ -12,32 +12,15 @@
  *  argument is left justified, and they all have different lengths
  */
 
-#include "L6470.h"
+#include "../inc/L6470.h"
+#include <stdbool.h>
 
 /**
  * Constants
- *
  */
-#define L6470_SPI_TIMEOUT   (0xFF)
+#define L6470_SPI_TIMEOUT   (0xFF)  // Arbitrary
 #define L6470_TICK_DURATION (0.000000250F)  // 250 ns
-#define L6470_STEP_ANGLE    (1.8F) // deg per step? TODO: check this
 
-/**
- * Stepping Mode
- *
- * Default mode on reset is 128th microstep.
- * When it's changed, the ABS_POS register is invalidated.
- *
- * datasheet pg 47
- */
-#define L6470_FULL_STEP_MODE          (0b000)
-#define L6470_HALF_STEP_MODE          (0b001)
-#define L6470_QUARTER_MICROSTEP_MODE  (0b010)
-#define L6470_EIGHTH_MICROSTEP_MODE   (0b011)
-#define L6470_16_MICROSTEP_MODE       (0b100)
-#define L6470_32_MICROSTEP_MODE       (0b101)
-#define L6470_64_MICROSTEP_MODE       (0b110)
-#define L6470_128_MICROSTEP_MODE      (0b111)
 
 /**
  * Commands
@@ -71,41 +54,6 @@
 #define L6470_CMD_HARDHIZ                ((uint8_t) 0b10101000)
 #define L6470_CMD_GETSTATUS              ((uint8_t) 0b11010000)
 
-/**
- * Register Addresses
- * Each one stores a different motor IC parameter
- * Each parameter has a different length, see datasheet
- *
- * Parameter addresses should be ORed with the GETPARAM and SETPARAM commands
- * Note that all param addresses are 5 bits. These fit into the GETPARAM and SETPARAM commands LSBs
- *
- * datasheet pg 40
- */
-#define L6470_PARAM_ABS_POS_ADDR        ((uint8_t) 0x01)  // 22 bits
-#define L6470_PARAM_EL_POS_ADDR         ((uint8_t) 0x02)  // 9 bits
-#define L6470_PARAM_MARK_ADDR           ((uint8_t) 0x03)  // 22 bits
-#define L6470_PARAM_SPEED_ADDR          ((uint8_t) 0x04)  // 20 bits
-#define L6470_PARAM_ACC_ADDR            ((uint8_t) 0x05)  // 12 bits
-#define L6470_PARAM_DEC_ADDR            ((uint8_t) 0x06)  // 12 bits
-#define L6470_PARAM_MAX_SPEED_ADDR      ((uint8_t) 0x07)  // 10 bits
-#define L6470_PARAM_MIN_SPEED_ADDR      ((uint8_t) 0x08)  // 13 bits
-#define L6470_PARAM_FS_SPD_ADDR         ((uint8_t) 0x15)  // 10 bits
-#define L6470_PARAM_KVAL_HOLD_ADDR      ((uint8_t) 0x09)  // 8 bits
-#define L6470_PARAM_KVAL_RUN_ADDR       ((uint8_t) 0x0A)  // 8 bits
-#define L6470_PARAM_KVAL_ACC_ADDR       ((uint8_t) 0x0B)  // 8 bits
-#define L6470_PARAM_KVAL_DEC_ADDR       ((uint8_t) 0x0C)  // 8 bits
-#define L6470_PARAM_INT_SPEED_ADDR      ((uint8_t) 0x0D)  // 14 bits
-#define L6470_PARAM_ST_SLP_ADDR         ((uint8_t) 0x0E)  // 8 bits
-#define L6470_PARAM_FN_SLOP_ACC_ADDR    ((uint8_t) 0x0F)  // 8 bits
-#define L6470_PARAM_FN_SLOP_DEC_ADDR    ((uint8_t) 0x10)  // 8 bits
-#define L6470_PARAM_K_THERM_ADDR        ((uint8_t) 0x11)  // 4 bits
-#define L6470_PARAM_ADC_OUT_ADDR        ((uint8_t) 0x12)  // 5 bits
-#define L6470_PARAM_OCD_TH_ADDR         ((uint8_t) 0x13)  // 4 bits
-#define L6470_PARAM_STALL_TH_ADDR       ((uint8_t) 0x14)  // 7 bits
-#define L6470_PARAM_STEP_MODE_ADDR      ((uint8_t) 0x16)  // 8 bits
-#define L6470_PARAM_ALARM_EN_ADDR       ((uint8_t) 0x17)  // 8 bits
-#define L6470_PARAM_CONFIG_ADDR         ((uint8_t) 0x18)  // 16 bits
-#define L6470_PARAM_STATUS_ADDR         ((uint8_t) 0x19)  // 16 bits
 
 /**
  * Status register bits
@@ -129,54 +77,114 @@
 #define L6470_STATUS_BIT_STEP_LOSS_B   ((uint16_t)0x4000)  // (active low, latched) Stall detected on bridge B
 #define L6470_STATUS_BIT_SCK_MOD       ((uint16_t)0x8000)  // (unused) step-clock mode
 
-/**
- * Transmit a message to the motor chip over SPI
- *
- * @param tx <uint8_t*> Pointer to array containing SPI transmit message
- * @param tx_sz <uint16_t> Size of the tx array in bytes
- */
-void L6470_SPI_transmit(L6470_Motor_IC *motor, uint8_t *tx, uint16_t tx_sz) {
-	__disable_irq();  // Prevent interrupts during the communication
-	HAL_GPIO_WritePin(motor->cs_base, motor->cs_pin, GPIO_PIN_RESET);  // chip select active low
-	motor->HAL_SPI_Status = HAL_SPI_Transmit(motor->hspi, tx, tx_sz,
-			L6470_SPI_TIMEOUT);  // Store status code
-	HAL_GPIO_WritePin(motor->cs_base, motor->cs_pin, GPIO_PIN_SET);
-	__enable_irq();
+
+void L6470_SPI_CS_delay(L6470_Motor_IC *motor) {
+	// Need to keep CS high >= 800ns in between SPI byte transmissions
+	// Assume max HCLK=180MHz, 1 cycle=5.5555ns
+	// 145 cycles required to delay that much
+	// Do 150 cycles
+
+	for (uint8_t i = 0; i < 150; i++) {
+		asm("nop"); // Delay next cycle
+	}
+
 }
 
 /**
- * Transmit and receive a message to the motor chip over SPI.
- * Same functionality as L6470_SPI_transmit_receive except with receiving
+ * Send a byte to the motor chip
  *
- * @param tx <uint8_t*> Pointer to array containing SPI transmit message
- * @param tx_sz <uint16_t> Size of the tx array in bytes
- * @param rx <uint8_t*> Pointer to array to receive the message in
- * @param rx_sz <uint16_t> Size of the rx array in bytes
+ * @param tx: Byte to transmit to the motor chip
  */
-void L6470_SPI_transmit_receive(L6470_Motor_IC *motor, uint8_t *tx,
-		uint16_t tx_sz, uint8_t *rx, uint16_t rx_sz) {
-	__disable_irq();
+void L6470_SPI_transmit_byte(L6470_Motor_IC *motor, uint8_t tx) {
 	HAL_GPIO_WritePin(motor->cs_base, motor->cs_pin, GPIO_PIN_RESET);
-	motor->HAL_SPI_Status = HAL_SPI_Transmit(motor->hspi, tx, tx_sz,
+	motor->HAL_SPI_Status = HAL_SPI_Transmit(motor->hspi, &tx, 1,
 			L6470_SPI_TIMEOUT);
-	motor->HAL_SPI_Status |= HAL_SPI_Receive(motor->hspi, rx, rx_sz,
-			L6470_SPI_TIMEOUT);  // Don't overwrite transmit status
 	HAL_GPIO_WritePin(motor->cs_base, motor->cs_pin, GPIO_PIN_SET);
-	__enable_irq();
 }
+
+/**
+ * Receive a byte from the motor chip and return its value.
+ */
+uint8_t L6470_SPI_receive_byte(L6470_Motor_IC *motor) {
+	uint8_t rx;
+	HAL_GPIO_WritePin(motor->cs_base, motor->cs_pin, GPIO_PIN_RESET);
+	motor->HAL_SPI_Status = HAL_SPI_Receive(motor->hspi, &rx, 1,
+			L6470_SPI_TIMEOUT);
+	HAL_GPIO_WritePin(motor->cs_base, motor->cs_pin, GPIO_PIN_SET);
+	return rx;
+}
+
+
+void L6470_write_register(L6470_Motor_IC *motor, uin8_t reg_addr,
+		uint32_t reg_val) {
+	//TODO: similar logic as L6470_read_register(), but write instead
+}
+
+
+uint32_t L6470_read_register(L6470_Motor_IC *motor, uint8_t reg_addr) {
+	uint8_t tx = L6470_CMD_GETPARAM | reg_addr;
+	uint8_t rx[4] = {0};
+
+	__disable_irq();
+	L6470_SPI_transmit_byte(motor, tx);
+
+	// All registers are >= 1 byte
+	L6470_SPI_CS_delay(motor);
+	rx[0] = L6470_SPI_receive_byte(motor);
+
+	// Registers >= 2 byte
+	if (reg_addr == L6470_PARAM_ABS_POS_ADDR
+			|| reg_addr == L6470_PARAM_EL_POS_ADDR
+			|| reg_addr == L6470_PARAM_MARK_ADDR
+			|| reg_addr == L6470_PARAM_SPEED_ADDR
+			|| reg_addr == L6470_PARAM_ACC_ADDR
+			|| reg_addr == L6470_PARAM_DEC_ADDR
+			|| reg_addr == L6470_PARAM_MAX_SPEED_ADDR
+			|| reg_addr == L6470_PARAM_MIN_SPEED_ADDR
+			|| reg_addr == L6470_PARAM_FS_SPD_ADDR
+			|| reg_addr == L6470_PARAM_INT_SPEED_ADDR
+			|| reg_addr == L6470_PARAM_CONFIG_ADDR
+			|| reg_addr == L6470_PARAM_STATUS_ADDR) {
+		L6470_SPI_CS_delay(motor);
+		rx[1] = L6470_SPI_receive_byte(motor);
+	}
+
+	// 3 byte registers
+	if (reg_addr == L6470_PARAM_ABS_POS_ADDR
+			|| reg_addr == L6470_PARAM_MARK_ADDR
+			|| reg_addr == L6470_PARAM_SPEED_ADDR) {
+		L6470_SPI_CS_delay(motor);
+		rx[2] = L6470_SPI_receive_byte(motor);
+	}
+
+	__enable_irq();
+
+	return ((uint32_t)rx[0] << 16) | ((uint32_t)rx[1] << 8)
+			| ((uint32_t)rx[0] << 0);
+}
+
 
 /**
  * Read the status register and update the struct's status variables
  * Datasheet pg 55
  */
-void L6470_update_status(L6470_Motor_IC *motor) {
-	uint8_t tx[1] = { L6470_CMD_GETPARAM | L6470_PARAM_STATUS_ADDR };
-	uint8_t rx[2];
-	L6470_SPI_transmit_receive(motor, tx, 1, rx, 2);
+void L6470_get_status(L6470_Motor_IC *motor) {
+
+	uint8_t tx = L6470_CMD_GETSTATUS;
+	uint8_t rx[2] = {0};
+
+	__disable_irq();
+	L6470_SPI_transmit_byte(motor, tx);
+	L6470_SPI_CS_delay(motor);
+	rx[0] = L6470_SPI_receive_byte(motor);
+	L6470_SPI_CS_delay(motor);
+	rx[1] = L6470_SPI_receive_byte(motor);
+	__enable_irq();
+
 	uint16_t status_reg = ((uint16_t)rx[1] << 8) | ((uint16_t)rx[0]);
 
 	// 1 bit statuses ("casting as bool" to avoid integer overflow)
-	motor->HiZ_status         = 0 != (status_reg & L6470_STATUS_BIT_HiZ);
+	motor->HiZ_status         =  (status_reg & L6470_STATUS_BIT_HiZ);
 	motor->BUSY_status        = 0 != (status_reg & L6470_STATUS_BIT_BUSY);
 	motor->SW_F_status        = 0 != (status_reg & L6470_STATUS_BIT_SW_F);
 	motor->SW_EVN_status      = 0 != (status_reg & L6470_STATUS_BIT_SW_EVN);
@@ -212,9 +220,4 @@ void L6470_update_status(L6470_Motor_IC *motor) {
 	default:
 		break;
 	}
-}
-
-float L6470_get_motor_speed(L6470_Motor_IC *motor) {
-	// Datasheet pg 42
-	return 0;
 }

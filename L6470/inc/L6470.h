@@ -19,6 +19,42 @@
 
 
 /**
+ * Register Addresses
+ * Each one stores a different motor IC parameter
+ * Each parameter has a different length, see datasheet
+ *
+ * Parameter addresses should be ORed with the GETPARAM and SETPARAM commands
+ * Note that all param addresses are 5 bits. These fit into the GETPARAM and SETPARAM commands LSBs
+ *
+ * datasheet pg 40
+ */
+#define L6470_PARAM_ABS_POS_ADDR        ((uint8_t) 0x01)  // 22 bits
+#define L6470_PARAM_EL_POS_ADDR         ((uint8_t) 0x02)  // 9 bits
+#define L6470_PARAM_MARK_ADDR           ((uint8_t) 0x03)  // 22 bits
+#define L6470_PARAM_SPEED_ADDR          ((uint8_t) 0x04)  // 20 bits
+#define L6470_PARAM_ACC_ADDR            ((uint8_t) 0x05)  // 12 bits
+#define L6470_PARAM_DEC_ADDR            ((uint8_t) 0x06)  // 12 bits
+#define L6470_PARAM_MAX_SPEED_ADDR      ((uint8_t) 0x07)  // 10 bits
+#define L6470_PARAM_MIN_SPEED_ADDR      ((uint8_t) 0x08)  // 13 bits
+#define L6470_PARAM_FS_SPD_ADDR         ((uint8_t) 0x15)  // 10 bits
+#define L6470_PARAM_KVAL_HOLD_ADDR      ((uint8_t) 0x09)  // 8 bits
+#define L6470_PARAM_KVAL_RUN_ADDR       ((uint8_t) 0x0A)  // 8 bits
+#define L6470_PARAM_KVAL_ACC_ADDR       ((uint8_t) 0x0B)  // 8 bits
+#define L6470_PARAM_KVAL_DEC_ADDR       ((uint8_t) 0x0C)  // 8 bits
+#define L6470_PARAM_INT_SPEED_ADDR      ((uint8_t) 0x0D)  // 14 bits
+#define L6470_PARAM_ST_SLP_ADDR         ((uint8_t) 0x0E)  // 8 bits
+#define L6470_PARAM_FN_SLOP_ACC_ADDR    ((uint8_t) 0x0F)  // 8 bits
+#define L6470_PARAM_FN_SLOP_DEC_ADDR    ((uint8_t) 0x10)  // 8 bits
+#define L6470_PARAM_K_THERM_ADDR        ((uint8_t) 0x11)  // 4 bits
+#define L6470_PARAM_ADC_OUT_ADDR        ((uint8_t) 0x12)  // 5 bits
+#define L6470_PARAM_OCD_TH_ADDR         ((uint8_t) 0x13)  // 4 bits
+#define L6470_PARAM_STALL_TH_ADDR       ((uint8_t) 0x14)  // 7 bits
+#define L6470_PARAM_STEP_MODE_ADDR      ((uint8_t) 0x16)  // 8 bits
+#define L6470_PARAM_ALARM_EN_ADDR       ((uint8_t) 0x17)  // 8 bits
+#define L6470_PARAM_CONFIG_ADDR         ((uint8_t) 0x18)  // 16 bits
+#define L6470_PARAM_STATUS_ADDR         ((uint8_t) 0x19)  // 16 bits
+
+/**
  * Returned from status register
  * datasheet pg 56
  */
@@ -29,6 +65,30 @@ typedef enum {
 	Constant_Speed = 3
 } L6470_Motor_Status;
 
+
+/**
+ * Stepping Mode
+ *
+ * Default mode on reset is 128th microstep.
+ * When it's changed, the ABS_POS register is invalidated.
+ *
+ * datasheet pg 47
+ */
+typedef enum {
+	L6470_FULL_STEP_MODE = 0,          // (0b000)
+	L6470_HALF_STEP_MODE = 1,          // (0b001)
+	L6470_QUARTER_MICROSTEP_MODE = 2,  // (0b010)
+	L6470_EIGHTH_MICROSTEP_MODE = 3,   // (0b011)
+	L6470_16_MICROSTEP_MODE = 4,       // (0b100)
+	L6470_32_MICROSTEP_MODE = 5,       // (0b101)
+	L6470_64_MICROSTEP_MODE = 6,       // (0b100)
+	L6470_128_MICROSTEP_MODE = 7       // (0b111)
+} L6470_Stepping_Mode;
+
+
+/**
+ * Struct to contain motor controller information
+ */
 typedef struct {
 	SPI_HandleTypeDef *hspi;      // SPI bus for communication, specified by user
 	GPIO_TypeDef *cs_base;        // Chip select pin, specified by user
@@ -42,6 +102,8 @@ typedef struct {
 
 	// HAL SPI status gets updated after every SPI transmission
 	HAL_StatusTypeDef HAL_SPI_Status;
+
+	L6470_Stepping_Mode step_mode;
 
 	// Status bits that get updated when the STATUS register is read
 	L6470_Motor_Status MOT_status;
@@ -62,17 +124,46 @@ typedef struct {
 	// Should be set by interrupts, not by the status register
 	volatile uint8_t BUSY_status;
 
+	float step_angle;  // degrees per step? I think our motors are 1.8, but don't assume that here
+
 } L6470_Motor_IC;
 
-/**
- * Returns the motor speed from the chip's internal register
- * Raw bits are in steps/tick, function returns steps/s
- */
-float L640_get_motor_speed(L6470_Motor_IC* motor);
 
 void L6470_set_motor_speed(L6470_Motor_IC* motor);
 
-void L6470_update_status(L6470_Motor_IC* motor);
+
+/**
+ * Send the command to reset the absolute position register
+ */
+void L6470_zero_motor(L6470_Motor_IC* motor);
+
+
+/**
+ * Go to an absolute position (degrees)
+ *
+ * @param abs_pos: The absolute position in degrees to go to.
+ */
+void L6470_goto_motor_pos(L6470_Motor_IC* motor, float abs_pos);
+
+
+/**
+ * Send the GETSTATUS command, which returns the status register and resets the FLAG.
+ * Stores the status bits into the struct.
+ */
+void L6470_get_status(L6470_Motor_IC* motor);
+
+
+/**
+ * Accepts one of the L6470_PARAM_..._ADDR values defined above.
+ * Returns the bits in the register.
+ */
+uint32_t L6470_read_register(L6470_Motor_IC* motor, uint8_t reg_addr);
+
+
+/**
+ * Call L6470_get_status to reset FLAG, configure the stepping mode, and store the step angle in the struct.
+ */
+void L6470_init_motor(L6470_Motor_IC* motor, L6470_Stepping_Mode mode, float step_angle);
 
 #endif /* HAL_SPI_MODULE_ENABLED */
 #endif /* INC_L6470_H_ */
