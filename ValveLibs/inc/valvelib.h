@@ -12,6 +12,7 @@
 
 #define VALVELIB_MAX_CHANNELS (5)
 
+#include "stdint.h"
 
 typedef struct {
 	uint8_t num_channels;
