@@ -36,7 +36,7 @@
  */
 #define L6470_CMD_NOP                    ((uint8_t) 0b00000000)
 #define L6470_CMD_SETPARAM               ((uint8_t) 0b00000000)  // set PARAM register in b4-0
-#define L6470_CMD_GETPARAM               ((uint8_t) 0b00100000)  // set PARAM register in b4-0
+#define L6470_CMD_GETPARAM               ((uint8_t) 0b00100000)  // get PARAM register in b4-0
 #define L6470_CMD_RUN                    ((uint8_t) 0b01010000)  // b0=DIR
 #define L6470_CMD_STEPCLOCK              ((uint8_t) 0b01011000)  // b0=DIR
 #define L6470_CMD_MOVE                   ((uint8_t) 0b01000000)  // b0=DIR
@@ -118,6 +118,43 @@ uint8_t L6470_SPI_receive_byte(L6470_Motor_IC *motor) {
 void L6470_write_register(L6470_Motor_IC *motor, uin8_t reg_addr,
 		uint32_t reg_val) {
 	//TODO: similar logic as L6470_read_register(), but write instead
+	uint8_t tx = L6470_CMD_SETPARAM | reg_addr;
+	uint8_t rx[4] = {0};
+
+	__disable_irq();
+	L6470_SPI_transmit_byte(motor, tx);
+
+	// All registers are >= 1 byte
+	L6470_SPI_CS_delay(motor);
+	rx[0] = L6470_SPI_receive_byte(motor);
+
+	// Registers >= 2 byte
+	if (reg_addr == L6470_PARAM_ABS_POS_ADDR
+			|| reg_addr == L6470_PARAM_EL_POS_ADDR
+			|| reg_addr == L6470_PARAM_MARK_ADDR
+			|| reg_addr == L6470_PARAM_SPEED_ADDR
+			|| reg_addr == L6470_PARAM_ACC_ADDR
+			|| reg_addr == L6470_PARAM_DEC_ADDR
+			|| reg_addr == L6470_PARAM_MAX_SPEED_ADDR
+			|| reg_addr == L6470_PARAM_MIN_SPEED_ADDR
+			|| reg_addr == L6470_PARAM_FS_SPD_ADDR
+			|| reg_addr == L6470_PARAM_INT_SPEED_ADDR
+			|| reg_addr == L6470_PARAM_CONFIG_ADDR
+			|| reg_addr == L6470_PARAM_STATUS_ADDR) {
+		L6470_SPI_CS_delay(motor);
+		rx[1] = L6470_SPI_receive_byte(motor);
+	}
+
+	// 3 byte registers
+	if (reg_addr == L6470_PARAM_ABS_POS_ADDR
+			|| reg_addr == L6470_PARAM_MARK_ADDR
+			|| reg_addr == L6470_PARAM_SPEED_ADDR) {
+		L6470_SPI_CS_delay(motor);
+		rx[2] = L6470_SPI_receive_byte(motor);
+	}
+
+	__enable_irq();
+
 }
 
 
@@ -170,7 +207,7 @@ uint32_t L6470_read_register(L6470_Motor_IC *motor, uint8_t reg_addr) {
  */
 void L6470_get_status(L6470_Motor_IC *motor) {
 
-	uint8_t tx = L6470_CMD_GETSTATUS;
+	uint8_t tx = L6470_CMD_GE TSTATUS;
 	uint8_t rx[2] = {0};
 
 	__disable_irq();
