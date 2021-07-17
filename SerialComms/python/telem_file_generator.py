@@ -5,7 +5,7 @@ Michigan Aeronautical Science Association
 Authors: Nathaniel Kalantar (nkalan@umich.edu) and Leif Gullstad (leifg@umich.edu)
 Modified from Engine Controller 3 code
 Created: November 9, 2020
-Updated: January 6, 2020
+Updated: July 16, 2021
 """
 
 import file_generator_byte_info as byte_info
@@ -240,10 +240,25 @@ def main():
 
             """ Update globals.h / globals.c strings """
 
-            # Check if the variable should be generated as an array
-            open_bracket_index = firmware_variable.find("[")
+            # Check if the variable is a struct, array, or variable
+            is_var = False
+            is_arr = False
+            is_struct_var = False
 
-            # If it should be in an array ('[' was found in the variable name)
+
+            # Check for struct (has a . in it)
+            dot_index = firmware_variable.find(".")
+            if (dot_index != -1):
+                is_struct_var = True
+                try:
+                    assert(dot_index < len(firmware_variable) - 1)  # . should be followed by something else
+                    assert(dot_index > 0)  # . should be preceded by something else
+                except:
+                    error_ocurred = True
+                    print("[row " + str(csv_row_num + 1) + "] " + "")
+
+            # Check for array (has a varname[n] format)
+            open_bracket_index = firmware_variable.find("[")
             if (open_bracket_index != -1):
 
                 # Get the variable name without brackets and the array index
