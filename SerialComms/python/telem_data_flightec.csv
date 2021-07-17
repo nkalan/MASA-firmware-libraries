@@ -105,6 +105,9 @@ tank 0 lower pressure,tank_low_pres[0],-100,3000,psi,float,%.1f,int32_t,100,tnk0
 tank 1 lower pressure,tank_low_pres[1],-100,3000,psi,float,%.1f,int32_t,100,tnk1.lp,float,,,y
 pot 0,epot[0],,,deg,volatile float,%d,int32_t,10,mtr0.pot,float,,,y
 pot 1,epot[1],,,deg,volatile float,%d,int32_t,10,mtr1.pot,float,,,y
+LOX Tank Control Pressure,lox_control_pressure,-100,10000,psi,float,%.1f,int32_t,10,,float,,,y
+Fuel Tank Control Pressure,fuel_control_pressure,-100,10000,psi,float,%.1f,int32_t,10,,float,,,y
+COPV Control Pressure,copv_control_pressure,-100,10000,psi,float,%.1f,int32_t,10,,float,,,y
 tank 0 enable,is_tank_enabled[0],,,ul,volatile uint8_t,%i,uint8_t,1,tnk0.en,int,,,n
 tank 1 enable,is_tank_enabled[1],,,ul,volatile uint8_t,%i,uint8_t,1,tnk1.en,int,,,n
 AutoPress Duration,autopress_duration,,,ms,uint32_t,%i,uint32_t,1,,int,,,y
