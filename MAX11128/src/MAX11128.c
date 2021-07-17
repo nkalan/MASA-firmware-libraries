@@ -141,7 +141,7 @@ void read_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11128_Pinfo *pinfo,
 
 	if (pinfo->HARDWARE_CONFIGURATION == NO_EOC_NOR_CNVST) {
 		// Select channel 0 to start
-		uint16_t ADC_MODE_CNTL_REG = MAX11128_MODE_CNTL | SET_MAX11128_CHAN_ID;
+		uint16_t ADC_MODE_CNTL_REG = MAX11128_MODE_MANUAL | SET_MAX11128_CHAN_ID;
 
 		package_cmd(ADC_MODE_CNTL_REG, tx);
 
@@ -153,33 +153,45 @@ void read_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11128_Pinfo *pinfo,
 		set_adc(pinfo, GPIO_PIN_SET);
 		__enable_irq();
 
-		uint8_t channelId;
-		for(uint8_t channel = 1; channel <= 16; channel++){
+		uint16_t adc_counts = 0;
+		uint16_t channelId  = 0;
 
-			tx[0] = (channel >> 1) | MAX11128_MODE_MANUAL;
-			tx[1] = (channel << 7) | SET_MAX11128_CHAN_ID;
+		//Loop over channels and send next channel to be read
+		for(uint8_t channel = 1; channel <= 16; channel++){
+			//The other configurations skip channel 15, so this one does too
+			if (channel == 14) {
+				channel = 15;
+			}
+			ADC_MODE_CNTL_REG = (MAX11128_MODE_MANUAL | SET_MAX11128_CHAN_ID);
+
+			package_cmd(ADC_MODE_CNTL_REG, tx);
+
+			//GSE code for putting channel id in correct place
+			tx[0] = (channel >> 1) | tx[0];
+			tx[1] = (channel << 7) | tx[1];
+			rx[0] = rx[1] = 0;
 
 			__disable_irq();
 			set_adc(pinfo, GPIO_PIN_RESET);
 			if(HAL_SPI_TransmitReceive(SPI_BUS, tx, rx, 2, 1) == HAL_TIMEOUT){
-
 			}
 			set_adc(pinfo, GPIO_PIN_SET);
 			__enable_irq();
 
+			adc_counts = ((rx[0]<<8)|rx[1]) & 0x0FFF;
 			channelId = (rx[0] >> 4) & 0x0F;
-			adc_out[channelId] = ((rx[1])|(rx[0] << 8)) & 0x0FFF;
-
+			adc_out[channelId] = adc_counts;
 		}
 	} else { // ADC configuration has EOC and possibly CNVST
 
 		set_adc(pinfo, GPIO_PIN_SET);
 
-		uint8_t ADC_MODE_CNTL_REG;
+		uint16_t ADC_MODE_CNTL_REG;
 
 		if (pinfo->HARDWARE_CONFIGURATION == EOC_AND_CNVST) {
 			cycle_cnvst(pinfo);
 		} else if (pinfo->HARDWARE_CONFIGURATION == EOC_ONLY){
+			//SWCNV bit needs to be set every time
 			ADC_MODE_CNTL_REG = SET_MAX11128_SWCNV|(CUSTOM_INT<<11);
 
 			package_cmd(ADC_MODE_CNTL_REG, tx);
@@ -188,6 +200,7 @@ void read_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11128_Pinfo *pinfo,
 			if (HAL_SPI_Transmit(SPI_BUS, tx, 2, 1) == HAL_TIMEOUT) {}
 			set_adc(pinfo, GPIO_PIN_SET);
 			__enable_irq();
+
 		}
 
 		uint16_t elapsed_cycles = 0;
