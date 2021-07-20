@@ -129,7 +129,12 @@ typedef struct {
 } L6470_Motor_IC;
 
 
-void L6470_set_motor_speed(L6470_Motor_IC* motor);
+/**
+ * Convert the speed to step/tick and set it
+ *
+ * @param degree_per_sec: the desired speed
+ */
+void L6470_set_motor_speed(L6470_Motor_IC* motor, float degree_per_sec);
 
 
 /**
@@ -141,9 +146,9 @@ void L6470_zero_motor(L6470_Motor_IC* motor);
 /**
  * Go to an absolute position (degrees)
  *
- * @param abs_pos: The absolute position in degrees to go to.
+ * @param abs_pos_degree: The absolute position in degrees to go to.
  */
-void L6470_goto_motor_pos(L6470_Motor_IC* motor, float abs_pos);
+void L6470_goto_motor_pos(L6470_Motor_IC* motor, float abs_pos_degree);
 
 
 /**
@@ -164,6 +169,11 @@ uint32_t L6470_read_register(L6470_Motor_IC* motor, uint8_t reg_addr);
  * Call L6470_get_status to reset FLAG, configure the stepping mode, and store the step angle in the struct.
  */
 void L6470_init_motor(L6470_Motor_IC* motor, L6470_Stepping_Mode mode, float step_angle);
+
+/**
+ * Resets the device to power-up conditions. (datasheet pg. 21)
+ */
+void L6470_reset_device(L6470_Motor_IC* motor);
 
 #endif /* HAL_SPI_MODULE_ENABLED */
 #endif /* INC_L6470_H_ */
