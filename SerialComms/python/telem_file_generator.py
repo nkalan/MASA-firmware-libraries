@@ -245,9 +245,10 @@ def main():
             is_arr = False
             is_struct_var = False
 
-
-            # Check for struct (has a . in it)
             dot_index = firmware_variable.find(".")
+            open_bracket_index = firmware_variable.find("[")
+
+            # Check for struct (has a varname.whatever format)
             if (dot_index != -1):
                 is_struct_var = True
                 try:
@@ -258,14 +259,14 @@ def main():
                     print("[row " + str(csv_row_num + 1) + "] " + "")
 
             # Check for array (has a varname[n] format)
-            open_bracket_index = firmware_variable.find("[")
-            if (open_bracket_index != -1):
+            elif (open_bracket_index != -1):
 
                 # Get the variable name without brackets and the array index
                 array_name = firmware_variable[0 : open_bracket_index]
                 close_bracket_index = firmware_variable.find("]")
                 array_index_str = firmware_variable[open_bracket_index + 1 : close_bracket_index] # Leave it as a string to error check it
 
+                is_arr = True
                 # Error check the array bracket formatting
                 try:
                     assert(close_bracket_index == len(firmware_variable) - 1)  # ']' should be the last character
@@ -288,6 +289,7 @@ def main():
                     global_arrays_generated[array_name][1] = max(array_index_decimal, global_arrays_generated[array_name][1])
                 # Otherwise create the list and set the array size manually
                 else:
+                    is_var = True
                     global_arrays_generated[array_name] = [firmware_type, array_index_decimal]
             
             # If it's not supposed to be an array (normal variable)
