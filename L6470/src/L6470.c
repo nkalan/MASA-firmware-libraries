@@ -2,7 +2,7 @@
  * L6470.c
  *
  *  Created on: May 23, 2021
- *      Author: natha
+ *      Author: Nathaniel Kalantar and Samantha Liu
  *
  *  Datasheet:
  *  https://www.st.com/content/ccc/resource/technical/document/datasheet/a5/86/06/1c/fa/b2/43/db/CD00255075.pdf/files/CD00255075.pdf/_jcr_content/translations/en.CD00255075.pdf
@@ -58,7 +58,7 @@
 /**
  * Status register bits
  * Latched status bits stay in that state until they are read
- * datasheet pg 55
+ * Datasheet pg 55
  */
 #define L6470_STATUS_BIT_HiZ           ((uint16_t)0x0001)  // Bridges are in HiZ
 #define L6470_STATUS_BIT_BUSY          ((uint16_t)0x0002)  // Mirrors ~BUSY pin
@@ -156,10 +156,6 @@ void L6470_write_register(L6470_Motor_IC *motor, uint8_t reg_addr,
 
 	// All registers are >= 1 byte
 	shifted_byte = reg_val;
-	L6470_SPI_CS_delay(motor);
-	L6470_SPI_transmit_byte(motor, (uint8_t)shifted_byte);
-
-	shifted_byte = (uint8_t)reg_val;
 	L6470_SPI_CS_delay(motor);
 	L6470_SPI_transmit_byte(motor, (uint8_t)shifted_byte);
 
@@ -317,18 +313,20 @@ void L6470_goto_motor_pos(L6470_Motor_IC* motor, float abs_pos_degree) {
 	//Convert degrees to steps
 	uint32_t abs_pos_step = (uint32_t)(abs_pos_degree / motor->step_angle);
 
+	L6470_write_register(motor, L6470_PARAM_MAX_SPEED_ADDR, (uint32_t)3355);
+	uint32_t max_speed = L6470_read_register(motor, L6470_PARAM_MAX_SPEED_ADDR);
+
 	__disable_irq();
 	L6470_SPI_transmit_byte(motor, L6470_CMD_GOTO);
 	L6470_SPI_CS_delay(motor);
-	L6470_SPI_transmit_byte(motor, (uint8_t)abs_pos_step >> 16);
+	L6470_SPI_transmit_byte(motor, (uint8_t)(abs_pos_step >> 16));
 	L6470_SPI_CS_delay(motor);
-	L6470_SPI_transmit_byte(motor, (uint8_t)abs_pos_step >> 8);
+	L6470_SPI_transmit_byte(motor, (uint8_t)(abs_pos_step >> 8));
 	L6470_SPI_CS_delay(motor);
 	L6470_SPI_transmit_byte(motor, (uint8_t)abs_pos_step);
+	__enable_irq();
 
 	// Busy
-
-	__enable_irq();
 
 	return;
 }
@@ -339,6 +337,24 @@ void L6470_reset_device(L6470_Motor_IC* motor) {
 	__disable_irq();
 	L6470_SPI_transmit_byte(motor, tx);
 	L6470_SPI_CS_delay(motor);
+	__enable_irq();
+
+	return;
+}
+
+void L6470_run(L6470_Motor_IC* motor, uint8_t dir, float speed_deg_sec) {
+	speed_deg_sec /= motor->step_angle; // Convert to step/sec
+	// This formula is from datasheet pg 42. 90 degree/sec converts to ~3355 step/tick
+	uint32_t speed_step_tick = (uint32_t)(speed_deg_sec * 67.108864);
+
+	__disable_irq();
+	L6470_SPI_transmit_byte(motor, L6470_CMD_RUN | dir);
+	L6470_SPI_CS_delay(motor);
+	L6470_SPI_transmit_byte(motor, (uint8_t)(speed_step_tick >> 16));
+	L6470_SPI_CS_delay(motor);
+	L6470_SPI_transmit_byte(motor, (uint8_t)(speed_step_tick >> 8));
+	L6470_SPI_CS_delay(motor);
+	L6470_SPI_transmit_byte(motor, (uint8_t)speed_step_tick);
 	__enable_irq();
 
 	return;

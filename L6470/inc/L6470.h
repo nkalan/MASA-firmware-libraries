@@ -2,7 +2,7 @@
  * L6470.h
  *
  *  Created on: May 23, 2021
- *      Author: natha
+ *      Author: Nathaniel Kalantar and Samantha Liu
  *
  *  Datasheet:
  *  https://www.st.com/content/ccc/resource/technical/document/datasheet/a5/86/06/1c/fa/b2/43/db/CD00255075.pdf/files/CD00255075.pdf/_jcr_content/translations/en.CD00255075.pdf
@@ -26,7 +26,7 @@
  * Parameter addresses should be ORed with the GETPARAM and SETPARAM commands
  * Note that all param addresses are 5 bits. These fit into the GETPARAM and SETPARAM commands LSBs
  *
- * datasheet pg 40
+ * Datasheet pg 40
  */
 #define L6470_PARAM_ABS_POS_ADDR        ((uint8_t) 0x01)  // 22 bits
 #define L6470_PARAM_EL_POS_ADDR         ((uint8_t) 0x02)  // 9 bits
@@ -56,7 +56,7 @@
 
 /**
  * Returned from status register
- * datasheet pg 56
+ * Datasheet pg 56
  */
 typedef enum {
 	Stopped = 0,
@@ -72,7 +72,7 @@ typedef enum {
  * Default mode on reset is 128th microstep.
  * When it's changed, the ABS_POS register is invalidated.
  *
- * datasheet pg 47
+ * Datasheet pg 47
  */
 typedef enum {
 	L6470_FULL_STEP_MODE = 0,          // (0b000)
@@ -171,9 +171,18 @@ uint32_t L6470_read_register(L6470_Motor_IC* motor, uint8_t reg_addr);
 void L6470_init_motor(L6470_Motor_IC* motor, L6470_Stepping_Mode mode, float step_angle);
 
 /**
- * Resets the device to power-up conditions. (datasheet pg. 21)
+ * Resets the device to power-up conditions.
+ * Datasheet pg 21
  */
 void L6470_reset_device(L6470_Motor_IC* motor);
+
+/**
+ * Produces a motion in dir and at speed.
+ * @param dir: 1 for forwards and 0 for reverse.
+ * @param speed: as expressed in degrees per second. Should be within the bounds of min_ and max_speed.
+ * Datasheet pg 60
+ */
+void L6470_run(L6470_Motor_IC* motor, uint8_t dir, float speed_deg_sec);
 
 #endif /* HAL_SPI_MODULE_ENABLED */
 #endif /* INC_L6470_H_ */
