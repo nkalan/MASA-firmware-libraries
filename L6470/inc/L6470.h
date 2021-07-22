@@ -144,12 +144,23 @@ void L6470_zero_motor(L6470_Motor_IC* motor);
 
 
 /**
- * Go to an absolute position (degrees)
+ * Go to an absolute position (degrees) USING THE SHORTEST PATH
  *
  * @param abs_pos_degree: The absolute position in degrees to go to.
  */
 void L6470_goto_motor_pos(L6470_Motor_IC* motor, float abs_pos_degree);
 
+
+/**
+ * Go to an absolute position (degrees) IN THE SPECIFIED DIRECTION
+ *
+ * @param abs_pos_degree: The absolute position in degrees to go to.
+ * @param dir: 1 for forwards and 0 for reverse.
+ *
+ * Datasheet pg 62
+ *
+ */
+void L6470_goto_motor_pos_dir(L6470_Motor_IC* motor, uint8_t dir, float abs_pos_degree);
 
 /**
  * Send the GETSTATUS command, which returns the status register and resets the FLAG.
@@ -178,8 +189,10 @@ void L6470_reset_device(L6470_Motor_IC* motor);
 
 /**
  * Produces a motion in dir and at speed.
+ *
  * @param dir: 1 for forwards and 0 for reverse.
  * @param speed: as expressed in degrees per second. Should be within the bounds of min_ and max_speed.
+ *
  * Datasheet pg 60
  */
 void L6470_run(L6470_Motor_IC* motor, uint8_t dir, float speed_deg_sec);

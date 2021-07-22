@@ -313,11 +313,27 @@ void L6470_goto_motor_pos(L6470_Motor_IC* motor, float abs_pos_degree) {
 	//Convert degrees to steps
 	uint32_t abs_pos_step = (uint32_t)(abs_pos_degree / motor->step_angle);
 
-	L6470_write_register(motor, L6470_PARAM_MAX_SPEED_ADDR, (uint32_t)3355);
-	uint32_t max_speed = L6470_read_register(motor, L6470_PARAM_MAX_SPEED_ADDR);
-
 	__disable_irq();
 	L6470_SPI_transmit_byte(motor, L6470_CMD_GOTO);
+	L6470_SPI_CS_delay(motor);
+	L6470_SPI_transmit_byte(motor, (uint8_t)(abs_pos_step >> 16));
+	L6470_SPI_CS_delay(motor);
+	L6470_SPI_transmit_byte(motor, (uint8_t)(abs_pos_step >> 8));
+	L6470_SPI_CS_delay(motor);
+	L6470_SPI_transmit_byte(motor, (uint8_t)abs_pos_step);
+	__enable_irq();
+
+	// Busy
+
+	return;
+}
+
+void L6470_goto_motor_pos_dir(L6470_Motor_IC* motor, uint8_t dir, float abs_pos_degree) {
+	//Convert degrees to steps
+	uint32_t abs_pos_step = (uint32_t)(abs_pos_degree / motor->step_angle);
+
+	__disable_irq();
+	L6470_SPI_transmit_byte(motor, L6470_CMD_GOTO_DIR|dir);
 	L6470_SPI_CS_delay(motor);
 	L6470_SPI_transmit_byte(motor, (uint8_t)(abs_pos_step >> 16));
 	L6470_SPI_CS_delay(motor);
