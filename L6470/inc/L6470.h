@@ -150,18 +150,6 @@ void L6470_zero_motor(L6470_Motor_IC* motor);
  */
 void L6470_goto_motor_pos(L6470_Motor_IC* motor, float abs_pos_degree);
 
-
-/**
- * Go to an absolute position (degrees) IN THE SPECIFIED DIRECTION
- *
- * @param abs_pos_degree: The absolute position in degrees to go to.
- * @param dir: 1 for forwards and 0 for reverse.
- *
- * Datasheet pg 62
- *
- */
-void L6470_goto_motor_pos_dir(L6470_Motor_IC* motor, uint8_t dir, float abs_pos_degree);
-
 /**
  * Send the GETSTATUS command, which returns the status register and resets the FLAG.
  * Stores the status bits into the struct.
@@ -181,6 +169,7 @@ uint32_t L6470_read_register(L6470_Motor_IC* motor, uint8_t reg_addr);
  */
 void L6470_init_motor(L6470_Motor_IC* motor, L6470_Stepping_Mode mode, float step_angle);
 
+//---
 /**
  * Resets the device to power-up conditions.
  * Datasheet pg 21
@@ -196,6 +185,17 @@ void L6470_reset_device(L6470_Motor_IC* motor);
  * Datasheet pg 60
  */
 void L6470_run(L6470_Motor_IC* motor, uint8_t dir, float speed_deg_sec);
+
+/**
+ * Go to an absolute position (degrees) IN THE SPECIFIED DIRECTION
+ *
+ * @param abs_pos_degree: The absolute position in degrees to go to.
+ * @param dir: 1 for forwards and 0 for reverse.
+ *
+ * Datasheet pg 62
+ *
+ */
+void L6470_goto_motor_pos_dir(L6470_Motor_IC* motor, uint8_t dir, float abs_pos_degree);
 
 #endif /* HAL_SPI_MODULE_ENABLED */
 #endif /* INC_L6470_H_ */
