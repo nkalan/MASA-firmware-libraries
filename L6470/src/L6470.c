@@ -315,8 +315,8 @@ void L6470_goto_motor_pos(L6470_Motor_IC* motor, float abs_pos_degree) {
 	//Convert degrees to steps
 	if (abs_pos_degree < 0) {
 		abs_pos_step = (uint32_t)(abs_pos_degree * -1 / motor->step_angle);
+		abs_pos_step -= 1;
 		abs_pos_step = ~abs_pos_step;
-		abs_pos_step += 1;
 	}
 	else { // Positive (forward direction)
 		abs_pos_step = (uint32_t)(abs_pos_degree / motor->step_angle);
