@@ -197,9 +197,28 @@ void L6470_run(L6470_Motor_IC* motor, uint8_t dir, float speed_deg_sec);
  */
 void L6470_goto_motor_pos_dir(L6470_Motor_IC* motor, uint8_t dir, float abs_pos_degree);
 
+/*
+ * Soft stop. Datasheet pg 64.
+ */
 void L6470_soft_stop(L6470_Motor_IC* motor);
 
+/*
+ * Hard stop. Datasheet pg 65.
+ */
 void L6470_hard_stop(L6470_Motor_IC* motor);
+
+/*
+ * Reads the absolute position register and converts it from steps to degrees.
+ * Datasheet pg 41.
+ */
+float L6470_get_position_deg(L6470_Motor_IC* motor);
+
+/*
+ * Reads the current speed and converts it from steps/tick to steps/sec.
+ * Datasheet pg 42.
+ */
+float L6470_get_speed_steps_sec(L6470_Motor_IC* motor);
+
 
 #endif /* HAL_SPI_MODULE_ENABLED */
 #endif /* INC_L6470_H_ */

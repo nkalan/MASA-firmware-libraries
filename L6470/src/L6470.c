@@ -397,8 +397,28 @@ void L6470_run(L6470_Motor_IC* motor, uint8_t dir, float speed_deg_sec) {
 
 void L6470_soft_stop(L6470_Motor_IC* motor) {
 	L6470_SPI_transmit_byte(motor, L6470_CMD_SOFTSTOP);
+	return;
 }
 
 void L6470_hard_stop(L6470_Motor_IC* motor) {
 	L6470_SPI_transmit_byte(motor, L6470_CMD_HARDSTOP);
+	return;
+}
+
+float L6470_get_position_deg(L6470_Motor_IC* motor) {
+	float pos = 0;
+	pos = (float)L6470_read_register(motor, L6470_PARAM_ABS_POS_ADDR);
+	// Converting
+	pos *= motor->step_angle;
+
+	return pos;
+}
+
+float L6470_get_speed_steps_sec(L6470_Motor_IC* motor) {
+	float spd = 0;
+	spd = (float)L6470_read_register(motor, L6470_PARAM_SPEED_ADDR);
+	// Converting according to datasheet pg 42
+	spd = spd * 2^(-28) / 0.00000025;
+
+	return spd;
 }
