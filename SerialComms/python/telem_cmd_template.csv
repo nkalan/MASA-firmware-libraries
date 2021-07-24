@@ -25,7 +25,7 @@ packet_type,function_name,nums args,arg0,arg_type0,xmit_scale,arg1,arg_type1,xmi
 31,set_telem,1,state,uint8_t,1,,,,,,,0 1 2 3,enables/disables telem
 32,set_presstank_status,2,tank_num,uint8_t,1,state,uint8_t,1,,,,2 3,enables/disables pressurization tank num
 33,ambientize_pot,1,pot_num,uint8_t,1,,,,,,,2 3,ambientizes potentiometer position
-34,led_write,2,led_num,uint8_t,1,state,uint8_t,1,,,,0,turn an led on or off
+34,led_write,2,led_num,uint8_t,1,state,uint8_t,1,,,,0 2,turn an led on or off
 35,tare_load_cells,0,,,,,,,,,,0,zero out all the load cells
 36,set_system_clock,1,system_time,uint32_t,1,,,,,,,0 1 2 3,sets the system clock time
 37,remove_pressure_ambients,0,,,,,,,,,,2,Sets stored pressure ambients to 0
@@ -38,3 +38,6 @@ packet_type,function_name,nums args,arg0,arg_type0,xmit_scale,arg1,arg_type1,xmi
 44,start_simulation,0,,,,,,,,,,2,Starts an already loaded software in loop simulation
 45,advance_simulation,0,,,,,,,,,,2,Moves to the next simulation test case
 46,stop_simulation,0,,,,,,,,,,2,Stops the data simulation
+47,set_pt_lower_voltage,2,pt_num,uint8_t,1,lower_voltage,float,10,,,,2,Sets a pressure transducer calibration lower voltage range
+48,set_pt_upper_voltage,2,pt_num,uint8_t,1,upper_voltage,float,10,,,,2,Sets a pressure transducer calibration upper voltage range
+49,set_pt_upper_pressure,2,pt_num,uint8_t,1,pressure_range,float,1,,,,2,Sets a pressure transducer calibration upper pressure range
