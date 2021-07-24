@@ -158,10 +158,6 @@ void read_adc(SPI_HandleTypeDef *SPI_BUS, GPIO_MAX11128_Pinfo *pinfo,
 
 		//Loop over channels and send next channel to be read
 		for(uint8_t channel = 1; channel <= 16; channel++){
-			//The other configurations skip channel 15, so this one does too
-			if (channel == 14) {
-				channel = 15;
-			}
 			ADC_MODE_CNTL_REG = (MAX11128_MODE_MANUAL | SET_MAX11128_CHAN_ID);
 
 			package_cmd(ADC_MODE_CNTL_REG, tx);
@@ -282,7 +278,10 @@ void configure_read_adc_all(GPIO_MAX11128_Pinfo *pinfo) {
     for (uint8_t i = 0; i < MAX11128_MAX_CHANNELS; ++i) {
         pinfo->MAX11128_CHANNELS[i] = i;
     }
-    pinfo->MAX11128_CHANNELS[14] = 15;
+    if (pinfo->HARDWARE_CONFIGURATION == EOC_AND_CNVST) {
+    	pinfo->NUM_CHANNELS--;
+    	pinfo->MAX11128_CHANNELS[14] = 15;
+    }
 }
 
 static inline void write_adc_reg(SPI_HandleTypeDef *SPI_BUS, uint8_t *tx, uint8_t *rx) {
