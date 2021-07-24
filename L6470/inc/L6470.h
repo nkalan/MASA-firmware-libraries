@@ -134,7 +134,7 @@ typedef struct {
  *
  * @param degree_per_sec: the desired speed
  */
-void L6470_set_motor_speed(L6470_Motor_IC* motor, float degree_per_sec);
+void L6470_set_motor_max_speed(L6470_Motor_IC* motor, float degree_per_sec);
 
 
 /**
@@ -169,7 +169,7 @@ uint32_t L6470_read_register(L6470_Motor_IC* motor, uint8_t reg_addr);
  */
 void L6470_init_motor(L6470_Motor_IC* motor, L6470_Stepping_Mode mode, float step_angle);
 
-//---
+//---------functions not in asana---------
 /**
  * Resets the device to power-up conditions.
  * Datasheet pg 21
@@ -196,6 +196,10 @@ void L6470_run(L6470_Motor_IC* motor, uint8_t dir, float speed_deg_sec);
  *
  */
 void L6470_goto_motor_pos_dir(L6470_Motor_IC* motor, uint8_t dir, float abs_pos_degree);
+
+void L6470_soft_stop(L6470_Motor_IC* motor);
+
+void L6470_hard_stop(L6470_Motor_IC* motor);
 
 #endif /* HAL_SPI_MODULE_ENABLED */
 #endif /* INC_L6470_H_ */

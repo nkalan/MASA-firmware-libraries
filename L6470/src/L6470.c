@@ -292,8 +292,17 @@ void L6470_init_motor(L6470_Motor_IC* motor, L6470_Stepping_Mode mode, float ste
 	return;
 }
 
-void L6470_set_motor_speed(L6470_Motor_IC* motor, float degree_per_sec) {
+void L6470_set_motor_max_speed(L6470_Motor_IC* motor, float degree_per_sec) {
+//	// Check register h07; default should be h41
+	uint32_t max_speed = L6470_read_register(motor, L6470_PARAM_MAX_SPEED_ADDR);
 
+	// Convert; datasheet pg 43
+	// Max is 1023 step/tick = 15610 step/s = 28098 degree/s
+	uint32_t step_per_tick = (uint32_t)(degree_per_sec / 1.8 / 15.25);
+	L6470_write_register(motor, L6470_PARAM_MAX_SPEED_ADDR, step_per_tick);
+
+	//check register
+	max_speed = L6470_read_register(motor, L6470_PARAM_MAX_SPEED_ADDR);
 
 	return;
 }
@@ -332,10 +341,11 @@ void L6470_goto_motor_pos(L6470_Motor_IC* motor, float abs_pos_degree) {
 	L6470_SPI_transmit_byte(motor, (uint8_t)abs_pos_step);
 	__enable_irq();
 
-	// Busy
-
 	return;
 }
+
+
+//---------------------Helper functions------------------------
 
 void L6470_goto_motor_pos_dir(L6470_Motor_IC* motor, uint8_t dir, float abs_pos_degree) {
 	//Convert degrees to steps
@@ -383,4 +393,12 @@ void L6470_run(L6470_Motor_IC* motor, uint8_t dir, float speed_deg_sec) {
 	__enable_irq();
 
 	return;
+}
+
+void L6470_soft_stop(L6470_Motor_IC* motor) {
+	L6470_SPI_transmit_byte(motor, L6470_CMD_SOFTSTOP);
+}
+
+void L6470_hard_stop(L6470_Motor_IC* motor) {
+	L6470_SPI_transmit_byte(motor, L6470_CMD_HARDSTOP);
 }
