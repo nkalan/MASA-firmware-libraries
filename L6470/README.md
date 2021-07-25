@@ -18,7 +18,6 @@ This repository contains the MASA firmware library for the L6470 stepper motor c
 * `L6470_goto_motor_pos(L6470_Motor_IC* motor, float abs_pos_degree)`
 * `L6470_zero_motor` zeros the absolute position register.
 * `L6470_run(L6470_Motor_IC* motor, uint8_t dir, float speed_deg_sec)` runs at a constant speed. After delaying for a certain amount of time, a stop function can be called.
-* `L6470_soft_stop(L6470_Motor_IC* motor)`
 * `L6470_hard_stop`
 * `L6470_soft_stop`
 * `L6470_get_position_deg`
