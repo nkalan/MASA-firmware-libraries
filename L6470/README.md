@@ -1,6 +1,6 @@
-# L6470 stepper motor IC library User Guide (Last updated Jul 23 2021)
+# L6470 stepper motor IC library User Guide (Last updated Jul 25 2021)
 
-TODO: write better readme
+This repository contains the MASA firmware library for the L6470 stepper motor chip.
 
 [L6470 Datasheet](https://www.st.com/content/ccc/resource/technical/document/datasheet/a5/86/06/1c/fa/b2/43/db/CD00255075.pdf/files/CD00255075.pdf/_jcr_content/translations/en.CD00255075.pdf)
 
@@ -83,3 +83,63 @@ Starting on datasheet pg. 42, there are a bunch of formulas for converting betwe
 - `L6470_goto_motor_pos` runs at the maximum speed, which is in register h07; it is default h41 (991.8 step/s) and can be changed 
 * To convert: step/tick = deg_sec / 1.8 / 15.25 (which is 27.45).
 * Max is 1023 step/tick = 15610 step/s = 28098 degree/s (datasheet)
+
+## Testing and sample code
+In main.c, make sure to ` #include "L6470.h"`.
+Initialize the motor:
+```
+/* USER CODE BEGIN 2 */
+mot.hspi = &hspi2;
+mot.cs_base = SPI2_CS_GPIO_Port;
+mot.cs_pin = SPI2_CS_Pin;
+HAL_GPIO_WritePin(SPI2_CS_GPIO_Port, SPI2_CS_Pin, 1);
+HAL_Delay(1);
+
+L6470_reset_device(&mot);
+
+L6470_init_motor(&mot, L6470_FULL_STEP_MODE, 1.8);
+```
+Set speed, acceleration, and deceleration:
+```
+L6470_set_motor_max_speed(&mot, 360);
+L6470_set_motor_acc_dec(&mot, 0.5, 0.5);
+```
+Before the while loop, run() can be called to have the motor start running in a constant speed:
+```
+L6470_run(&mot, 1, 90);
+```
+In the while loop, multiple functions can be tested:
+```
+// Read Write
+    L6470_reset_device(&mot);
+    status_reg_read = L6470_read_register(&mot, L6470_PARAM_STEP_MODE_ADDR);
+    L6470_write_register(&mot, L6470_PARAM_STEP_MODE_ADDR,      L6470_FULL_STEP_MODE);
+    status_reg_read = L6470_read_register(&mot, L6470_PARAM_STEP_MODE_ADDR);
+
+// Get Status
+    L6470_get_status(&mot);
+    HAL_Delay(2);
+
+// Consecutive Run
+    L6470_run(&mot, 1, 1080);
+    HAL_Delay(3000);
+
+    L6470_run(&mot, 0, 360);
+    HAL_Delay(3000);
+
+// Soft and hard stop
+    L6470_hard_stop(&mot);
+    HAL_Delay(1000);
+
+// GOTO and zero
+    L6470_goto_motor_pos(&mot, 1800);
+    while(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_4) == 0) {} // This is our BUSY pin
+    HAL_Delay(3000);
+
+    L6470_goto_motor_pos(&mot, 0);
+    while(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_4) == 0) {}
+    HAL_Delay(3000);
+
+    L6470_zero_motor(&mot);
+    HAL_Delay(1);
+```

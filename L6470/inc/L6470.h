@@ -97,7 +97,7 @@ typedef struct {
 	GPIO_TypeDef *busy_base;      // Active low pin set by motor while executing commands
 	uint16_t busy_pin;
 
-	uint16_t speed;               // motor speed, in steps/tick
+	uint32_t speed;               // motor speed, in steps/tick
 	// bounded by MIN_SPEED and MAX_SPEED
 
 	// HAL SPI status gets updated after every SPI transmission
@@ -128,6 +128,34 @@ typedef struct {
 
 } L6470_Motor_IC;
 
+/**
+ * Accepts one of the L6470_PARAM_..._ADDR values defined above.
+ * Returns the bits in the register.
+ */
+uint32_t L6470_read_register(L6470_Motor_IC* motor, uint8_t reg_addr);
+
+/**
+ * Writes the register. Check datasheet pg 40 for which registers are writable.
+ */
+void L6470_write_register(L6470_Motor_IC *motor, uint8_t reg_addr,
+		uint32_t reg_val);
+
+/**
+ * Resets the device to power-up conditions.
+ * Datasheet pg 21
+ */
+void L6470_reset_device(L6470_Motor_IC* motor);
+
+/**
+ * Send the GETSTATUS command, which returns the status register and resets the FLAG.
+ * Stores the status bits into the struct.
+ */
+void L6470_get_status(L6470_Motor_IC* motor);
+
+/**
+ * Call L6470_get_status to reset FLAG, configure the stepping mode, and store the step angle in the struct.
+ */
+void L6470_init_motor(L6470_Motor_IC* motor, L6470_Stepping_Mode mode, float step_angle);
 
 /**
  * Convert the speed to step/tick and set it
@@ -136,11 +164,14 @@ typedef struct {
  */
 void L6470_set_motor_max_speed(L6470_Motor_IC* motor, float degree_per_sec);
 
-
-/**
- * Send the command to reset the absolute position register
+/*
+ * Set the acceleration and deceleration registers.
+ * Dafault is 2008 steps/tick^2, max is 4095, min is 1.
+ * In order to change the acceleration to 80% of the max, for example, pass in 0.8 for acc_ratio.
+ *
+ * Datasheet pg 40 and 42.
  */
-void L6470_zero_motor(L6470_Motor_IC* motor);
+void L6470_set_motor_acc_dec(L6470_Motor_IC* motor, float acc_ratio, float dec_ratio);
 
 
 /**
@@ -151,30 +182,9 @@ void L6470_zero_motor(L6470_Motor_IC* motor);
 void L6470_goto_motor_pos(L6470_Motor_IC* motor, float abs_pos_degree);
 
 /**
- * Send the GETSTATUS command, which returns the status register and resets the FLAG.
- * Stores the status bits into the struct.
+ * Send the command to reset the absolute position register
  */
-void L6470_get_status(L6470_Motor_IC* motor);
-
-
-/**
- * Accepts one of the L6470_PARAM_..._ADDR values defined above.
- * Returns the bits in the register.
- */
-uint32_t L6470_read_register(L6470_Motor_IC* motor, uint8_t reg_addr);
-
-
-/**
- * Call L6470_get_status to reset FLAG, configure the stepping mode, and store the step angle in the struct.
- */
-void L6470_init_motor(L6470_Motor_IC* motor, L6470_Stepping_Mode mode, float step_angle);
-
-//---------functions not in asana---------
-/**
- * Resets the device to power-up conditions.
- * Datasheet pg 21
- */
-void L6470_reset_device(L6470_Motor_IC* motor);
+void L6470_zero_motor(L6470_Motor_IC* motor);
 
 /**
  * Produces a motion in dir and at speed.
@@ -191,6 +201,7 @@ void L6470_run(L6470_Motor_IC* motor, uint8_t dir, float speed_deg_sec);
  *
  * @param abs_pos_degree: The absolute position in degrees to go to.
  * @param dir: 1 for forwards and 0 for reverse.
+ * Basically not useful because absolute position can be negative.
  *
  * Datasheet pg 62
  *

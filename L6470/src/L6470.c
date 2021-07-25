@@ -207,6 +207,20 @@ void L6470_write_register(L6470_Motor_IC *motor, uint8_t reg_addr,
 	L6470_SPI_CS_delay(motor);
 	L6470_SPI_transmit_byte(motor, (uint8_t)shifted_byte);
 
+	L6470_SPI_CS_delay(motor);
+
+	__enable_irq();
+
+	return;
+}
+
+
+void L6470_reset_device(L6470_Motor_IC* motor) {
+	uint8_t tx = L6470_CMD_RESETDEVICE;
+
+	__disable_irq();
+	L6470_SPI_transmit_byte(motor, tx);
+	L6470_SPI_CS_delay(motor);
 	__enable_irq();
 
 	return;
@@ -298,14 +312,26 @@ void L6470_set_motor_max_speed(L6470_Motor_IC* motor, float degree_per_sec) {
 	uint32_t max_speed = L6470_read_register(motor, L6470_PARAM_MAX_SPEED_ADDR);
 
 	// Convert; datasheet pg 43
-	// Max is 1023 step/tick = 15610 step/s = 28098 degree/s
-	uint32_t step_per_tick = (uint32_t)(degree_per_sec / 1.8 / 15.25);
+	// Max is 1023 step/tick = 15610 step/s = 28098 degree/s;
+	// CAUTION: Because we want to compensate for this division so that the motor can run() at a speed close to max,
+	// I added this +1, but this does mean that goto() runs at a faster speed than the degree_per_sec here
+	uint32_t step_per_tick = (uint32_t)((degree_per_sec / 1.8 / 15.25) + 1);
 	L6470_write_register(motor, L6470_PARAM_MAX_SPEED_ADDR, step_per_tick);
 
 	//check register
-	max_speed = L6470_read_register(motor, L6470_PARAM_MAX_SPEED_ADDR);
+	//max_speed = L6470_read_register(motor, L6470_PARAM_MAX_SPEED_ADDR);
 
 	return;
+}
+
+
+void L6470_set_motor_acc_dec(L6470_Motor_IC* motor, float acc_ratio, float dec_ratio){
+	uint32_t acc_step_tick_2 = (uint16_t)(4095 * acc_ratio + 0.5);
+	uint32_t dec_step_tick_2 = (uint16_t)(4095 * dec_ratio + 0.5);
+	L6470_write_register(motor, L6470_PARAM_ACC_ADDR, acc_step_tick_2);
+	L6470_write_register(motor, L6470_PARAM_DEC_ADDR, dec_step_tick_2);
+
+	//uint32_t check = L6470_read_register(motor, L6470_PARAM_DEC_ADDR);
 }
 
 
@@ -402,8 +428,11 @@ void L6470_hard_stop(L6470_Motor_IC* motor) {
 float L6470_get_position_deg(L6470_Motor_IC* motor) {
 	float pos = 0;
 	pos = (float)L6470_read_register(motor, L6470_PARAM_ABS_POS_ADDR);
+
 	// Converting
 	pos *= motor->step_angle;
+
+	//update struct
 
 	return pos;
 }
@@ -412,8 +441,12 @@ float L6470_get_position_deg(L6470_Motor_IC* motor) {
 float L6470_get_speed_steps_sec(L6470_Motor_IC* motor) {
 	float spd = 0;
 	spd = (float)L6470_read_register(motor, L6470_PARAM_SPEED_ADDR);
+
+	// update struct
+	motor->speed = (uint32_t)spd;
+
 	// Converting according to datasheet pg 42
-	spd = spd * 2^(-28) / 0.00000025;
+	spd = spd / 67.108864 * motor->step_angle;
 
 	return spd;
 }
