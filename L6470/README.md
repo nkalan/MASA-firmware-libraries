@@ -110,7 +110,6 @@ L6470_run(&mot, 1, 90);
 In the while loop, multiple functions can be tested:
 ```
 // Read Write
-    L6470_reset_device(&mot);
     status_reg_read = L6470_read_register(&mot, L6470_PARAM_STEP_MODE_ADDR);
     L6470_write_register(&mot, L6470_PARAM_STEP_MODE_ADDR,      L6470_FULL_STEP_MODE);
     status_reg_read = L6470_read_register(&mot, L6470_PARAM_STEP_MODE_ADDR);
