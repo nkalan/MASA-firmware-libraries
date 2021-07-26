@@ -87,7 +87,6 @@ void L6470_SPI_CS_delay(L6470_Motor_IC *motor) {
 	for (uint8_t i = 0; i < 150; i++) {
 		asm("nop"); // Delay next cycle
 	}
-
 }
 
 /**
@@ -114,56 +113,7 @@ uint8_t L6470_SPI_receive_byte(L6470_Motor_IC *motor) {
 	return rx;
 }
 
-
-void L6470_write_register(L6470_Motor_IC *motor, uint8_t reg_addr,
-		uint32_t reg_val) {
-	// Similar logic as L6470_read_register(), but write instead
-	// User handles matching the right length of reg_val to reg_addr
-	uint8_t tx = L6470_CMD_SETPARAM | reg_addr;
-	uint32_t shifted_byte = 0;
-
-	__disable_irq();
-	L6470_SPI_transmit_byte(motor, tx);
-
-	// 3 byte registers
-	if (reg_addr == L6470_PARAM_ABS_POS_ADDR
-			|| reg_addr == L6470_PARAM_MARK_ADDR
-			|| reg_addr == L6470_PARAM_SPEED_ADDR) {
-		shifted_byte = reg_val;
-		shifted_byte >>= 16;
-		L6470_SPI_CS_delay(motor);
-		L6470_SPI_transmit_byte(motor, (uint8_t)shifted_byte);
-	}
-
-	// Registers >= 2 byte
-	if (reg_addr == L6470_PARAM_ABS_POS_ADDR
-			|| reg_addr == L6470_PARAM_EL_POS_ADDR
-			|| reg_addr == L6470_PARAM_MARK_ADDR
-			|| reg_addr == L6470_PARAM_SPEED_ADDR
-			|| reg_addr == L6470_PARAM_ACC_ADDR
-			|| reg_addr == L6470_PARAM_DEC_ADDR
-			|| reg_addr == L6470_PARAM_MAX_SPEED_ADDR
-			|| reg_addr == L6470_PARAM_MIN_SPEED_ADDR
-			|| reg_addr == L6470_PARAM_FS_SPD_ADDR
-			|| reg_addr == L6470_PARAM_INT_SPEED_ADDR
-			|| reg_addr == L6470_PARAM_CONFIG_ADDR
-			|| reg_addr == L6470_PARAM_STATUS_ADDR) {
-		shifted_byte = reg_val;
-		shifted_byte >>= 8;
-		L6470_SPI_CS_delay(motor);
-		L6470_SPI_transmit_byte(motor, (uint8_t)shifted_byte);
-	}
-
-	// All registers are >= 1 byte
-	shifted_byte = reg_val;
-	L6470_SPI_CS_delay(motor);
-	L6470_SPI_transmit_byte(motor, (uint8_t)shifted_byte);
-
-	__enable_irq();
-
-	return;
-}
-
+//---------------------End of Helper Functions----------------------
 
 uint32_t L6470_read_register(L6470_Motor_IC *motor, uint8_t reg_addr) {
 	uint8_t tx = L6470_CMD_GETPARAM | reg_addr;
@@ -212,6 +162,69 @@ uint32_t L6470_read_register(L6470_Motor_IC *motor, uint8_t reg_addr) {
 	return return_val;
 }
 
+
+void L6470_write_register(L6470_Motor_IC *motor, uint8_t reg_addr,
+		uint32_t reg_val) {
+	// Similar logic as L6470_read_register(), but write instead
+	// User handles matching the right length of reg_val to reg_addr
+	uint8_t tx = L6470_CMD_SETPARAM | reg_addr;
+	uint32_t shifted_byte = 0;
+
+	__disable_irq();
+	L6470_SPI_transmit_byte(motor, tx);
+
+	// 3 byte registers
+	if (reg_addr == L6470_PARAM_ABS_POS_ADDR
+			|| reg_addr == L6470_PARAM_MARK_ADDR
+			|| reg_addr == L6470_PARAM_SPEED_ADDR) {
+		shifted_byte = reg_val;
+		shifted_byte >>= 16;
+		L6470_SPI_CS_delay(motor);
+		L6470_SPI_transmit_byte(motor, (uint8_t)shifted_byte);
+	}
+
+	// Registers >= 2 byte
+	if (reg_addr == L6470_PARAM_ABS_POS_ADDR
+			|| reg_addr == L6470_PARAM_EL_POS_ADDR
+			|| reg_addr == L6470_PARAM_MARK_ADDR
+			|| reg_addr == L6470_PARAM_SPEED_ADDR
+			|| reg_addr == L6470_PARAM_ACC_ADDR
+			|| reg_addr == L6470_PARAM_DEC_ADDR
+			|| reg_addr == L6470_PARAM_MAX_SPEED_ADDR
+			|| reg_addr == L6470_PARAM_MIN_SPEED_ADDR
+			|| reg_addr == L6470_PARAM_FS_SPD_ADDR
+			|| reg_addr == L6470_PARAM_INT_SPEED_ADDR
+			|| reg_addr == L6470_PARAM_CONFIG_ADDR
+			|| reg_addr == L6470_PARAM_STATUS_ADDR) {
+		shifted_byte = reg_val;
+		shifted_byte >>= 8;
+		L6470_SPI_CS_delay(motor);
+		L6470_SPI_transmit_byte(motor, (uint8_t)shifted_byte);
+	}
+
+	// All registers are >= 1 byte
+	shifted_byte = reg_val;
+	L6470_SPI_CS_delay(motor);
+	L6470_SPI_transmit_byte(motor, (uint8_t)shifted_byte);
+
+	L6470_SPI_CS_delay(motor);
+
+	__enable_irq();
+
+	return;
+}
+
+
+void L6470_reset_device(L6470_Motor_IC* motor) {
+	uint8_t tx = L6470_CMD_RESETDEVICE;
+
+	__disable_irq();
+	L6470_SPI_transmit_byte(motor, tx);
+	L6470_SPI_CS_delay(motor);
+	__enable_irq();
+
+	return;
+}
 
 
 /**
@@ -274,6 +287,7 @@ void L6470_get_status(L6470_Motor_IC *motor) {
 	}
 }
 
+
 void L6470_init_motor(L6470_Motor_IC* motor, L6470_Stepping_Mode mode, float step_angle) {
 	// Call L6470_get_status to reset FLAG
 	L6470_get_status(motor);
@@ -292,31 +306,34 @@ void L6470_init_motor(L6470_Motor_IC* motor, L6470_Stepping_Mode mode, float ste
 	return;
 }
 
+
 void L6470_set_motor_max_speed(L6470_Motor_IC* motor, float degree_per_sec) {
 //	// Check register h07; default should be h41
 	uint32_t max_speed = L6470_read_register(motor, L6470_PARAM_MAX_SPEED_ADDR);
 
 	// Convert; datasheet pg 43
-	// Max is 1023 step/tick = 15610 step/s = 28098 degree/s
-	uint32_t step_per_tick = (uint32_t)(degree_per_sec / 1.8 / 15.25);
+	// Max is 1023 step/tick = 15610 step/s = 28098 degree/s;
+	// CAUTION: Because we want to compensate for this division so that the motor can run() at a speed close to max,
+	// I added this +1, but this does mean that goto() runs at a faster speed than the degree_per_sec here
+	uint32_t step_per_tick = (uint32_t)((degree_per_sec / 1.8 / 15.25) + 1);
 	L6470_write_register(motor, L6470_PARAM_MAX_SPEED_ADDR, step_per_tick);
 
 	//check register
-	max_speed = L6470_read_register(motor, L6470_PARAM_MAX_SPEED_ADDR);
+	//max_speed = L6470_read_register(motor, L6470_PARAM_MAX_SPEED_ADDR);
 
 	return;
 }
 
-void L6470_zero_motor(L6470_Motor_IC* motor) {
-	uint8_t tx = L6470_CMD_RESETPOS;
 
-	__disable_irq();
-	L6470_SPI_transmit_byte(motor, tx);
-	L6470_SPI_CS_delay(motor);
-	__enable_irq();
+void L6470_set_motor_acc_dec(L6470_Motor_IC* motor, float acc_ratio, float dec_ratio){
+	uint32_t acc_step_tick_2 = (uint16_t)(4095 * acc_ratio + 0.5);
+	uint32_t dec_step_tick_2 = (uint16_t)(4095 * dec_ratio + 0.5);
+	L6470_write_register(motor, L6470_PARAM_ACC_ADDR, acc_step_tick_2);
+	L6470_write_register(motor, L6470_PARAM_DEC_ADDR, dec_step_tick_2);
 
-	return;
+	//uint32_t check = L6470_read_register(motor, L6470_PARAM_DEC_ADDR);
 }
+
 
 void L6470_goto_motor_pos(L6470_Motor_IC* motor, float abs_pos_degree) {
 	uint32_t abs_pos_step = 0;
@@ -345,7 +362,17 @@ void L6470_goto_motor_pos(L6470_Motor_IC* motor, float abs_pos_degree) {
 }
 
 
-//---------------------Helper functions------------------------
+void L6470_zero_motor(L6470_Motor_IC* motor) {
+	uint8_t tx = L6470_CMD_RESETPOS;
+
+	__disable_irq();
+	L6470_SPI_transmit_byte(motor, tx);
+	L6470_SPI_CS_delay(motor);
+	__enable_irq();
+
+	return;
+}
+
 
 void L6470_goto_motor_pos_dir(L6470_Motor_IC* motor, uint8_t dir, float abs_pos_degree) {
 	//Convert degrees to steps
@@ -366,16 +393,6 @@ void L6470_goto_motor_pos_dir(L6470_Motor_IC* motor, uint8_t dir, float abs_pos_
 	return;
 }
 
-void L6470_reset_device(L6470_Motor_IC* motor) {
-	uint8_t tx = L6470_CMD_RESETDEVICE;
-
-	__disable_irq();
-	L6470_SPI_transmit_byte(motor, tx);
-	L6470_SPI_CS_delay(motor);
-	__enable_irq();
-
-	return;
-}
 
 void L6470_run(L6470_Motor_IC* motor, uint8_t dir, float speed_deg_sec) {
 	speed_deg_sec /= motor->step_angle; // Convert to step/sec
@@ -395,10 +412,41 @@ void L6470_run(L6470_Motor_IC* motor, uint8_t dir, float speed_deg_sec) {
 	return;
 }
 
+
 void L6470_soft_stop(L6470_Motor_IC* motor) {
 	L6470_SPI_transmit_byte(motor, L6470_CMD_SOFTSTOP);
+	return;
 }
+
 
 void L6470_hard_stop(L6470_Motor_IC* motor) {
 	L6470_SPI_transmit_byte(motor, L6470_CMD_HARDSTOP);
+	return;
+}
+
+
+float L6470_get_position_deg(L6470_Motor_IC* motor) {
+	float pos = 0;
+	pos = (float)L6470_read_register(motor, L6470_PARAM_ABS_POS_ADDR);
+
+	// Converting
+	pos *= motor->step_angle;
+
+	//update struct
+
+	return pos;
+}
+
+
+float L6470_get_speed_steps_sec(L6470_Motor_IC* motor) {
+	float spd = 0;
+	spd = (float)L6470_read_register(motor, L6470_PARAM_SPEED_ADDR);
+
+	// update struct
+	motor->speed = (uint32_t)spd;
+
+	// Converting according to datasheet pg 42
+	spd = spd / 67.108864 * motor->step_angle;
+
+	return spd;
 }
