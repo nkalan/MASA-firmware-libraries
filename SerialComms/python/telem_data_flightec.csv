@@ -3,8 +3,8 @@ STATE,STATE,0,127,ul,enum States,%u,uint8_t,1,,int,,,y
 ebatt,e_batt,-20,20,Volts,float,%.2f,int16_t,100,,float,,,y
 ibatt,i_batt,-10,150,Amps,float,%.2f,int16_t,100,,float,,,y
 Valve State Feedback,valve_states,,,ul,uint32_t,%u,uint32_t,1,,int,,,y
-E 3V,e3v,0,5,Volts,float,%.2f,int32_t,100,,float,,,y
-E 5V,e5v,0,5,Volts,float,%.2f,int32_t,100,,float,,,y
+E 3V,e3v,0,5,Volts,float,%.2f,int16_t,100,,float,,,y
+E 5V,e5v,0,5,Volts,float,%.2f,int16_t,100,,float,,,y
 I 5V,i5v,0,2,Amps,float,%.1f,uint8_t,100,,float,,,y
 I 3V,i3v,0,2,Amps,float,%.1f,uint8_t,100,,float,,,y
 Board Temp 0,t_brd[0],,,C,float,%.1f,uint16_t,10,,float,,,n
@@ -105,9 +105,9 @@ COPV Control Pressure,copv_control_pressure,-100,10000,psi,float,%.1f,int32_t,10
 tank 0 enable,tanks[0].tank_enable,,,ul,volatile uint8_t,%i,uint8_t,1,tnk0.en,int,,,y
 tank 1 enable,tanks[1].tank_enable,,,ul,volatile uint8_t,%i,uint8_t,1,tnk1.en,int,,,y
 Test Duration,test_duration,,,ms,uint32_t,%i,uint32_t,1,,int,,,y
-Purge Duration,purge_duration,,,ms,uint32_t,%i,uint32_t,1,,int,,,y
+Purge Duration,purge_duration,,,ms,uint32_t,%i,uint32_t,1,,int,,,n
 Remaining Time in State,state_rem_duration,,,ms,int32_t,%i,int32_t,1,,int,,,y
-Telem Rate,telem_rate,,,Hz,uint32_t,%i,uint32_t,1,,int,,,y
-ADC Rate,adc_rate,,,Hz,uint32_t,%i,uint32_t,1,,int,,,y
+Telem Rate,telem_rate,,,Hz,uint16_t,%i,uint16_t,1,,int,,,y
+ADC Rate,adc_rate,,,Hz,uint16_t,%i,uint16_t,1,,int,,,y
 Flash Memory,flash_mem,,,bytes,uint32_t,%i,uint32_t,1,,int,,,y
 Flash Logging Active,LOGGING_ACTIVE,,,ul,uint8_t,%d,uint8_t,1,,int,,,y

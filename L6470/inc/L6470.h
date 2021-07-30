@@ -208,15 +208,20 @@ void L6470_run(L6470_Motor_IC* motor, uint8_t dir, float speed_deg_sec);
  */
 void L6470_goto_motor_pos_dir(L6470_Motor_IC* motor, uint8_t dir, float abs_pos_degree);
 
-/*
- * Soft stop. Datasheet pg 64.
+/**
+ * Send the HardStop command immediately stop and lock the motor
+ *
+ * Datasheet pg 65
  */
-void L6470_soft_stop(L6470_Motor_IC* motor);
+void L6470_lock_motor(L6470_Motor_IC* motor);
 
-/*
- * Hard stop. Datasheet pg 65.
+/**
+ * Send the HardHiZ command to the motor to immediately
+ * disable the power bridges
+ *
+ * Datasheet pg 65
  */
-void L6470_hard_stop(L6470_Motor_IC* motor);
+void L6470_stop_motor(L6470_Motor_IC* motor);
 
 /*
  * Reads the absolute position register and converts it from steps to degrees.

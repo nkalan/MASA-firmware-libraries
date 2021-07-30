@@ -303,6 +303,11 @@ void L6470_init_motor(L6470_Motor_IC* motor, L6470_Stepping_Mode mode, float ste
 	// Store the step angle in the struct
 	motor->step_angle = step_angle;
 
+	// Stop the motor in case it's moving.
+	// This happens when the microcontroller resets without losing
+	// power while the motor is moving.
+	L6470_stop_motor(motor);
+
 	return;
 }
 
@@ -413,13 +418,13 @@ void L6470_run(L6470_Motor_IC* motor, uint8_t dir, float speed_deg_sec) {
 }
 
 
-void L6470_soft_stop(L6470_Motor_IC* motor) {
-	L6470_SPI_transmit_byte(motor, L6470_CMD_SOFTSTOP);
+void L6470_stop_motor(L6470_Motor_IC* motor) {
+	L6470_SPI_transmit_byte(motor, L6470_CMD_HARDHIZ);
 	return;
 }
 
 
-void L6470_hard_stop(L6470_Motor_IC* motor) {
+void L6470_lock_motor(L6470_Motor_IC* motor) {
 	L6470_SPI_transmit_byte(motor, L6470_CMD_HARDSTOP);
 	return;
 }
