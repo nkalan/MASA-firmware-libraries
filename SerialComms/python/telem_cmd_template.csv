@@ -29,15 +29,17 @@ packet_type,function_name,nums args,arg0,arg_type0,xmit_scale,arg1,arg_type1,xmi
 35,tare_load_cells,0,,,,,,,,,,0,zero out all the load cells
 36,set_system_clock,1,system_time,uint32_t,1,,,,,,,0 1 2 3,sets the system clock time
 37,remove_pressure_ambients,0,,,,,,,,,,2,Sets stored pressure ambients to 0
-38,set_autosequence_fuel_first,0,,,,,,,,,,2,Sets the autosequence to open Fuel MPV first
-39,set_autosequence_lox_first,0,,,,,,,,,,2,Sets the autosequence to open LOX MPV first
-40,set_autosequence_mpv_delay,1,mpv_delay_ms,uint16_t,1,,,,,,,2,MPV valve delay time in milliseconds
-41,set_engine_test_duration,1,engine_test_duration,uint32_t,1,,,,,,,2,Like set_control_loop_duration but for the engine controller (ms)
-42,set_engine_purge_duration,1,engine_purge_duration,uint32_t,1,,,,,,,2,Sets purge duration in ms after hotfire
-43,clear_status_flags,0,,,,,,,,,,2,Removes all status flags from the status_flags_variable
-44,start_simulation,0,,,,,,,,,,2,Starts an already loaded software in loop simulation
-45,advance_simulation,0,,,,,,,,,,2,Moves to the next simulation test case
-46,stop_simulation,0,,,,,,,,,,2,Stops the data simulation
-47,set_pt_lower_voltage,2,pt_num,uint8_t,1,lower_voltage,float,10,,,,2,Sets a pressure transducer calibration lower voltage range
-48,set_pt_upper_voltage,2,pt_num,uint8_t,1,upper_voltage,float,10,,,,2,Sets a pressure transducer calibration upper voltage range
-49,set_pt_upper_pressure,2,pt_num,uint8_t,1,pressure_range,float,1,,,,2,Sets a pressure transducer calibration upper pressure range
+38,set_fuel_mpv_on_delay,1,mpv_delay_ms,uint8_t,1,,,,,,,2,MPV valve delay time in milliseconds
+39,set_engine_test_duration,1,engine_test_duration_ms,uint32_t,1,,,,,,,2,Like set_control_loop_duration but for the engine controller (ms)
+40,set_pid_start_delay,1,pid_delay_ms,uint16_t,1,,,,,,,2,Sets purge duration in ms after hotfire
+41,set_ignitor_on_delay,1,ignitor_on_delay_ms,uint16_t,1,,,,,,,2,Sets time into ignition state in ms to turn on ignitor
+42,set_ignitor_high_duration,1,ignitor_high_duration_ms,uint16_t,1,,,,,,,2,Sets total duration in ms to leave the ignitor on before combustion
+43,set_film_cooling_on_delay,1,film_cooling_delay_ms,uint16_t,1,,,,,,,2,Sets time into hotfire in ms to turn on nozzle film cooling
+44,set_init_motor_deg_factor,1,deg_correction_factor,double,10000,,,,,,,2,Initial motor position coefficient
+45,clear_status_flags,0,,,,,,,,,,2,Removes all status flags from the status_flags_variable
+46,start_simulation,0,,,,,,,,,,2,Starts an already loaded software in loop simulation
+47,advance_simulation,0,,,,,,,,,,2,Moves to the next simulation test case
+48,stop_simulation,0,,,,,,,,,,2,Stops the data simulation
+49,set_pt_lower_voltage,2,pt_num,uint8_t,1,lower_voltage,float,10,,,,2,Sets a pressure transducer calibration lower voltage range
+50,set_pt_upper_voltage,2,pt_num,uint8_t,1,upper_voltage,float,10,,,,2,Sets a pressure transducer calibration upper voltage range
+51,set_pt_upper_pressure,2,pt_num,uint8_t,1,pressure_range,float,1,,,,2,Sets a pressure transducer calibration upper pressure range
