@@ -22,6 +22,10 @@
 #include "pack_cmd_defines.h"
 #include "pack_telem_defines.h"
 
+#ifdef PACK_CALIBRATION_DEFINES_H
+#include "pack_calibration_defines.h"
+#endif
+
 /* Global Defines */
 #define PING_MAX_PACKET_SIZE        253
 #define PONG_MAX_PACKET_SIZE        255
@@ -76,6 +80,10 @@ uint8_t CLB_board_addr;
 uint8_t CLB_last_cmd_received;
 
 CLB_Packet_Header CLB_receive_header;       // private header for receive packets
+
+#ifdef PACK_CALIBRATION_DEFINES_H
+uint8_t CLB_calibration_data[CLB_NUM_CALIBRATION_ITEMS];
+#endif
 
 /**
     Points CLB data arr to array buffer that encode/send
