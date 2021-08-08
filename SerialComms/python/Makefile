@@ -109,7 +109,7 @@ ecpressport:
 
 	${PYTHON} ./cmd_template_parser.py \
 		-f ${TELEM_CMD_FILE} \
-		-n ${PRESS_BOARD_NUM} \
+		-n ${EC_BOARD_NUM} \
 		-o ${TELEM_C_FILE_DIRECTORY}
 
 gsecal:
