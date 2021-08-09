@@ -20,21 +20,9 @@ void init_board(uint8_t board_addr) {
 void init_data(uint8_t *buffer, int16_t buffer_sz, CLB_Packet_Header* header) {
 	if (buffer_sz == -1) {	// standard telem
 	    // repack CLB_telem_data
-
-		if (header->packet_type == 0) {  // Normal telem
-			pack_telem_data(CLB_telem_data);
-			CLB_buffer = CLB_telem_data;
-			CLB_buffer_sz = CLB_NUM_TELEM_ITEMS;
-		}
-
-#ifdef PACK_CALIBRATION_DEFINES_H
-		else if (header->packet_type == 2) {  // Calibration packet
-			pack_calibration_data(CLB_calibration_data);
-			CLB_buffer = CLB_calibration_data;
-			CLB_buffer_sz = CLB_NUM_CALIBRATION_ITEMS;
-		}
-#endif
-
+		pack_telem_data(CLB_telem_data);
+		CLB_buffer = CLB_telem_data;
+		CLB_buffer_sz = CLB_NUM_TELEM_ITEMS;
 	} else {				// custom telem
 		CLB_buffer = buffer;
 		CLB_buffer_sz = buffer_sz;

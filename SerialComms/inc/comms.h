@@ -22,10 +22,6 @@
 #include "pack_cmd_defines.h"
 #include "pack_telem_defines.h"
 
-#ifdef PACK_CALIBRATION_DEFINES_H
-#include "pack_calibration_defines.h"
-#endif
-
 /* Global Defines */
 #define PING_MAX_PACKET_SIZE        253
 #define PONG_MAX_PACKET_SIZE        255

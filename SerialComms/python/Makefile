@@ -20,6 +20,9 @@ FLIGHT_TELEM_CSV_FILE= ./telem_data_flightcomp.csv
 EC_TELEM_CSV_FILE= ./telem_data_flightec.csv
 EC_PRESS_PORT_TELEM_CSV_FILE = ./telem_data_flightec_pressboard_port.csv
 
+# Calibration Data CSV files
+EC_PRESS_PORT_CALIBRATION_CSV_FILE = ./calibration_data_flightec_pressboard_port.csv
+
 # Calibration Files
 CAL_CSV_FILE	= ./calibrations.csv
 CAL_H_FILE	= ../../../Inc/calibrations.h 
@@ -122,10 +125,11 @@ presscal:
 		${CAL_CSV_FILE}	\
 		${PRESS_BOARD_NUM}
 
-eccal:
-	${PYTHON} ./calibration_generator.py	\
-		${CAL_CSV_FILE}	\
-		${EC_BOARD_NUM}
+ecpressportcal:
+	${PYTHON} ./calibration_file_generator.py	\
+		${EC_PRESS_PORT_CALIBRATION_CSV_FILE}	\
+		${EC_PRESS_PORT_TELEM_PARSE_FILE}	\
+		${PRESS_BOARD_NUM}
 
 constants:
 	${PYTHON} ./flash_constants_autogen.py	\
