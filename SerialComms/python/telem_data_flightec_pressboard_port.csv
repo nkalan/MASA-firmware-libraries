@@ -122,3 +122,6 @@ Telem Rate,telem_rate,,,Hz,uint8_t,%i,uint8_t,1,,int,,,y
 ADC Rate,adc_rate,,,Hz,uint8_t,%i,uint8_t,1,,int,,,y
 Flash Memory,flash_mem,,,bytes,uint32_t,%i,uint32_t,1,,int,,,y
 Flash Logging Active,LOGGING_ACTIVE,,,ul,uint8_t,%d,uint8_t,1,,int,,,y
+Automatic Abort enable,autosequence.enable_auto_aborts,,,ul,uint8_t,%d,uint8_t,1,enable_auto_aborts,int,,,y
+Ignitor break detection counter,autosequence.ignition_ignitor_current_lower_bound_pass_count,,,counts,uint32_t,%d,uint16_t,1,ignitor_break_count,int,,,y
+Combustion failure detection counter,autosequence.hotfire_chamber_pres_lower_bound_pass_count,,,counts,uint32_t,%d,uint16_t,1,chamber_pressure_low_count,int,,,y
