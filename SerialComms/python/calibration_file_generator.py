@@ -46,8 +46,8 @@ def main():
     
     # Parse command line arguments
     filename = sys.argv[1]  # template file
-    output_file = sys.argv[2]  # Output file name
-    output_file_parser_name = board_addresses[sys.argv[3]]  # Parser names
+    output_file = sys.argv[2]  # Output parser filename
+    output_file_parser_name = board_addresses[sys.argv[3]] + "Calibrations"  # Parser class name
     print("Reading " + filename + "...")
 
     # Script should read in from a csv and store the data
@@ -183,14 +183,8 @@ def main():
 
         python_type = calibration_parameters['python_type'][i]
         
-        '''
-        ASK NATHANIEL ABOUT THIS, what are the units??
 
-        unit = calibration_parameters['units'][i]
-        '''
-
-        # Temporary, leave this for now:
-        unit = 'Volts'
+        unit = calibration_parameters['unit'][i]
 
         parser_items_list.append(python_variable)
 
@@ -314,9 +308,10 @@ def main():
         print(" --- Packet statistics --- ")
         print("Packet items: " + str(packet_byte_length/8))
         print("Packet length (bytes): " + str(packet_byte_length))
-        print("\nCreated/updated 2 files:\n"+ \
+        print("\nCreated/updated 3 files:\n"+ \
                     "\n../../../Inc/pack_calibration_defines.h" + \
-                    "\n../../../Src/pack_calibration_defines.c\n" + "\n")
+                    "\n../../../Src/pack_calibration_defines.c" + \
+                    "\n" + output_file + "\n")
     else:
         print("\nScript failed to complete. One or more errors occurred. See command line or terminal interface for "
             "details.\n")

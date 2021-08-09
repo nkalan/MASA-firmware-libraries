@@ -10,7 +10,8 @@ GSE_TELEM_PARSE_FILE = ${GUI_PATH}/parsers/gseControllerParse.py
 PRESS_TELEM_PARSE_FILE = ${GUI_PATH}/parsers/pressBoardParse.py
 FLIGHT_TELEM_PARSE_FILE = ${GUI_PATH}/parsers/flightCompParse.py
 EC_TELEM_PARSE_FILE = ${GUI_PATH}/parsers/engineControllerParse.py
-EC_PRESS_PORT_TELEM_PARSE_FILE = ${GUI_PATH}/parsers/engineControllerPressPort.py
+EC_PRESS_PORT_TELEM_PARSE_FILE = ${GUI_PATH}/parsers/engineControllerPressPortParse.py
+EC_PRESS_PORT_CALIBRATION_PARSE_FILE = ${GUI_PATH}/parsers/engineControllerPressPortParseCalibration.py
 
 # Telem Data CSV files
 TELEM_CSV_FILE = ./telem_data_template.csv
@@ -128,7 +129,7 @@ presscal:
 ecpressportcal:
 	${PYTHON} ./calibration_file_generator.py	\
 		${EC_PRESS_PORT_CALIBRATION_CSV_FILE}	\
-		${EC_PRESS_PORT_TELEM_PARSE_FILE}	\
+		${EC_PRESS_PORT_CALIBRATION_PARSE_FILE}	\
 		${PRESS_BOARD_NUM}
 
 constants:
