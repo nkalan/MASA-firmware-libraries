@@ -85,26 +85,26 @@ I Mtr 0,i_mtr[0],,,Amps,float,%d,uint16_t,100,,float,,,y
 I Mtr 1,i_mtr[1],,,Amps,float,%d,uint16_t,100,,float,,,y
 mtr 0 setpoint,mtr_set[0],,,deg,float,%d,int32_t,100,mtr0.set,float,,,y
 mtr 1 setpoint,mtr_set[1],,,deg,float,%d,int32_t,100,mtr1.set,float,,,y
-mtr 0 Kp,tanks[0].K_p,,,ul,float,%d,uint16_t,100,mtr0.kp,float,,,y
-mtr 1 Kp,tanks[1].K_p,,,ul,float,%d,uint16_t,100,mtr1.kp,float,,,y
-mtr 0 Ki,tanks[0].K_i,,,ul,float,%d,uint16_t,100,mtr0.ki,float,,,y
-mtr 1 Ki,tanks[1].K_i,,,ul,float,%d,uint16_t,100,mtr1.ki,float,,,y
-mtr 0 Kd,tanks[0].K_d,,,ul,float,%d,uint16_t,100,mtr0.kd,float,,,y
-mtr 1 Kd,tanks[1].K_d,,,ul,float,%d,uint16_t,100,mtr1.kd,float,,,y
+mtr 0 Kp,tanks[0].K_p,,,ul,float,%d,uint16_t,100,mtr0.p,float,,,y
+mtr 1 Kp,tanks[1].K_p,,,ul,float,%d,uint16_t,100,mtr1.p,float,,,y
+mtr 0 Ki,tanks[0].K_i,,,ul,float,%d,uint16_t,100,mtr0.i,float,,,y
+mtr 1 Ki,tanks[1].K_i,,,ul,float,%d,uint16_t,100,mtr1.i,float,,,y
+mtr 0 Kd,tanks[0].K_d,,,ul,float,%d,uint16_t,100,mtr0.d,float,,,y
+mtr 1 Kd,tanks[1].K_d,,,ul,float,%d,uint16_t,100,mtr1.d,float,,,y
 mtr 0 Kp error,tanks[0].Kp_error,,,ul,float,%d,int16_t,10,mtr0.kp_err,float,,,y
 mtr 1 Kp error,tanks[1].Kp_error,,,ul,float,%d,int16_t,10,mtr1.kp_err,float,,,y
 mtr 0 Ki error,tanks[0].Ki_error,,,ul,float,%d,int16_t,10,mtr0.ki_err,float,,,y
 mtr 1 Ki error,tanks[1].Ki_error,,,ul,float,%d,int16_t,10,mtr1.ki_err,float,,,y
 mtr 0 Kd error,tanks[0].Kd_error,,,ul,float,%d,int16_t,10,mtr0.kd_err,float,,,y
 mtr 1 Kd error,tanks[1].Kd_error,,,ul,float,%d,int16_t,10,mtr1.kd_err,float,,,y
-tank 0 target pressure,tanks[0].target_pres,,,psi,float,%.1f,int32_t,100,tnk0.target_pres,float,,,y
-tank 1 target pressure,tanks[1].target_pres,,,psi,float,%.1f,int32_t,100,tnk1.target_pres,float,,,y
-tank 0 high pressure percent,tanks[0].PID_ctrl_vlv_high_pres,,,psi,float,%.1f,int16_t,10,tnk0.high_pres,float,,,y
-tank 1 high pressure percent,tanks[1].PID_ctrl_vlv_high_pres,,,psi,float,%.1f,int16_t,10,tnk1.high_pres,float,,,y
-tank 0 lower pressure percent,tanks[0].PID_ctrl_vlv_low_pres,,,psi,float,%.1f,int16_t,10,tnk0.low_pres,float,,,y
-tank 1 lower pressure percent,tanks[1].PID_ctrl_vlv_low_pres,,,psi,float,%.1f,int16_t,10,tnk1.low_pres,float,,,y
-pot 0,epot[0],,,deg,volatile float,%d,int32_t,10,pot0.e,float,,,y
-pot 1,epot[1],,,deg,volatile float,%d,int32_t,10,pot1.e,float,,,y
+tank 0 target pressure,tanks[0].target_pres,,,psi,float,%.1f,int32_t,100,tnk0.tp,float,,,y
+tank 1 target pressure,tanks[1].target_pres,,,psi,float,%.1f,int32_t,100,tnk1.tp,float,,,y
+tank 0 high pressure percent,tanks[0].PID_ctrl_vlv_high_pres,,,psi,float,%.1f,int16_t,10,tnk0.hp,float,,,y
+tank 1 high pressure percent,tanks[1].PID_ctrl_vlv_high_pres,,,psi,float,%.1f,int16_t,10,tnk1.hp,float,,,y
+tank 0 lower pressure percent,tanks[0].PID_ctrl_vlv_low_pres,,,psi,float,%.1f,int16_t,10,tnk0.lp,float,,,y
+tank 1 lower pressure percent,tanks[1].PID_ctrl_vlv_low_pres,,,psi,float,%.1f,int16_t,10,tnk1.lp,float,,,y
+pot 0,epot[0],,,deg,volatile float,%d,int32_t,10,mtr0.pot,float,,,y
+pot 1,epot[1],,,deg,volatile float,%d,int32_t,10,mtr1.pot,float,,,y
 LOX Tank Control Pressure,lox_control_pressure,,,psi,float,%.1f,int32_t,10,lox_ctrl_pres,float,,,y
 Fuel Tank Control Pressure,fuel_control_pressure,,,psi,float,%.1f,int32_t,10,fuel_ctrl_pres,float,,,y
 COPV Control Pressure,copv_control_pressure,,,psi,float,%.1f,int32_t,10,copv_ctrl_pres,float,,,y
@@ -123,5 +123,8 @@ ADC Rate,adc_rate,,,Hz,uint8_t,%i,uint8_t,1,,int,,,y
 Flash Memory,flash_mem,,,bytes,uint32_t,%i,uint32_t,1,,int,,,y
 Flash Logging Active,LOGGING_ACTIVE,,,ul,uint8_t,%d,uint8_t,1,,int,,,y
 Automatic Abort enable,autosequence.enable_auto_aborts,,,ul,uint8_t,%d,uint8_t,1,enable_auto_aborts,int,,,y
-Ignitor break detection counter,autosequence.ignition_ignitor_current_lower_bound_pass_count,,,counts,uint32_t,%d,uint16_t,1,ignitor_break_count,int,,,y
-Combustion failure detection counter,autosequence.hotfire_chamber_pres_lower_bound_pass_count,,,counts,uint32_t,%d,uint16_t,1,chamber_pressure_low_count,int,,,y
+Ignitor break detection counter,autosequence.ignition_ignitor_current_lower_bound_pass_count,,,counts,uint16_t,%d,uint16_t,1,ignitor_break_count,int,,,y
+Combustion failure detection counter,autosequence.hotfire_chamber_pres_lower_bound_pass_count,,,counts,uint16_t,%d,uint16_t,1,chamber_pres_low_count,int,,,y
+Hard start detection counter,autosequence.hotfire_chamber_pres_upper_bound_pass_count,,,counts,uint16_t,%d,uint16_t,1,chamber_pres_high_count,int,,,y
+LOX TPC Active,autosequence.hotfire_lox_tank_enable_PID_control,,,ul,uint8_t,%d,uint8_t,1,tnk0.tpc.active,int,,,y
+Fuel TPC Active,autosequence.hotfire_fuel_tank_enable_PID_control,,,ul,uint8_t,%d,uint8_t,1,tnk1.tpc.active,int,,,y
