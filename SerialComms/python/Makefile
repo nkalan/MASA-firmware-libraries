@@ -11,7 +11,10 @@ PRESS_TELEM_PARSE_FILE = ${GUI_PATH}/parsers/pressBoardParse.py
 FLIGHT_TELEM_PARSE_FILE = ${GUI_PATH}/parsers/flightCompParse.py
 EC_TELEM_PARSE_FILE = ${GUI_PATH}/parsers/engineControllerParse.py
 EC_PRESS_PORT_TELEM_PARSE_FILE = ${GUI_PATH}/parsers/engineControllerPressPortParse.py
-EC_PRESS_PORT_CALIBRATION_PARSE_FILE = ${GUI_PATH}/parsers/engineControllerPressPortParseCalibration.py
+
+# GUI Calibration Data Templates
+EC_PRESS_PORT_CALIBRATION_PARSE_FILE = ${GUI_PATH}/parsers/engineControllerPressPortCalibrationParse.py
+GSE_CALIBRATION_PARSE_FILE = ${GUI_PATH}/parsers/gseControllerCalibrationParse.py
 
 # Telem Data CSV files
 TELEM_CSV_FILE = ./telem_data_template.csv
@@ -23,8 +26,9 @@ EC_PRESS_PORT_TELEM_CSV_FILE = ./telem_data_flightec_pressboard_port.csv
 
 # Calibration Data CSV files
 EC_PRESS_PORT_CALIBRATION_CSV_FILE = ./calibration_data_flightec_pressboard_port.csv
+GSE_CALIBRATION_CSV_FILE = ./calibration_data_gsecontroller.csv
 
-# Calibration Files
+# Calibration Files (deprecated)
 CAL_CSV_FILE	= ./calibrations.csv
 CAL_H_FILE	= ../../../Inc/calibrations.h 
 CAL_C_FILE	= ../../../Src/calibrations.c
@@ -117,8 +121,9 @@ ecpressport:
 		-o ${TELEM_C_FILE_DIRECTORY}
 
 gsecal:
-	${PYTHON} ./calibration_generator.py	\
-		${CAL_CSV_FILE}	\
+	${PYTHON} ./calibration_file_generator.py	\
+		${GSE_CALIBRATION_CSV_FILE}	\
+		${GSE_CALIBRATION_PARSE_FILE}	\
 		${GSE_BOARD_NUM}
 		
 presscal:
