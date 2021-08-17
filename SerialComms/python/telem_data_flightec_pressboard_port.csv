@@ -128,3 +128,6 @@ Combustion failure detection counter,autosequence.hotfire_chamber_pres_lower_bou
 Hard start detection counter,autosequence.hotfire_chamber_pres_upper_bound_pass_count,,,counts,uint16_t,%d,uint16_t,1,chamber_pres_high_count,int,,,y
 LOX TPC Active,autosequence.hotfire_lox_tank_enable_PID_control,,,ul,uint8_t,%d,uint8_t,1,tnk0.tpc.active,int,,,y
 Fuel TPC Active,autosequence.hotfire_fuel_tank_enable_PID_control,,,ul,uint8_t,%d,uint8_t,1,tnk1.tpc.active,int,,,y
+,autosequence.post_gse_fuel_vent_signal,,,ul,uint8_t,%d,uint8_t,1,fuel_vent_signal,int,,,y
+,autosequence.post_gse_fuel_vent_command_enable,,,ul,uint8_t,%d,uint8_t,1,fuel_vent_enable,int,,,y
+,autosequence.post_gse_fuel_vent_telem_toggle,,,ul,uint8_t,%d,uint8_t,1,fuel_vent_telem_toggle,int,,,y
