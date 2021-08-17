@@ -77,6 +77,10 @@ uint8_t CLB_last_cmd_received;
 
 CLB_Packet_Header CLB_receive_header;       // private header for receive packets
 
+#ifdef PACK_CALIBRATION_DEFINES_H
+uint8_t CLB_calibration_data[CLB_NUM_CALIBRATION_ITEMS];
+#endif
+
 /**
     Points CLB data arr to array buffer that encode/send
     @param  buffer      <uint8_t> array of data to encode/send

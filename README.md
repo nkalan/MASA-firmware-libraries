@@ -1,3 +1,8 @@
+# Until they've been tested, do not use the following libraries:
+* L6470
+* MAX11128
+* MAX31856
+
 # Important Information for Firmware Developers
 Untested firmware changes should be pushed to their own branches. For instance, a change made to the MAX11131 IC should be pushed to the branch `release-max11131-dev`. In general the naming convention for branches is:
 
