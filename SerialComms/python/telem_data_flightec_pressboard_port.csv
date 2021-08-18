@@ -130,4 +130,4 @@ LOX TPC Active,autosequence.hotfire_lox_tank_enable_PID_control,,,ul,uint8_t,%d,
 Fuel TPC Active,autosequence.hotfire_fuel_tank_enable_PID_control,,,ul,uint8_t,%d,uint8_t,1,tnk1.tpc.active,int,,,y
 ,autosequence.post_gse_fuel_vent_signal,,,ul,uint8_t,%d,uint8_t,1,fuel_vent_signal,int,,,y
 ,autosequence.post_gse_fuel_vent_command_enable,,,ul,uint8_t,%d,uint8_t,1,fuel_vent_enable,int,,,y
-,autosequence.post_gse_fuel_vent_telem_toggle,,,ul,uint8_t,%d,uint8_t,1,fuel_vent_telem_toggle,int,,,y
+,autosequence.post_gse_fuel_vent_telem_count,,,ul,uint8_t,%d,uint8_t,1,fuel_vent_telem_count,int,,,y

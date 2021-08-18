@@ -46,4 +46,5 @@ packet_type,function_name,nums args,arg0,arg_type0,xmit_scale,arg1,arg_type1,xmi
 52,refresh_calibrations,0,,,,,,,,,,0 2,Sends a calibration telemetry packet back to the server
 53,send_gse_vlv_cmd,2,vlv_num,uint32_t,1,state,uint8_t,1,,,,2,Commands the GSE controller to send a set_vlv command
 54,set_automatic_abort_enable,1,abort_enable_status,uint8_t,1,,,,,,,2,Sets automatic aborts on or off
-55,reset_micro,0,,,,,,,,,,0 1 2 3,Triggers a software reset on the microcontroller
+55,reset_micro,0,,,,,,,,,,0 2 3,Triggers a software reset on the microcontroller
+56,clear_serial_buffer,0,,,,,,,,,,0 2 3,Clears the UART DMA buffers
