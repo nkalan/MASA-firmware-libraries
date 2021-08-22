@@ -40,9 +40,6 @@ packet_type,function_name,nums args,arg0,arg_type0,xmit_scale,arg1,arg_type1,xmi
 46,start_simulation,0,,,,,,,,,,2,Starts an already loaded software in loop simulation
 47,advance_simulation,0,,,,,,,,,,2,Moves to the next simulation test case
 48,stop_simulation,0,,,,,,,,,,2,Stops the data simulation
-49,set_pt_lower_voltage,2,pt_num,uint8_t,1,lower_voltage,float,10,,,,0 2,Sets a pressure transducer calibration lower voltage range
-50,set_pt_upper_voltage,2,pt_num,uint8_t,1,upper_voltage,float,10,,,,0 2,Sets a pressure transducer calibration upper voltage range
-51,set_pt_upper_pressure,2,pt_num,uint8_t,1,pressure_range,float,1,,,,0 2,Sets a pressure transducer calibration upper pressure range
-52,refresh_calibrations,0,,,,,,,,,,0 2,Sends a calibration telemetry packet back to the server
+49,set_pt_slope_offset,3,pt_num,uint8_t,1,mV_per_psi,float,10000,mV_offset,float,1,0 2,Sets a pressure transducer calibration lower voltage range
 53,set_automatic_abort_enable,1,abort_enable_status,uint8_t,1,,,,,,,2,Sets automatic aborts on or off
 54,reset_micro,0,,,,,,,,,,0 2 3,Triggers a software reset on the microcontroller
