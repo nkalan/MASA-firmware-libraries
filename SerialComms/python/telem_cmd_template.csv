@@ -43,3 +43,4 @@ packet_type,function_name,nums args,arg0,arg_type0,xmit_scale,arg1,arg_type1,xmi
 49,set_pt_slope_offset,3,pt_num,uint8_t,1,mV_per_psi,float,10000,mV_offset,float,1,0 2,Sets a pressure transducer calibration lower voltage range
 50,set_automatic_abort_enable,1,abort_enable_status,uint8_t,1,,,,,,,2,Sets automatic aborts on or off
 51,reset_micro,0,,,,,,,,,,0 2 3,Triggers a software reset on the microcontroller
+52,reset_micro_pneu_vent_on,0,,,,,,,,,,0,"Resets micro, but leaves LOX pneumatic vent powered on"
