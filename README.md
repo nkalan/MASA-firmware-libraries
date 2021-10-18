@@ -1,7 +1,9 @@
-# Until they've been tested, do not use the following libraries:
-* L6470
-* MAX11128
-* MAX31856
+# Note About This Repository
+This repository was imported from MASA's private Gitlab server. Although this project has had several contributers, I wrote significant portions of the following libraries:
+- W25N01GV (SPI flash memory driver)
+- MS5607 (not on master branch, SPI pressure altimeter)
+- SerialComms (Python C code autogeneration scripts)
+- L6470 (SPI stepper motor driver)
 
 # Important Information for Firmware Developers
 Untested firmware changes should be pushed to their own branches. For instance, a change made to the MAX11131 IC should be pushed to the branch `release-max11131-dev`. In general the naming convention for branches is:
